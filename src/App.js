@@ -1,0 +1,116 @@
+import { BrowserRouter, Routes, Route,Navigate } from "react-router-dom";
+import Layout from "./components/layout/layout";
+import Home from "./components/pages/Dashboard/dashboard";
+import General from "./components/pages/Genral/general";
+import PurchaseHome from "./components/pages/Purchase/purchasehome";
+import {Toaster} from "react-hot-toast";
+import ProductionStock from "./components/pages/Production/productionstock";
+import SalesModule from "./components/pages/Sales/salesmodule";
+import Reports from "./components/pages/Reports/reports";
+import AddNewCustomerModal from "./components/pages/Genral/customer";
+import Spare from "./components/pages/Genral/sparedata";
+import Employee from "./components/pages/Genral/employee";
+import ExpenseData from "./components/pages/Genral/expensedata";
+ import Stock from "./components/pages/Purchase/purchaseitem";
+ import PurchaseOrder from "./components/forms/purchaseorderform";  
+ import PurchaseOrderFormat from "./components/pages/Purchase/purchaseorderview";
+ import Debitnote from "./components/forms/debitnoteform";
+ import Debitnoteview from "./components/pages/Purchase/debitnoteview";
+ import SupplierAdvance from "./components/forms/supplieradvance";
+ import SupplierModel from "./components/ui/supplierreport";
+ import TaxPurchaseEntry from "./components/forms/taxpurchaseentry";
+ import Purchaseentryreport from"./components/ui/purchasereport";
+ import BillwisePayment from "./components/forms/bilwisepayment";
+ import Billwiseformat from "./components/pages/Purchase/bilwisepaymentformat";
+ import Servicemodel from "./components/pages/Genral/servicesdata";
+
+
+
+//  Layouts
+import MainLayout from "./components/layout/mainlayout";
+ 
+
+//  Sales Modules
+import Quotation from "./components/forms/quotationform";
+import Quotationview from "./components/pages/Sales/quotationoverview";
+import PerformanceInvoice from "./components/forms/performainvoiceform";
+import SalesInvoiceForm from "./components/forms/salesinvoiceform";
+import SalesDCEntry from "./components/forms/salesdcentryform";
+
+// Service
+
+import ServiceModule from "./components/pages/Services/ServiceModule";
+import InwardEntry from "./components/forms/inwardEntryform";
+import ServicedcEntry from"./components/forms/dcEntryform";
+
+
+
+function App() {
+
+  if(!localStorage.getItem("adminPassword")){
+  localStorage.setItem("adminPassword","Ashwitha@123");
+}
+  return (
+    <BrowserRouter>
+          <Toaster position="top-right" reverseOrder={false}/>
+
+      <Routes>
+        <Route path="/" element={<Layout />}>
+          <Route index element={<Home />} />
+          <Route path="general" element={<General />}>
+             <Route index element={<Navigate to="customer" replace />} />
+            <Route path="customer" element={<AddNewCustomerModal/>}/>
+             <Route path="services" element={<Servicemodel/>}/> 
+             <Route path="spare" element={<Spare/>}/>
+            <Route path="expense" element={<ExpenseData/>}/>
+            <Route path="employee" element={<Employee/>}/>
+           </Route>
+
+           {/* purchase module */}
+
+           <Route path="purchase" element={<MainLayout />}>
+           <Route index element={<PurchaseHome/>} />
+           <Route path="stock" element={<Stock/>}/>
+            <Route path="orders" element={<PurchaseOrder/>}/>
+            <Route path="debit" element={<Debitnote/>}/>
+            <Route path="po-format/:poNumber" element={<PurchaseOrderFormat/>}/>  
+           <Route path="debitnote-view/:dnNumber"  element={<Debitnoteview/>}/>
+           <Route path="supplier" element={<SupplierAdvance/>}/>
+           <Route path="supplier-ledger" element={<SupplierModel/>}/>
+          <Route path="tax" element={<TaxPurchaseEntry/>}/>
+          <Route path="tax-report" element={<Purchaseentryreport/>}/>
+          <Route path="billwise" element={<BillwisePayment/>}/>
+           <Route path="bill-format" element={<Billwiseformat/>}/>
+         </Route>
+
+         {/* sales modules */}
+         
+          <Route path="sales" element={<MainLayout />}>
+         <Route index element={<SalesModule/>}/>    
+          <Route path="quotation" element={<Quotation/>}/>
+          <Route path="Qt-format/:QtNumber" element={<Quotationview/>}/>
+          <Route path="performance-invoice" element={<PerformanceInvoice/>}/>
+          <Route path="sales-invoice" element={<SalesInvoiceForm/>}/>
+          <Route path="sales-dc" element={<SalesDCEntry/>}/>
+         </Route>
+
+         {/* Service Module */}
+
+          <Route path="services" element={<MainLayout />}>
+           <Route index element={<ServiceModule/>}/>
+            <Route path="inward-entry" element={<InwardEntry/>}/>
+            <Route path="service-dc" element={<ServicedcEntry/>}/>
+          </Route>
+          
+
+          <Route path="production" element={<ProductionStock />}/>
+          <Route path="reports" element={<Reports/>}/>
+        </Route>
+
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+
+export default App;
