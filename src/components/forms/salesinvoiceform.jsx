@@ -578,17 +578,6 @@ const edititem = (index) => {
            {/* Next Row */}
 
              <div className="flex">
-                <div className='flex flex-col gap-2 flex-1'>
-                 <label htmlFor=""
-                 className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">
-                  PAYEMENT TERMS
-                </label>
-                 <input type="text"
-                 value={formData.payment_terms}
-                  onChange={(e) => setFormdata({...formData, payment_terms:e.target.value})}
-                 placeholder="Enter Payment Terms"
-                 className="w-full max-w-[300px] p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black focus:outline-none bg-white cursor-pointer shadow-sm"/>
-                </div>
 
                 {/*  */}
 

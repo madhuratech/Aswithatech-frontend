@@ -527,47 +527,11 @@ const deleteItem = (index) =>{
 
       {/* MAIN CONTAINER */}
       <div className="flex-1 bg-white border mt-10 p-4 flex flex-col">
-        <div className="flex justify-between">
-            <div className="items-center gap-2 min-w-0 space-y-3 relative" ref={dnRef}>
-              <span>SELECT DN NO :</span>
-              <input
-                 value={loadDnnumber}
-                 onFocus={() => setshowdnNumber(true)}
-                 onChange={(e) => {const value = e.target.value;
-                  setloadDnnumber(value);
-                  SearchDn(value);
-                  if(value) setshowdnNumber(true);
-                 }}
-                className=" w-full border px-3 py-2 rounded flex-1 min-w-[150px] max-w-[250px] outline-none"
-                placeholder="Enter / Search DC No"
-              />
-              {/* dropdown */}
-              {showdnNumber && (
-            <div className="absolute top-[65px] left-0  w-[250px] bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-40 overflow-y-auto">
-                 {Dnlist.length > 0 ? (
-                Dnlist.map((dn) => (
-                  <div
-                    key={dn.dn_number}
-                    onClick={() => {
-                      setloadDnnumber(dn.dn_number);
-                      setshowdnNumber(false);
-                      loadDn(dn.dn_number);
-                    }}
-                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-100 last:border-0"
-                  >
-                    {dn.dn_number}
-                  </div>
-                ))
-              ) : (
-                <div className="px-3 py-2 text-gray-400 text-sm">No DN found</div>
-              )}
-            </div>
-            )}
-
-          </div>
+        <div className="flex justify-end">
+            
     
         {/* TOP MENU */}
-        <div className="flex flex-wrap gap-2 justify-end pb-6 mb-10">
+        <div className="flex flex-wrap gap-2 justify-end pb-6 mb-5">
           <div className="flex gap-2">
             <button onClick={resetForm} className="border px-3 py-1.5 rounded-lg hover:bg-green-500 hover:text-white ">NEW</button>
             <button onClick={submitdebitNote} className="border px-3 py-1.5 rounded-lg text-black hover:bg-green-500 hover:text-white">SAVE</button>
@@ -863,9 +827,50 @@ const deleteItem = (index) =>{
         {/* BOTTOM */}
         <div className=" pt-3 mt-3 space-y-3 min-w-0">
 
+          
           {/* TOTAL */}
           <div className=" items-center justify-between gap-3">
-                <div className="flex justify-end">
+                <div className="flex justify-between">
+
+                    <div className="items-center gap-2 min-w-0 space-y-3 relative" ref={dnRef}>
+              <span>SELECT DN NO :</span>
+              <input
+                 value={loadDnnumber}
+                 onFocus={() => setshowdnNumber(true)}
+                 onChange={(e) => {const value = e.target.value;
+                  setloadDnnumber(value);
+                  SearchDn(value);
+                  if(value) setshowdnNumber(true);
+                 }}
+                className=" w-full border px-3 py-2 rounded flex-1 min-w-[150px] max-w-[250px] outline-none"
+                placeholder="Enter / Search DC No"
+              />
+              {/* dropdown */}
+              {showdnNumber && (
+              <div className="absolute top-[65px] left-0  w-[250px] bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-40 overflow-y-auto">
+                 {Dnlist.length > 0 ? (
+                Dnlist.map((dn) => (
+                  <div
+                    key={dn.dn_number}
+                    onClick={() => {
+                      setloadDnnumber(dn.dn_number);
+                      setshowdnNumber(false);
+                      loadDn(dn.dn_number);
+                    }}
+                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-100 last:border-0"
+                  >
+                    {dn.dn_number}
+                  </div>
+                ))
+              ) : (
+                <div className="px-3 py-2 text-gray-400 text-sm">No DN found</div>
+              )}
+            </div>
+            )}
+
+            </div>
+
+
             <div className="w-full max-w-md text-sm space-y-2">
 
               <div className="flex justify-between">

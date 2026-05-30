@@ -432,48 +432,6 @@ const [debouncedItemSearch] = useState(() => debounce(itemSearch, 300));
           </div>
         </div>
 
-        {/* Load PO */}
-        <div className="mb-4 relative" ref={poRef}>
-          <p className="text-sm font-medium mb-1">Load Purchase Order</p>
-          <div className="flex gap-2">
-            <input 
-               type="text" 
-               placeholder="Enter PO Number"
-               value={loadPoNumber}
-               onFocus={() => setshowpodropdown(true)}
-               onChange={(e) => {
-                 const value = e.target.value; 
-                 setLoadPoNumber(value); 
-                 searchPo(value);
-                 if (value) setshowpodropdown(true);
-               }}
-               className="outline-none border rounded-lg px-3 py-2 w-full max-w-[200px]" 
-            />
-
-              {/* Show Drop Down */}
-              {showpodropdown && polist && (
-                <div className="absolute top-[65px] left-0 w-full max-w-[200px] bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-40 overflow-y-auto">
-                      {polist.length > 0 ? (
-                    polist.map((po) => (
-                      <div
-                        key={po.po_number}
-                        onClick={() => {
-                          setLoadPoNumber(po.po_number);
-                          setshowpodropdown(false);
-                          loadPo(po.po_number);
-                        }}
-                        className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-100 last:border-0"
-                      >
-                        {po.po_number}
-                      </div>
-                    ))
-                  ) : (
-                    <div className="px-3 py-2 text-gray-400 text-sm">No PO found</div>
-                  )}
-                </div>
-           )}
-          </div>
-        </div>
 
         {/* Top Form */}
         <div className="grid grid-cols-3 gap-4 mb-4">
@@ -696,9 +654,55 @@ const [debouncedItemSearch] = useState(() => debounce(itemSearch, 300));
           />
         </div>
 
+      
+
         {/* Calculation Box (separate like image) */}
         <div className="mt-4 border border-gray-200 rounded-xl bg-gray-50 p-6">
-          <div className="flex justify-end">
+          <div className="flex justify-between ">
+
+            {/* Load PO */}
+            <div className="mb-4 relative" ref={poRef}>
+              <p className="text-sm font-medium mb-1">Load Purchase Order</p>
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  placeholder="Enter PO Number"
+                  value={loadPoNumber}
+                  onFocus={() => setshowpodropdown(true)}
+                  onChange={(e) => {
+                    const value = e.target.value; 
+                    setLoadPoNumber(value); 
+                    searchPo(value);
+                    if (value) setshowpodropdown(true);
+                  }}
+                  className="outline-none border rounded-lg px-3 py-2 w-full max-w-[200px]" 
+                />
+
+                  {/* Show Drop Down */}
+                  {showpodropdown && polist && (
+                    <div className="absolute top-[65px] left-0 w-full max-w-[200px] bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-40 overflow-y-auto">
+                          {polist.length > 0 ? (
+                        polist.map((po) => (
+                          <div
+                            key={po.po_number}
+                            onClick={() => {
+                              setLoadPoNumber(po.po_number);
+                              setshowpodropdown(false);
+                              loadPo(po.po_number);
+                            }}
+                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-100 last:border-0"
+                          >
+                            {po.po_number}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="px-3 py-2 text-gray-400 text-sm">No PO found</div>
+                      )}
+                    </div>
+              )}
+              </div>
+            </div>
+
             <div className="w-full max-w-md text-sm space-y-2">
 
               <div className="flex justify-between">

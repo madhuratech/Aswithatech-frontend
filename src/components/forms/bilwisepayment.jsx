@@ -356,19 +356,8 @@ const deleteBill = async () =>{
             <div className="pl-6">
                 
                 <div className="grid grid-cols-2"> 
-                      
-                      {/* Date */}
-                       
-                      <div className="relative">
-                          <label htmlFor="" className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                     
-                         <input type="date" 
-                           value={formdata.entry_date}
-                           onChange={(e) => setformdata({...formdata, entry_date:e.target.value})}
-                          className="outline-none border mt-1 rounded-lg px-3 py-2 w-full max-w-[300px]" />
-                      </div>
 
-                     {/* Supplier Name */}
+                       {/* Supplier Name */}
 
                       <div className="relative">
                         <label htmlFor="" className="block text-sm font-medium text-gray-700 mb-1">Supplier Name</label>
@@ -397,6 +386,21 @@ const deleteBill = async () =>{
                          )}
                       
                       </div>
+
+
+                      
+                      {/* Date */}
+                       
+                      <div className="relative">
+                          <label htmlFor="" className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                     
+                         <input type="date" 
+                           value={formdata.entry_date}
+                           onChange={(e) => setformdata({...formdata, entry_date:e.target.value})}
+                          className="outline-none border mt-1 rounded-lg px-3 py-2 w-full max-w-[300px]" />
+                      </div>
+
+                    
 
                 </div>
  

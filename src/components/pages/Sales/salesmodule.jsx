@@ -29,7 +29,7 @@ const SalesModule = () => {
     const [viewtype , setviewtype] = React.useState("");
     const [modalTitle, setModalTitle] = useState("");
     const [isMinimized, setIsMinimized] = useState(false);
-    const [initialView, setInitialView] = useState("qt");
+   // const [initialView, setInitialView] = useState("qt");
     
     
 
@@ -205,7 +205,7 @@ const ShowReport = (item) => {
           onClose={() => setShowModal(false)}
           isMinimized={isMinimized}
           setIsMinimized={setIsMinimized}
-          initialView={initialView}
+  //        initialView={initialView}
           onMinimize={() => setShowModal(false)}
            onFilterChange={setFilters}
          >

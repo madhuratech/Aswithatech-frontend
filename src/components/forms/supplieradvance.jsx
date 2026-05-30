@@ -332,25 +332,8 @@ const resestForm = async () => {
 
    {/* Inputs Fields */}
                    <div className="grid grid-cols-3 gap-4 p-5"> 
+
                        
-                       <div className="flex flex-col">
-                            <label className="text-sm" htmlFor="">Receipt No</label>
-                             <input type="text"
-                              value={formData.receipt_no}
-                              readOnly
-                              className="w-full max-w-[200px] outline-none border rounded-lg px-3 py-2 mt-2"/>
-                       </div>
-
-                       {/*  */}
-
-                        <div className="flex flex-col">
-                            <label className="text-sm" htmlFor="">Date</label>
-                             <input type="date" 
-                              value={formData.date}
-                              onChange={(e) => setFormData({...formData,date:e.target.value})}
-                            className="w-full max-w-[200px] outline-none border rounded-lg px-3 py-2 mt-2"/>
-                        </div>
-
                         {/*  */}
 
                         <div className="flex flex-col relative">
@@ -393,6 +376,26 @@ const resestForm = async () => {
                                )}
 
                         </div>
+                       
+                       <div className="flex flex-col">
+                            <label className="text-sm" htmlFor="">Receipt No</label>
+                             <input type="text"
+                              value={formData.receipt_no}
+                              readOnly
+                              className="w-full max-w-[200px] outline-none border rounded-lg px-3 py-2 mt-2"/>
+                       </div>
+
+                       {/*  */}
+
+                        <div className="flex flex-col">
+                            <label className="text-sm" htmlFor="">Date</label>
+                             <input type="date" 
+                              value={formData.date}
+                              onChange={(e) => setFormData({...formData,date:e.target.value})}
+                            className="w-full max-w-[200px] outline-none border rounded-lg px-3 py-2 mt-2"/>
+                        </div>
+
+                       
     
                   </div>
 
