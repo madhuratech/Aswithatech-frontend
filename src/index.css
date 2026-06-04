@@ -1,21 +1,95 @@
-body {
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
-}
-/* html {
-  scrollbar-gutter: stable;
-} */
-
-body {
+  padding: 0;
   overflow-x: hidden;
-  overflow-y: auto;
+  background: #f3f3f3;
+  font-family: Arial, sans-serif;
+}
+
+.printable-area {
+  width: 190mm !important;
+  height: auto !important;
+  margin: 0 auto;
+  background: white;
+  box-sizing: border-box;
+  overflow: hidden !important;
+}
+
+.print-container {
+  width: 190mm !important;
+  margin: 0 auto;
+  background: white;
+  overflow: hidden !important;
+  box-sizing: border-box;
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+tr,
+td,
+th {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
+
+@media print {
+
+  html,
+  body {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: white !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .printable-area {
+    width: 185mm !important;
+    margin: 0 auto !important;
+    overflow: visible !important;
+    box-sizing: border-box !important;
+  }
+
+  .print-container {
+    width: 185mm !important;
+    margin: 0 auto !important;
+    overflow: visible !important;
+    box-sizing: border-box !important;
+    page-break-inside: avoid !important;
+  }
+
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  tr,
+  td,
+  th {
+    page-break-inside: avoid !important;
+  }
 }

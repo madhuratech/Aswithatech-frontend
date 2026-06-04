@@ -9,11 +9,10 @@ const Navbar = () => {
     { label: "PRODUCTIONS", path: "/production" },
     { label: "SALES", path: "/sales" },
     { label: "SERVICE", path: "/services" },
-    { label: "REPORTS", path: "/reports" },
     { label: "CONTACT", path: "/report" },
     { label: "EXIT", path: "/report" },
   ];
-
+  
 
   return (
 

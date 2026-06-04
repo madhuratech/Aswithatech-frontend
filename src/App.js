@@ -7,6 +7,7 @@ import {Toaster} from "react-hot-toast";
 import ProductionStock from "./components/pages/Production/productionstock";
 import SalesModule from "./components/pages/Sales/salesmodule";
 import Reports from "./components/pages/Reports/reports";
+import PendingReport from "./components/pages/Reports/pendingreport";
 import AddNewCustomerModal from "./components/pages/Genral/customer";
 import Spare from "./components/pages/Genral/sparedata";
 import Employee from "./components/pages/Genral/employee";
@@ -19,7 +20,6 @@ import ExpenseData from "./components/pages/Genral/expensedata";
  import SupplierAdvance from "./components/forms/supplieradvance";
  import SupplierModel from "./components/ui/supplierreport";
  import TaxPurchaseEntry from "./components/forms/taxpurchaseentry";
- import Purchaseentryreport from"./components/ui/purchasereport";
  import BillwisePayment from "./components/forms/bilwisepayment";
  import Billwiseformat from "./components/pages/Purchase/bilwisepaymentformat";
  import Servicemodel from "./components/pages/Genral/servicesdata";
@@ -36,12 +36,21 @@ import Quotationview from "./components/pages/Sales/quotationoverview";
 import PerformanceInvoice from "./components/forms/performainvoiceform";
 import SalesInvoiceForm from "./components/forms/salesinvoiceform";
 import SalesDCEntry from "./components/forms/salesdcentryform";
+import ReceiptEntry from "./components/forms/receiptentry";
+import ReceiptAdvance from "./components/forms/receiptAdvance";
+import PendingForm from "./components/forms/pending";
+import CustomerLedger from "./components/ui/customerledger";
+import SalesReport from "./components/ui/salesreport";
+import ReceiptReport from "./components/ui/receiptreport";
 
 // Service
-
 import ServiceModule from "./components/pages/Services/ServiceModule";
 import InwardEntry from "./components/forms/inwardEntryform";
 import ServicedcEntry from"./components/forms/dcEntryform";
+import ServiceInvoice from "./components/forms/serviceinvoice";
+import ServiceDCView from "./components/pages/Services/dcFormat";
+import InvoiceView from "./components/pages/Sales/invoiceview";
+
 
 
 
@@ -78,7 +87,6 @@ function App() {
            <Route path="supplier" element={<SupplierAdvance/>}/>
            <Route path="supplier-ledger" element={<SupplierModel/>}/>
           <Route path="tax" element={<TaxPurchaseEntry/>}/>
-          <Route path="tax-report" element={<Purchaseentryreport/>}/>
           <Route path="billwise" element={<BillwisePayment/>}/>
            <Route path="bill-format" element={<Billwiseformat/>}/>
          </Route>
@@ -92,6 +100,12 @@ function App() {
           <Route path="performance-invoice" element={<PerformanceInvoice/>}/>
           <Route path="sales-invoice" element={<SalesInvoiceForm/>}/>
           <Route path="sales-dc" element={<SalesDCEntry/>}/>
+          <Route path="invoice-format/:invoiceNo" element={<InvoiceView/>}/>
+          <Route path="receipt" element={<ReceiptEntry/>}/>
+          <Route path="receipt-advance" element={<ReceiptAdvance/>}/>
+          <Route path="customer-Ledger" element={<CustomerLedger/>}/>
+          <Route path="sales-report" element={<SalesReport/>}/>
+          <Route path="Reciept-Format" element={<ReceiptReport/>}/>
          </Route>
 
          {/* Service Module */}
@@ -100,11 +114,15 @@ function App() {
            <Route index element={<ServiceModule/>}/>
             <Route path="inward-entry" element={<InwardEntry/>}/>
             <Route path="service-dc" element={<ServicedcEntry/>}/>
+            <Route path="service-invoice" element={<ServiceInvoice/>}/>
+            <Route path="dc-format" element={<ServiceDCView/>}/>
+            <Route path="pending" element={<PendingForm/>}/>
           </Route>
           
 
           <Route path="production" element={<ProductionStock />}/>
           <Route path="reports" element={<Reports/>}/>
+          <Route path="pending" element={<PendingReport/>}/>
         </Route>
 
       </Routes>

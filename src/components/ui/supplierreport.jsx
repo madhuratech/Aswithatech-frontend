@@ -1,12 +1,15 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { X, Square, Minus} from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import html2pdf from "html2pdf.js";
 
 const SupplierModel = ({onMinimize, onClose, title, setIsMinimizedInternal}) =>{
   const [data, setData] = useState([]);
   const [isMaximized, setIsMaximized] = useState(false);
   const navigate = useNavigate();
   const [isMinimized, setIsMinimized] = useState(false);
+  const contentRef = useRef(null);
+
 
   // States for search dropdowns
   const [receiptList, setReceiptList] = useState([]);
@@ -62,6 +65,56 @@ const [filters, setFilters] = useState({
      }
    };
 
+   const handlePrint = () => {
+
+  const printContents = contentRef.current.innerHTML;
+
+  const printWindow = window.open("", "", "width=900,height=650");
+
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>${title || "Report"}</title>
+
+        <style>
+          body{
+            margin:0;
+            padding:20px;
+            background:white;
+          }
+
+          @page{
+            size:A4;
+            margin:10mm;
+          }
+
+          table{
+            width:100%;
+            border-collapse:collapse;
+          }
+
+          th,td{
+            border:1px solid #ccc;
+            padding:6px;
+          }
+        </style>
+
+      </head>
+
+      <body>
+        ${printContents}
+      </body>
+    </html>
+  `);
+
+  printWindow.document.close();
+  printWindow.focus();
+
+  setTimeout(() => {
+    printWindow.print();
+  }, 500);
+};
+
    const fetchSuppliers = async (val) => {
      try {
        const res = await fetch(`${Api_urls}/report?supplier_name=${encodeURIComponent(val)}`);
@@ -112,9 +165,61 @@ const handleMinimize = () => {
           <div className="w-3 h-3 border border-white/50"></div>
           {title || "Supplier Ledger"}
         </button>
-      </div>
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 14px;
+          height: 14px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #c0c0c0;
+          box-shadow: inset 1px 1px 2px rgba(0,0,0,0.4);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #e0e0e0;
+          border: 2px solid #808080;
+          box-shadow: inset 1px 1px 0px white;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:active {
+          background: #d0d0d0;
+        }
+
+        @media print {
+        body { margin: 0 !important; padding: 0 !important; }
+        .no-print { display: none !important; }
+        .printable-area {
+          width: 100% !important;
+          height: auto !important;
+          overflow: visible !important;
+          padding: 0 !important;
+          margin: 0 !important;
+        }
+        table { width: 100% !important; page-break-inside: auto !important; }
+        tr { page-break-inside: avoid !important; }
+        }
+      `}</style>
+  </div>
     );
   }
+
+  const exportToPdf = () => {
+    if (!contentRef.current) return;
+    const opt = {
+        margin: [5, 5, 5, 5],
+        filename: `${title || 'Supplier_Report'}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { 
+            scale: 2, 
+            useCORS: true,
+            letterRendering: true,
+            windowWidth: 1200 
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+    };
+    html2pdf().set(opt).from(contentRef.current).toPdf().get('pdf').save().then(() => {
+        handleClose();
+        navigate("/");
+    });
+  };
 
 
 
@@ -123,7 +228,7 @@ const handleMinimize = () => {
 
        <div
         className={`bg-gray border-2 border-white flex flex-col shadow-2xl transition-all duration-200 pointer-events-auto
-        ${isMaximized ? "w-full h-full border-none" : "w-[1200px] h-[100vh]"}`} >
+       ${isMaximized ? "w-full h-full border-none" : "w-[98vw] h-[95vh]"}`}>
 
         {/* TITLE BAR */}
         <div 
@@ -279,10 +384,15 @@ const handleMinimize = () => {
       {/* Content */}
 
        <div className="flex-1 overflow-auto bg-white p-6 custom-scrollbar">
-           <div>
-               <button  className=" bg-green-400 text-white border border-green-400 px-1 py-1.5 rounded-[3px]">Main Report</button>
+           <div className="flex gap-3 no-print mb-4">
+               <button  className=" bg-green-400 text-white border border-green-400 px-2 py-1.5 rounded-[3px]">Main Report</button>
+               <button onClick={handlePrint} className="bg-blue-500 border border-blue-500 text-white px-4 py-1.5 rounded-[3px] shadow">Print</button>
+               <button onClick={exportToPdf} className="bg-red-500 border border-red-500 text-white px-4 py-1.5 rounded-[3px] shadow">Export PDF</button>
            </div>
-
+           
+          <div ref={contentRef} className="printable-area w-full"
+           style={{ width: "100%", minWidth: "100%", padding: "10px 20px", boxSizing: "border-box"}}
+>
            {/* from to */}
             <div className="mt-5 leading-9">
               <div className="inline-flex gap-5">
@@ -292,14 +402,14 @@ const handleMinimize = () => {
                 <h2 className="text-black font-bold">SUPPLIER NAME : <span className="text-red-600 font-semibold">{filters.supplier_name}</span> </h2>
             </div>
 
-           <div>
-            <table  className="w-full mt-4 relative  border-t border-b border-gray-400 w-[1000px] border-collapse">
+    <div className="w-full overflow-x-auto">
+  <table className="w-full table-auto mt-4 border border-gray-300 border-collapse bg-white">
 
       <thead>
         <tr className="border-b border-gray-400 text-[14px]">
 
           <th className=" text-left p-2 ">SNO</th>
-          <th className="text-left p-2 truncate ">RECEIPT NUMBER</th>
+          <th className="text-left p-2 whitespace-nowrap">RECEIPT NUMBER</th>
           <th className="text-left p-2">DATE</th>
            <th className="text-left p-2 ">SUPPLIER NAME</th>
           <th className="text-right p-2 truncate ">PAID AMOUNT</th>
@@ -311,7 +421,7 @@ const handleMinimize = () => {
         </tr>
       </thead>
 
-      <tbody className="w-[500px]">
+      <tbody >
 
         {/* DATA ROWS */}
         {loading ? (
@@ -364,6 +474,8 @@ const handleMinimize = () => {
 
             </tr>
           ))
+
+          
         ) : (
           <tr>
             <td colSpan="8" className="text-center py-10 text-gray-500">
@@ -372,11 +484,80 @@ const handleMinimize = () => {
           </tr>
         )}
 
+        <tr className="bg-gray-100 font-bold text-black border-t-2">
+
+  <td colSpan="4" className="p-3 text-right">
+    OVERALL TOTAL
+  </td>
+
+  {/* PAID AMOUNT TOTAL */}
+  <td className="p-3 text-center text-green-600">
+    {data
+      .reduce(
+        (sum, row) => sum + (Number(row.paid_amount) || 0),
+        0
+      )
+      .toFixed(2)}
+  </td>
+
+  {/* TDS TOTAL */}
+  <td className="p-3 text-center">
+    {data
+      .reduce(
+        (sum, row) => sum + (Number(row.tds) || 0),
+        0
+      )
+      .toFixed(2)}
+  </td>
+
+  {/* OTHERS TOTAL */}
+  <td className="p-3 text-center">
+    {data
+      .reduce(
+        (sum, row) => sum + (Number(row.others) || 0),
+        0
+      )
+      .toFixed(2)}
+  </td>
+
+  {/* GRAND TOTAL */}
+  <td className="p-3 text-center text-blue-600">
+    {data
+      .reduce(
+        (sum, row) => sum + (Number(row.po_grand_total) || 0),
+        0
+      )
+      .toFixed(2)}
+  </td>
+
+  {/* BALANCE TOTAL */}
+  <td className="p-3 text-center text-red-600">
+    {data
+      .reduce(
+        (sum, row) =>
+          sum +
+          (
+            (Number(row.po_grand_total) || 0) -
+            (Number(row.paid_amount) || 0) -
+            (Number(row.tds) || 0) -
+            (Number(row.others) || 0)
+          ),
+        0
+      )
+      .toFixed(2)}
+  </td>
+
+  {/* EMPTY PAYMENT METHOD */}
+  <td className="p-3"></td>
+
+</tr>
+
       </tbody>
     </table>
 
            </div>
-
+       </div>
+           
        </div>
           
 

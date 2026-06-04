@@ -2,10 +2,12 @@ import React from "react";
 import {TrendingUp,Clock,CheckCircle2,Package,PackageOpen,ArrowLeftRight,
 AlertCircle,FileText,IndianRupee,Plus,Send,Search,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Statcard = () =>{
- const Card = ({ title, value, icons }) => (
-    <div className="rounded-xl border border-black/10 bg-white text-black p-5 shadow-sm hover:shadow-md hover:border-blue-200 transition-all cursor-pointer group">
+  const navigate = useNavigate();
+ const Card = ({ title, value, icons, onClick }) => (
+    <div onClick={onClick} className="rounded-xl border border-black/10 bg-white text-black p-5 shadow-sm hover:shadow-md hover:border-blue-200 transition-all cursor-pointer group">
       
       <div className="flex items-center justify-between">
         <div>
@@ -29,11 +31,11 @@ const Statcard = () =>{
     { title: "Jobs", value: 0,icons:<TrendingUp className="bg-[#EFF6FF] text-[#155DFC] w-[40px] h-[40px] px-2 rounded-lg "/> },
     { title: "Pending Jobs", value: 4,icons:<Clock className="bg-[#FFF7ED] text-[#F54900] w-[40px] h-[40px] px-2 rounded-lg "/>},
     { title: "Completed Jobs", value: 12,icons:<CheckCircle2 className="bg-[#F0FDF4] text-[#00A63E] w-[40px] h-[40px] px-2 rounded-lg "/> },
-    { title: "Brand PCBS", value: 8,icons:<Package className="bg-[#FAF5FF] text-[#9810FA] w-[40px] h-[40px] px-2 rounded-lg "/>},
+    { title: "Brand PCBS",  value: 8,icons:<Package className="bg-[#FAF5FF] text-[#9810FA] w-[40px] h-[40px] px-2 rounded-lg "/>},
     { title: "Non-Brand PCBS", value: 6,icons:<PackageOpen className="bg-[#EEF2FF] text-[#4F39F6] w-[40px] h-[40px] px-2 rounded-lg "/> },
     { title: "Standby Issued", value: 3,icons:<ArrowLeftRight className="bg-[#ECFEFF] text-[#0092B8] w-[40px] h-[40px] px-2 rounded-lg "/> },
     { title: "Overdue", value: 5,icons:<AlertCircle className="bg-[#FEF2F2] text-[#E7000B] w-[40px] h-[40px] px-2 rounded-lg "/> },
-    { title: "Pending Invoice", value: 120,icons:<FileText className="bg-[#FEFCE8] text-[#D08700] w-[40px] h-[40px] px-2 rounded-lg "/> },
+    { title: "Pending Reports", onClick: () => navigate("/pending"), value: 120,icons:<FileText className="bg-[#FEFCE8] text-[#D08700] w-[40px] h-[40px] px-2 rounded-lg "/> },
     { title: "Balance Payment", value: 9,icons:<IndianRupee className="bg-[#FFF1F2] text-[#EC003F] w-[40px] h-[40px] px-2 rounded-lg "/> },
   ];
     return(
@@ -45,6 +47,7 @@ const Statcard = () =>{
           title={card.title}
           value={card.value}
           icons={card.icons}
+          onClick={card.onClick}
         />
       ))}
     </div>

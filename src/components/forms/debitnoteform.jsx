@@ -318,7 +318,6 @@ const resetForm = async() =>{
     });
 
   settabledata([]);
-  tabledata([]);
   setcurrentrow({
     item_name: "",
     quantity: 0,

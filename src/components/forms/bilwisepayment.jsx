@@ -70,8 +70,16 @@ const BillwisePayment = () => {
 }
 
 const Savebill = async () =>{
-   if(tabledata.length === 0){
-    alert("Please Add Items");
+   if (!supplierName?.trim()) {
+    toast.error("Supplier Name is required");
+    return;
+   }
+   if (!formdata.entry_date) {
+    toast.error("Entry Date is required");
+    return;
+   }
+   if (tabledata.length === 0) {
+    toast.error("Please add at least one bill item");
     return;
    }
 

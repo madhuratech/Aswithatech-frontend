@@ -140,6 +140,18 @@ useEffect(() =>{
 // Save Supplier Advance
 
 const savesupplier = async () => {
+  if (!formData.supplier_name?.trim()) {
+    toast.error("Supplier Name is required");
+    return;
+  }
+  if (!formData.date) {
+    toast.error("Date is required");
+    return;
+  }
+  if (!formData.paid_amount) {
+    toast.error("Paid Amount is required");
+    return;
+  }
   const payload = {
     supplier_name: formData.supplier_name,
     receipt_no: formData.receipt_no,

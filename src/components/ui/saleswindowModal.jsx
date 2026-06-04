@@ -1,500 +1,835 @@
-import React, { useEffect, useState } from "react";
-import { X, Minus, Square } from "lucide-react";
+import React, { useEffect, useState, useRef } from "react";
+import { X, Minus, Square, Printer } from "lucide-react";
+import html2pdf from "html2pdf.js";
+import { useNavigate } from "react-router-dom";
 
 const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, children, onFilterChange, initialViewMode, initialView, filters: externalFilters }) => {
-    const [isMaximized, setIsMaximized] = useState(false);
-    const [reportData, setReportData] = useState([]);
-    const [poList, setPoList] = useState([]);
-    const [openpo , setpodown] = useState(false);
-    const [viewMode, setViewMode] = useState(initialViewMode || initialView || "qt");
-    const [clientopen , setclientopen] = useState(false);
-    const [clientlist , setclientlist] = useState([]);
- 
-
-     useEffect(() => {
-  if (isOpen) {
-    setViewMode(initialViewMode || initialView || "qt");   
-    setReportData([]);                     
-  }
-}, [isOpen, initialViewMode, initialView]);
-
-
-  
-  const Api_urls ="http://localhost:3000/api/quotations"
-
-
- const [filters , setFilters] = useState({
-  fromDate: "",
-  toDate: "",
-  clientName: "",
-  QtNumber: externalFilters?.QtNumber || ""
- });
-
-useEffect(() => {
-  if (!externalFilters?.QtNumber) return;
-
-  setFilters(prev => {
-    if (prev.QtNumber === externalFilters.QtNumber) return prev;
-    return { ...prev, QtNumber: externalFilters.QtNumber };
-  });
-}, [externalFilters?.QtNumber]);
-
-//  Search PO
-useEffect(() =>{
-  const searchurl = (type === "qt" || type === "Quotation Format")
-   ? `${Api_urls}/QT/search?q=`
-   : null;
-
-  if (searchurl) {
-    fetch(searchurl)
-      .then(res => res.json())
-      .then(data => setPoList(data))
-      .catch(err => console.error(err));
-  } else {
-    setPoList([]);
-  }
-},[type, Api_urls]);
-
-
-// search client
-const searchclient = async(value) =>{
-  try{
-    const res = await fetch(`${Api_urls}/clients/search?q=${value}`);
-    const data = await res.json();
-    setclientlist(data);
-  }catch(error){
-    console.error("Error fetching client list:", error);
-  }
-}
-
-
-
-const gentratereport = async () => {
-  try {
-    const params = new URLSearchParams();
-    if (filters.fromDate && filters.toDate) {
-      params.append("fromDate", filters.fromDate);   
-      params.append("toDate", filters.toDate);   
-    }
-
-    if ((type === "qt" || type === "Quotation Format") && filters.QtNumber) {
-      params.append("quotationNo", filters.QtNumber); 
-    }
-
-    if ((type === "qt" || type === "Quotation Format") && filters.clientName) {
-      params.append("clientName", filters.clientName);
-    }
-
-    const response = await fetch(
-      `${Api_urls}/report/filters?${params.toString()}`
-    );
-
-    const data = await response.json();
-
-    console.log("REPORT DATA:", data); 
-
-    setReportData(data);
-
-    setViewMode("report"); 
-
-  } catch (error) {
-    console.error("Error generating report:", error);
-  }
-};
-
-//  Download Excel format
- 
-const downloadExcel = () =>{
-   const params = new URLSearchParams();
-   
-   if(filters.fromDate && filters.toDate){
-      params.append("fromDate", filters.fromDate);
-      params.append("toDate", filters.toDate);
-     }
-
-     if((type === "qt" || type === "Quotation Format") && filters.QtNumber) {
-     params.append("quotationNo", filters.QtNumber);
-     }
-     const url = `${Api_urls}/report/excel?${params.toString()}`;
-     window.open(url, "_blank");
-
-  }
+  const navigate = useNavigate();
+  const [isMaximized, setIsMaximized] = useState(false);
+  const [reportData, setReportData] = useState([]);
+  const [poList, setPoList] = useState([]);
+  const [openpo, setpodown] = useState(false);
+  const [viewMode, setViewMode] = useState("qt");
+  const [clientopen, setclientopen] = useState(false);
+  const [clientlist, setclientlist] = useState([]);
+  const contentRef = useRef(null);
 
 
   useEffect(() => {
-  const handleClickOutside = (e) => {
-    if (!e.target.closest(".qt-dropdown")) {
-      setpodown(false);
+    if (isOpen) {
+      setViewMode(initialViewMode || initialView || "qt");
+      setReportData([]);
+    }
+  }, [isOpen, initialViewMode, initialView]);
+
+
+
+  const Api_urls = "http://localhost:3000/api/quotations"
+
+
+  const [filters, setFilters] = useState({
+    fromDate: "",
+    toDate: "",
+    clientName: "",
+    QtNumber: externalFilters?.QtNumber || ""
+  });
+
+
+ const qtNumber = externalFilters?.QtNumber || "";
+
+useEffect(() => {
+
+  if (!qtNumber) return;
+
+  setFilters((prev) => {
+
+    if (prev.QtNumber === qtNumber) {
+      return prev;
+    }
+
+    return {
+      ...prev,
+      QtNumber: qtNumber,
+    };
+
+  });
+
+}, [qtNumber]);
+
+
+
+  //  Search PO
+  useEffect(() => {
+    const searchurl = (type === "qt" || type === "Quotation Format")
+      ? `${Api_urls}/QT/search?q=`
+      : (type === "Invoice Format")
+      ? `http://localhost:3000/api/salesinvoices/INV/search?q=`
+      : (type === "DC Format")
+      ? `http://localhost:3000/api/salesdc/DC/search?q=`
+      : null;
+
+    if (searchurl) {
+      fetch(searchurl)
+        .then(res => res.json())
+        .then(data => setPoList(data))
+        .catch(err => console.error(err));
+    } else {
+      setPoList([]);
+    }
+  }, [type, Api_urls,onFilterChange]);
+
+
+  // search client
+  const searchclient = async (value) => {
+    try {
+      const res = await fetch(`${Api_urls}/clients/search?q=${value}`);
+      const data = await res.json();
+      setclientlist(data);
+    } catch (error) {
+      console.error("Error fetching client list:", error);
+    }
+  }
+
+
+
+  const gentratereport = async () => {
+    try {
+      const params = new URLSearchParams();
+      if (filters.fromDate && filters.toDate) {
+        params.append("fromDate", filters.fromDate);
+        params.append("toDate", filters.toDate);
+      }
+
+      if ((type === "qt" || type === "Quotation Format") && filters.QtNumber) {
+        params.append("quotationNo", filters.QtNumber);
+      }
+
+      if ((type === "Invoice Format") && filters.QtNumber) {
+        params.append("invoiceNo", filters.QtNumber);
+      }
+
+      if ((type === "DC Format") && filters.QtNumber) {
+        params.append("dcNo", filters.QtNumber);
+      }
+
+      if ((type === "qt" || type === "Quotation Format" || type === "Invoice Format" || type === "DC Format") && filters.clientName) {
+        params.append("clientName", filters.clientName);
+      }
+
+      const url = (type === "Invoice Format")
+        ? `http://localhost:3000/api/salesinvoices/report/filters?${params.toString()}`
+        : (type === "DC Format")
+        ? `http://localhost:3000/api/salesdc/report/filters?${params.toString()}`
+        : `${Api_urls}/report/filters?${params.toString()}`;
+      const response = await fetch(url);
+
+      const data = await response.json();
+
+      console.log("REPORT DATA:", data);
+
+      setReportData(data);
+
+      setViewMode("report");
+
+    } catch (error) {
+      console.error("Error generating report:", error);
     }
   };
 
-  document.addEventListener("click", handleClickOutside);
-  return () => document.removeEventListener("click", handleClickOutside);
-}, []);
+  const downloadExcel = () => {
+    const params = new URLSearchParams();
+
+    if (filters.fromDate && filters.toDate) {
+      params.append("fromDate", filters.fromDate);
+      params.append("toDate", filters.toDate);
+    }
+
+    if ((type === "qt" || type === "Quotation Format") && filters.QtNumber) {
+      params.append("quotationNo", filters.QtNumber);
+    }
+    if ((type === "Invoice Format") && filters.QtNumber) {
+        params.append("invoiceNo", filters.QtNumber);
+    }
+    if ((type === "DC Format") && filters.QtNumber) {
+        params.append("dcNo", filters.QtNumber);
+    }
+    const url = (type === "Invoice Format")
+        ? `http://localhost:3000/api/salesinvoices/report/excel?${params.toString()}`
+        : (type === "DC Format")
+        ? `http://localhost:3000/api/salesdc/report/excel?${params.toString()}`
+        : `${Api_urls}/report/excel?${params.toString()}`;
+    window.open(url, "_blank");
+
+  }
+
+  const exportToPdf = async () => {
+
+    try {
+
+      if (!contentRef.current) return;
+
+      const element = contentRef.current;
+
+      const opt = {
+
+        margin: [0, 0, 0, 0],
+
+        filename: `${title || "Report"}.pdf`,
+
+        image: {
+          type: "jpeg",
+          quality: 1,
+        },
+
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          scrollY: 0,
+          scrollX: 0,
+          windowWidth: 794,
+          windowHeight: 1123,
+        },
+
+        jsPDF: {
+          unit: "mm",
+          format: "a4",
+          orientation: "portrait",
+        },
+
+        pagebreak: {
+          mode: ["avoid-all", "css", "legacy"],
+        },
+      };
+
+      const worker = html2pdf()
+        .set(opt)
+        .from(element);
+
+      const pdfBlob = await worker.outputPdf("blob");
+
+      const handle = await window.showSaveFilePicker({
+        suggestedName: `${title || "Report"}.pdf`,
+        types: [
+          {
+            description: "PDF Files",
+            accept: {
+              "application/pdf": [".pdf"],
+            },
+          },
+        ],
+      });
+
+      const writable = await handle.createWritable();
+
+      await writable.write(pdfBlob);
+
+      await writable.close();
+
+    } catch (error) {
+
+      if (error.name !== "AbortError") {
+        console.error("PDF Save Error:", error);
+      }
+
+    }
+  };
+
+
+  const handlePrint = () => {
+
+    const printContents = contentRef.current;
+
+    const printWindow = window.open("", "_blank");
+
+    printWindow.document.write(`
+    <html>
+      <head>
+        <title>${title || "Report"}</title>
+
+        <script src="https://cdn.tailwindcss.com"></script>
+
+        <style>
+          body{
+            margin:0;
+            padding:0;
+            background:white;
+          }
+
+          @page{
+            size:A4;
+            margin:10mm 0;
+          }
+
+          .print-container{
+            width:100%;
+            background:white;
+            display: flex;
+            justify-content: center;
+            padding: 0;
+          }
+
+          table{
+            width:100%;
+            border-collapse:collapse;
+          }
+
+          th,td{
+            border:1px solid #d1d5db;
+            padding:8px;
+          }
+
+          tr{
+            page-break-inside:avoid;
+          }
+
+          .no-print{
+            display:none !important;
+          }
+        </style>
+      </head>
+
+      <body>
+        <div class="print-container">
+          ${printContents.outerHTML}
+        </div>
+      </body>
+    </html>
+  `);
+
+    printWindow.document.close();
+
+    setTimeout(() => {
+      printWindow.focus();
+      printWindow.print();
+    }, 1000);
+  };
+
+
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest(".qt-dropdown")) {
+        setpodown(false);
+      }
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, []);
 
   if (!isOpen || isMinimized) return null;
 
   return (
-    <div className={`fixed inset-0 z-[9999] flex ${isMaximized ? "items-stretch" : "items-center justify-center p-6 bg-black/30 transition-colors"}`}>
-      
+    <div
+      style={{
+        position: "fixed", inset: 0, zIndex: 9999,
+        display: "flex",
+        alignItems: isMaximized ? "stretch" : "center",
+        justifyContent: isMaximized ? "stretch" : "center",
+        background: isMaximized ? "transparent" : "rgba(0,0,0,0.45)",
+        padding: isMaximized ? 0 : "0",
+      }}
+    >
       <div
-        className={`bg-gray border-2 border-white flex flex-col shadow-2xl transition-all duration-200 pointer-events-auto
-        ${isMaximized ? "w-full h-full border-none" : "w-[1200px] h-[90vh]"}`}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          boxShadow: "0 4px 24px rgba(0,0,0,0.45)",
+          border: "2px solid #888",
+          width: isMaximized ? "100%" : "calc(100vw - 40px)",
+          maxWidth: isMaximized ? "100%" : "1500px",
+          height: isMaximized ? "100%" : "90vh",
+          background: "#f0f0f0",
+          pointerEvents: "auto",
+        }}
       >
 
-        {/* TITLE BAR */}
-        <div 
+        {/* ── TITLE BAR ── */}
+        <div
           onDoubleClick={() => setIsMaximized(!isMaximized)}
-          className="bg-white text-black px-2 py-1 flex justify-between items-center cursor-default select-none"
+          style={{
+            background: "linear-gradient(to right, #0050a0, #1478d4)",
+            color: "white",
+            padding: "3px 6px 3px 10px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            cursor: "default",
+            userSelect: "none",
+            flexShrink: 0,
+          }}
         >
-          <span className="text-xs font-bold truncate max-w-[200px]">{title}</span>
-
-          <div className="flex shrink-0">
-            
-            {/* MINIMIZE */}
+          <span style={{ fontSize: "13px", fontWeight: "bold" }}>{title}</span>
+          <div style={{ display: "flex" }}>
             <button
               onClick={onMinimize}
-              className="w-7 h-5 hover:bg-white/20 border border-transparent hover:border-white/30 flex justify-center items-center transition-colors"
               title="Minimize"
+              style={{
+                width: 28, height: 22, background: "transparent", border: "none",
+                color: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+              }}
+              onMouseOver={e => e.currentTarget.style.background = "rgba(255,255,255,0.2)"}
+              onMouseOut={e => e.currentTarget.style.background = "transparent"}
             >
               <Minus size={12} strokeWidth={3} />
             </button>
-
-            {/* MAXIMIZE / RESTORE */}
             <button
               onClick={() => setIsMaximized(!isMaximized)}
-              className="w-7 h-5 hover:bg-white/20 border border-transparent hover:border-white/30 flex justify-center items-center transition-colors"
               title={isMaximized ? "Restore Down" : "Maximize"}
+              style={{
+                width: 28, height: 22, background: "transparent", border: "none",
+                color: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+              }}
+              onMouseOver={e => e.currentTarget.style.background = "rgba(255,255,255,0.2)"}
+              onMouseOut={e => e.currentTarget.style.background = "transparent"}
             >
               <Square size={10} strokeWidth={3} />
             </button>
-
-            {/* CLOSE */}
             <button
               onClick={onClose}
-              className="w-8 h-5 hover:bg-red-500 border border-transparent flex justify-center items-center transition-colors ml-0.5"
+              style={{
+                width: 32, height: 22, background: "transparent", border: "none",
+                color: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", marginLeft: 2,
+              }}
+              onMouseOver={e => e.currentTarget.style.background = "#e81123"}
+              onMouseOut={e => e.currentTarget.style.background = "transparent"}
             >
               <X size={14} strokeWidth={3} />
             </button>
-
           </div>
         </div>
 
-        {/* TOOLBAR */}
-        <div className="bg-black text-white border-white px-3  flex justify-between text-xs font-bold shadow-[inset_1px_1px_0px_#ffffff]">
-     <div className="  px-4 py-3 flex items-end gap-6 text-xs font-semibold">
+        {/* ── FILTER BAR ── */}
+        <div
+          style={{
+            background: "#000",
+            padding: "8px 16px 10px 16px",
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "space-between",
+            flexShrink: 0,
+            flexWrap: "wrap",
+            gap: "8px",
+          }}
+        >
+          {/* Left: filter fields */}
+          <div style={{ display: "flex", alignItems: "flex-end", gap: "20px", flexWrap: "wrap" }}>
 
-  {/* FROM DATE */}
-  <div className="flex flex-col text-white">
-    <label className="text-gray-700 mb-1 text-white">FROM DATE</label>
-    <input
-      type="date"
-      placeholder="From Date"
-      value={filters?.fromDate || ""}
-      onChange={(e) => setFilters({...filters,fromDate:e.target.value})}
-      className="w-[130px] px-2 py-1 border text-black border-gray-300 rounded-sm outline-none focus:border-blue-500 bg-white"
-    />
-  </div>
-
-  {/* TO DATE */}
-  <div className="flex flex-col">
-    <label className="text-gray-700 mb-1 text-white">TO DATE</label>
-    <input
-      type="date"
-      placeholder="To Date"
-      value={filters?.toDate || ""}
-      onChange={(e) => setFilters({...filters, toDate:e.target.value})}
-      className="w-[130px] px-2 py-1 border text-black border-gray-300 rounded-sm outline-none focus:border-blue-500 bg-white"
-    />
-  </div>
-
-  {/* PO NUMBER */}
-<div className="flex flex-col relative qt-dropdown">
-  <label>
-    {type === "qt" || type === "Quotation Format" ? "QUOTATION NO" : type === "dn" ? "DEBIT NOTE NO" : "BILL NO"}
-</label>
-    <input
-      type="text"
-      placeholder="e.g. AT-QT-001"
-      value={filters.QtNumber}
-      onFocus={() => setpodown(true)}
-      onChange={(e) => {
-      const value = e.target.value;
-      setFilters({...filters, QtNumber:value});
-      if(value){
-        setViewMode("qt");
-      }
-      }}
-      className="w-[150px] px-2 py-1 mt-[4px] border text-black  border-gray-300 rounded-sm outline-none focus:border-blue-500 bg-white"
-    />
-
-    {/* Drop Down */}
-
-      <div className="">
-          {
-        openpo && (
-         <div className="absolute top-full left-0 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-[200px] overflow-y-auto">            {poList.length > 0 ? (
-              poList.map((po) => (
-                <div
-                  key={po.quotation_no}
-                   onClick={(e) => {
-                   e.stopPropagation();
-                   const selectedQt = po.quotation_no;
-                   setFilters((prev) => ({  ...prev,  QtNumber: selectedQt }));
-
-                 if (onFilterChange) {
-                 onFilterChange({ ...filters, QtNumber: selectedQt });
-                  }
-                setReportData([]);        
-                 setViewMode("qt");        
-                 setpodown(false);
+            {/* FROM DATE */}
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <label style={{ color: "#fff", fontWeight: "bold", fontSize: "11px", marginBottom: "4px", letterSpacing: "0.5px" }}>
+                FROM DATE
+              </label>
+              <input
+                type="date"
+                value={filters?.fromDate || ""}
+                onChange={(e) => setFilters({ ...filters, fromDate: e.target.value })}
+                style={{
+                  width: 130, padding: "4px 6px", border: "1px solid #aaa",
+                  background: "white", color: "#000", fontSize: "12px", outline: "none",
                 }}
-                  className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-black text-sm border-b border-gray-100 last:border-0"
+              />
+            </div>
+
+            {/* TO DATE */}
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <label style={{ color: "#fff", fontWeight: "bold", fontSize: "11px", marginBottom: "4px", letterSpacing: "0.5px" }}>
+                TO DATE
+              </label>
+              <input
+                type="date"
+                value={filters?.toDate || ""}
+                onChange={(e) => setFilters({ ...filters, toDate: e.target.value })}
+                style={{
+                  width: 130, padding: "4px 6px", border: "1px solid #aaa",
+                  background: "white", color: "#000", fontSize: "12px", outline: "none",
+                }}
+              />
+            </div>
+
+            {/* QT / INVOICE / DC NUMBER */}
+            <div style={{ display: "flex", flexDirection: "column", position: "relative" }} className="qt-dropdown">
+              <label style={{ color: "#fff", fontWeight: "bold", fontSize: "11px", marginBottom: "4px", letterSpacing: "0.5px" }}>
+                {type === "qt" || type === "Quotation Format"
+                  ? "QUOTATION NO"
+                  : type === "Invoice Format"
+                  ? "INVOICE NO"
+                  : type === "dn"
+                  ? "DEBIT NOTE NO"
+                  : "BILL NO"}
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. AT-QT-001"
+                value={filters.QtNumber}
+                onFocus={() => setpodown(true)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setFilters({ ...filters, QtNumber: value });
+                  if (value) setViewMode("qt");
+                }}
+                style={{
+                  width: 150, padding: "4px 6px", border: "1px solid #aaa",
+                  background: "white", color: "#000", fontSize: "12px", outline: "none",
+                }}
+              />
+              {openpo && (
+                <div
+                  style={{
+                    position: "absolute", top: "100%", left: 0, minWidth: "100%",
+                    background: "white", border: "1px solid #ccc", zIndex: 9999,
+                    maxHeight: 200, overflowY: "auto", boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+                  }}
                 >
-                  {po.quotation_no}
+                  {poList.length > 0 ? (
+                    poList.map((po) => (
+                      <div
+                        key={po.dc_no || po.invoice_no || po.quotation_no}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const selectedQt = type === "Invoice Format" ? po.invoice_no : type === "DC Format" ? po.dc_no : po.quotation_no;
+                          setFilters((prev) => ({ ...prev, QtNumber: "" }));
+                          setTimeout(() => { setFilters((prev) => ({ ...prev, QtNumber: selectedQt })); }, 50);
+                          if (onFilterChange) onFilterChange({ ...filters, QtNumber: selectedQt });
+                          setReportData([]);
+                          setViewMode("qt");
+                          setpodown(false);
+                        }}
+                        style={{ padding: "6px 10px", cursor: "pointer", color: "#000", fontSize: "12px", borderBottom: "1px solid #f0f0f0" }}
+                        onMouseOver={e => e.currentTarget.style.background = "#e8f0f8"}
+                        onMouseOut={e => e.currentTarget.style.background = "white"}
+                      >
+                        {po.dc_no || po.invoice_no || po.quotation_no}
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ padding: "8px 10px", color: "#999", fontSize: "12px" }}>No PO found</div>
+                  )}
                 </div>
-              ))
-            ) : (
-              <div className="px-3 py-2 text-gray-400 text-sm">No PO found</div>
-            )}
-          </div>
-        )}
-      </div>
-     
-  </div>
+              )}
+            </div>
 
-  {/* Client Name wise search */}
-    <div className="flex flex-col">
-      <label htmlFor="">CLIENT NAME</label>
-       <input type="text" 
-       value={filters?.clientName|| ""}
-        onFocus={() => setclientopen(true)}
-        onChange={(e) => {const value = e.target.value;
-          setFilters({...filters, clientName:value});
-          searchclient(value);
-        }}
-        placeholder="Client Name"
-       className="w-full px-2 mt-[4px] py-1 border text-black border-gray-300 rounded-sm outline-none focus:border-blue-500 bg-white"
-      />
-
-       {/* dropdown */}
-        <div className="relative">
+            {/* CLIENT NAME */}
+            <div style={{ display: "flex", flexDirection: "column", position: "relative" }}>
+              <label style={{ color: "#fff", fontWeight: "bold", fontSize: "11px", marginBottom: "4px", letterSpacing: "0.5px" }}>
+                CLIENT NAME
+              </label>
+              <input
+                type="text"
+                value={filters?.clientName || ""}
+                onFocus={() => setclientopen(true)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setFilters({ ...filters, clientName: value });
+                  searchclient(value);
+                }}
+                placeholder="Client Name"
+                style={{
+                  width: 160, padding: "4px 6px", border: "1px solid #aaa",
+                  background: "white", color: "#000", fontSize: "12px", outline: "none",
+                }}
+              />
               {clientopen && (
-                <div className="absolute top-0 left-0 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                <div
+                  style={{
+                    position: "absolute", top: "100%", left: 0, minWidth: "100%",
+                    background: "white", border: "1px solid #ccc", zIndex: 9999,
+                    boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+                  }}
+                >
                   {clientlist.length > 0 ? (
                     clientlist.map((client, index) => (
                       <div
                         key={index}
-                        onClick={() => {
-                          setFilters({ ...filters, clientName: client.customer_name });
-                          setclientopen(false);
-                        }}
-                        className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-black text-sm border-b border-gray-100 last:border-0"
+                        onClick={() => { setFilters({ ...filters, clientName: client.customer_name }); setclientopen(false); }}
+                        style={{ padding: "6px 10px", cursor: "pointer", color: "#000", fontSize: "12px", borderBottom: "1px solid #f0f0f0" }}
+                        onMouseOver={e => e.currentTarget.style.background = "#e8f0f8"}
+                        onMouseOut={e => e.currentTarget.style.background = "white"}
                       >
                         {client.customer_name}
                       </div>
                     ))
                   ) : (
-                    <div className="px-3 py-2 text-gray-400 text-sm">No clients found</div>
+                    <div style={{ padding: "8px 10px", color: "#999", fontSize: "12px" }}>No clients found</div>
                   )}
                 </div>
-              ) }
-        </div>
+              )}
+            </div>
 
+          </div>
 
-    </div>
-
-</div>
-
-          <div className="flex gap-5 mr-20">
+          {/* Right: action buttons */}
+          <div style={{ display: "flex", gap: "8px", alignItems: "flex-end" }}>
             {type !== "billwise" && (
-          <button 
-            onClick={gentratereport} 
-            className="border h-[30px] mt-7 text-black border-gray-500 px-3 py-0.5 bg-white shadow-[1px_1px_0px_rgba(0,0,0,0.5)] active:shadow-none active:translate-x-[0.5px] active:translate-y-[0.5px] hover:bg-gray-50"
-          >
-            GENERATE REPORT
-          </button>
-          )}
-
-          <button 
-            onClick={onClose} 
-            className="border h-[30px] mt-7 text-black border-gray-500 px-3 py-0.5 bg-white shadow-[1px_1px_0px_rgba(0,0,0,0.5)] active:shadow-none active:translate-x-[0.5px] active:translate-y-[0.5px] hover:bg-gray-50"
-          >
-            CLOSE
-          </button>
+              <button
+                onClick={gentratereport}
+                style={{
+                  background: "#f0f0f0", color: "#000", border: "1px solid #888",
+                  padding: "5px 18px", fontSize: "12px", fontWeight: "bold",
+                  cursor: "pointer", boxShadow: "1px 1px 0 rgba(0,0,0,0.4)",
+                  letterSpacing: "0.3px",
+                }}
+                onMouseOver={e => e.currentTarget.style.background = "#fff"}
+                onMouseOut={e => e.currentTarget.style.background = "#f0f0f0"}
+              >
+                GENERATE REPORT
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              style={{
+                background: "#f0f0f0", color: "#000", border: "1px solid #888",
+                padding: "5px 18px", fontSize: "12px", fontWeight: "bold",
+                cursor: "pointer", boxShadow: "1px 1px 0 rgba(0,0,0,0.4)",
+                letterSpacing: "0.3px",
+              }}
+              onMouseOver={e => e.currentTarget.style.background = "#fff"}
+              onMouseOut={e => e.currentTarget.style.background = "#f0f0f0"}
+            >
+              CLOSE
+            </button>
           </div>
         </div>
 
+        {/* ── CONTENT AREA ── */}
+        <div
+          className="custom-scrollbar"
+          style={{ flex: 1, overflowY: "auto", background: "#f0f0f0", padding: "12px 14px" }}
+        >
 
-        {/* CONTENT */}
-        <div className="flex-1 overflow-auto bg-white p-6 custom-scrollbar">
-          <div>
-               <button onClick={downloadExcel} className=" bg-green-400 text-white border border-green-400 px-1 py-1.5 rounded-[3px]">Main Report</button>
-           </div>
-            
-          <div className={`w-full h-[100vh] mt-10 mx-auto ${viewMode === "report" ? "border" : ""}`}>
-                  
-                   {/*Report View  */}
-                   {/*table*/}
-                  
-   {viewMode === "report" && type !== "billwise" && ( 
-  <div
-    className="mx-auto mt-4 text-[12px] text-black"
-    style={{ width: "100%", maxWidth: "1000px" }}
-  >
-
-    {/* ===== HEADER LINE ===== */}
-    <div className=" pb-2 leading-8">
-
-      <div className="inline-flex gap-6">
-          <h2 className="text-black font-bold text-[14px]">FROM : <span className="text-red-500 font-semibold text-[15px]">{filters.fromDate}</span></h2>
-           <h2 className="text-black font-bold text-[14px]">TO : <span className="text-red-500 font-semibold text-[15px]">{filters.toDate}</span></h2> 
-      </div>
-       <h2 className="text-black font-bold text-[14px]">CUSTOMER NAME :  <span className="text-red-600 font-semibold text-[15px]">{filters.clientName}</span></h2>
-
-    </div>
-
-    {/* ===== TABLE HEADER ===== */}
-    <div className="overflow-x-auto">
-    <table  className="w-full mt-4 relative border-gray-400 w-[1500px] border-collapse]">
-
-      <thead>
-        <tr className="border border-gray-400 font-bold text-[13px]">
-
-          <th className="text-left py-2 px-3 w-[60px] border-r ">SNO</th>
-          <th className="text-left py-2 px-3 truncate w-[120px] border-r">
-            QUOTATION NO
-          </th>
-          <th className="text-left py-2 px-3 w-[120px] border-r ">DATE</th>
-           <th className="text-left py-2 px-3 w-[120px] truncate border-r ">CLIENT NAME</th>
-          <th className="text-right py-2 px-3 truncate w-[120px] border-r ">PURCHASE ITEM</th>
-            <th className="text-right py-2 px-3 w-[110px] border-r  ">QUANTITY</th>
-          <th className="text-center py-2 px-3 w-[110px] border-r">PRICE</th>
-          <th className="text-center py-2 px-3 w-[110px] pl-5 border-r ">SUBTOTAL</th>
-           <th className="text-center py-2 px-3 w-[110px] pl-3 border-r ">SGST</th>
-           <th className="text-center py-2 px-3 w-[110px] pl-3 border-r ">CGST</th>
-            <th className="text-center py-2 px-3 w-[110px] pl-3 border-r ">IGST</th>
-           <th className="text-center py-2 px-3 w-[110px] pl-3 border-r  ">GRANDTOTAL</th>
-
-        </tr>
-      </thead>
-
-      <tbody className="w-[600px]  font-semibold text-[14px] text-gray-600">
-
-        {/* DATA ROWS */}
-        {reportData.length > 0 ? (
-          reportData.map((row, i) => (
-            <tr key={i} className="border border-gray-400 ">
-
-              <td className="p-2 text-left truncate border-r border-gray-400 ">{i + 1}</td>
-
-              <td className="p-2 text-left truncate  border-r border-gray-400 ">
-                {row.quotation_no || "-"}
-             </td>
-
-              <td className="p-2 text-left truncate border-r border-gray-400 ">
-                {row.quotation_date}
-              </td>
-
-             <td className="p-2 text-left truncate border-r border-gray-400 " title={row.client_name}>
-              {row.customer_name}
-              </td>
-
-              <td className="p-2 text-center truncate border-r border-gray-400 ">
-                {row.item_name || "-"}
-              </td>
-
-              <td className="p-2 text-center truncate border-r border-gray-400 ">
-                {row.quantity ?? 0}
-              </td>
-
-              <td className="p-2 text-center pl-8 border-r border-gray-400 ">
-                    {row.price ?? 0}
-              </td>
-
-
-              <td className="p-2 pl-8 text-center border-r border-gray-400 ">
-                 {row.subtotal ?? 0}
-              </td>
-              
-
-              <td className="p-2 pl-8 text-center border-r border-gray-400 ">
-                    {row.sgst ?? 0}
-              </td>
-
-              <td className="p-2 pl-8 text-center border-r border-gray-400 ">
-                    {row.cgst ?? 0}
-
-              </td>
-              <td className="p-2 pl-8 text-center border-r border-gray-400 ">
-                    {row.igst || "-"}
-
-              </td>
-
-               <td className="p-2 pl-8 text-center text-blue-500">
-                    {row.grandTotal ?? 0}
-
-              </td>
-
-            </tr>
-          ))
-        ) : (
-          <tr>
-            <td colSpan="6" className="text-center py-10 text-gray-500">
-              No Data Available
-            </td>
-          </tr>
-        )}
-
-      </tbody>
-    </table>
-  </div>
-
-  </div>
-  
-)}
-
-         {/* Po View */}
-        {viewMode === "qt" && (
-          <div  className=" mx-auto mt-10"
-           style={{ width: "210mm", minHeight: "297mm" }} >
-            
-            {children}
+          {/* Action buttons row */}
+          <div className="no-print" style={{ display: "flex", gap: "6px", marginBottom: "12px" }}>
+            <button
+              onClick={downloadExcel}
+              style={{
+                background: "#28a745", color: "#fff", border: "1px solid #1e7e34",
+                padding: "6px 14px", fontSize: "12px", fontWeight: "bold",
+                cursor: "pointer", borderRadius: "3px",
+              }}
+              onMouseOver={e => e.currentTarget.style.background = "#218838"}
+              onMouseOut={e => e.currentTarget.style.background = "#28a745"}
+            >
+              MAIN REPORT
+            </button>
+            <button
+              onClick={handlePrint}
+              style={{
+                background: "#0069d9", color: "#fff", border: "1px solid #0062cc",
+                padding: "6px 14px", fontSize: "12px", fontWeight: "bold",
+                cursor: "pointer", borderRadius: "3px", display: "flex", alignItems: "center", gap: "5px",
+              }}
+              onMouseOver={e => e.currentTarget.style.background = "#0056b3"}
+              onMouseOut={e => e.currentTarget.style.background = "#0069d9"}
+            >
+              <Printer size={13} /> PRINT
+            </button>
+            <button
+              onClick={exportToPdf}
+              style={{
+                background: "#dc3545", color: "#fff", border: "1px solid #c82333",
+                padding: "6px 14px", fontSize: "12px", fontWeight: "bold",
+                cursor: "pointer", borderRadius: "3px",
+              }}
+              onMouseOver={e => e.currentTarget.style.background = "#c82333"}
+              onMouseOut={e => e.currentTarget.style.background = "#dc3545"}
+            >
+              EXPORT PDF
+            </button>
           </div>
-)}
-    </div>
-    </div>
 
-        {/* STATUS BAR */}
-        <div className="bg-white border-t border-gray-400 px-3 py-0.5 text-[10px] font-bold text-gray-600 flex justify-between shadow-[inset_0px_1px_0px_#ffffff]">
-          <span className="flex items-center gap-4">
-             <span className="border-r border-gray-400 pr-4">Total Page No: 1</span>
-             <span>READY</span>
+          {/* Printable / report area */}
+          <div ref={contentRef} style={{ width: "100%" }}>
+
+            {/* ── REPORT VIEW ── */}
+            {viewMode === "report" && type !== "billwise" && (
+              <div
+                style={{
+                  background: "white",
+                  border: "1px solid #bbb",
+                  padding: "16px 18px 20px 18px",
+                  minHeight: "297mm",
+                }}
+              >
+                {/* Report heading */}
+                <div style={{ marginBottom: "10px" }}>
+                  <h2 style={{ fontSize: "15px", fontWeight: "bold", color: "#000", margin: "0 0 4px 0" }}>
+                    {title ? title.toUpperCase() : "REPORT"}
+                  </h2>
+                  <div style={{ fontSize: "12px", color: "#333", display: "flex", gap: "18px" }}>
+                    <span>FROM : <strong>{filters.fromDate || "—"}</strong></span>
+                    <span>TO : <strong>{filters.toDate || "—"}</strong></span>
+                    <span>CLIENT : <strong>{filters.clientName || "ALL CLIENTS"}</strong></span>
+                  </div>
+                </div>
+
+                {/* Table */}
+                <div style={{ overflowX: "auto" }}>
+                  <table
+                    style={{
+                      width: "100%", borderCollapse: "collapse",
+                      fontSize: "12px", tableLayout: "auto",
+                    }}
+                  >
+                    <thead>
+                      <tr style={{ background: "#b8cce4" }}>
+                        {[
+                          { label: "SNO",           align: "left"  },
+                          { label: "QUOTATION NO",  align: "left"  },
+                          { label: "DATE",          align: "left"  },
+                          { label: "CLIENT NAME",   align: "left"  },
+                          { label: "PURCHASE ITEM", align: "left"  },
+                          { label: "QUANTITY",      align: "right" },
+                          { label: "PRICE",         align: "right" },
+                          { label: "SUBTOTAL",      align: "right" },
+                          { label: "SGST",          align: "right" },
+                          { label: "CGST",          align: "right" },
+                          { label: "IGST",          align: "right" },
+                          { label: "GRANDTOTAL",    align: "right" },
+                        ].map(({ label, align }) => (
+                          <th
+                            key={label}
+                            style={{
+                              border: "1px solid #9baec8", padding: "7px 10px",
+                              textAlign: align, fontWeight: "bold", color: "#000",
+                              whiteSpace: "nowrap", fontSize: "12px",
+                            }}
+                          >
+                            {label}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {reportData.length > 0 ? (
+                        reportData.map((row, i) => (
+                          <tr
+                            key={i}
+                            style={{ background: i % 2 === 0 ? "#fff" : "#dce6f1" }}
+                          >
+                            <td style={tdStyle("left")}>{i + 1}</td>
+                            <td style={{ ...tdStyle("left"), color: "#1a3f7a", fontWeight: "bold" }}>
+                              {row.quotation_no || "-"}
+                            </td>
+                            <td style={tdStyle("left")}>{row.quotation_date}</td>
+                            <td style={{ ...tdStyle("left"), color: "#1a3f7a", fontWeight: "bold" }}>
+                              {row.customer_name}
+                            </td>
+                            <td style={tdStyle("left")}>{row.item_name || "-"}</td>
+                            <td style={tdStyle("right")}>{row.quantity ?? 0}</td>
+                            <td style={tdStyle("right")}>{row.price ?? 0}</td>
+                            <td style={tdStyle("right")}>{row.subtotal ?? 0}</td>
+                            <td style={tdStyle("right")}>{row.sgst ?? 0}</td>
+                            <td style={tdStyle("right")}>{row.cgst ?? 0}</td>
+                            <td style={tdStyle("right")}>{row.igst || "-"}</td>
+                            <td style={{ ...tdStyle("right"), color: "#1a3f7a", fontWeight: "bold" }}>
+                              {row.grandTotal ?? 0}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td
+                            colSpan="12"
+                            style={{ textAlign: "center", padding: "24px", color: "#888", fontSize: "13px" }}
+                          >
+                            No Data Available
+                          </td>
+                        </tr>
+                      )}
+
+                      {/* Total row */}
+                      {reportData.length > 0 && (
+                        <tr style={{ background: "#b8cce4", fontWeight: "bold" }}>
+                          <td colSpan="5" style={{ border: "1px solid #9baec8", padding: "6px 10px", textAlign: "right", fontSize: "12px" }}>
+                            TOTAL
+                          </td>
+                          <td style={{ border: "1px solid #9baec8", padding: "6px 10px", textAlign: "right", fontSize: "12px" }}>
+                            {reportData.reduce((s, r) => s + (Number(r.quantity) || 0), 0)}
+                          </td>
+                          <td style={{ border: "1px solid #9baec8", padding: "6px 10px" }}></td>
+                          <td style={{ border: "1px solid #9baec8", padding: "6px 10px", textAlign: "right", fontSize: "12px" }}>
+                            {reportData.reduce((s, r) => s + (Number(r.subtotal) || 0), 0).toFixed(2)}
+                          </td>
+                          <td style={{ border: "1px solid #9baec8", padding: "6px 10px", textAlign: "right", fontSize: "12px" }}>
+                            {reportData.reduce((s, r) => s + (Number(r.sgst) || 0), 0).toFixed(2)}
+                          </td>
+                          <td style={{ border: "1px solid #9baec8", padding: "6px 10px", textAlign: "right", fontSize: "12px" }}>
+                            {reportData.reduce((s, r) => s + (Number(r.cgst) || 0), 0).toFixed(2)}
+                          </td>
+                          <td style={{ border: "1px solid #9baec8", padding: "6px 10px" }}></td>
+                          <td style={{ border: "1px solid #9baec8", padding: "6px 10px", textAlign: "right", fontSize: "12px" }}>
+                            {reportData.reduce((s, r) => s + (Number(r.grandTotal) || 0), 0).toFixed(2)}
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* ── QT / DOCUMENT VIEW ── */}
+            {viewMode === "qt" && (
+              <div
+                className="printable-area"
+                style={{
+                  width: "190mm", minHeight: "270mm",
+                  boxSizing: "border-box", background: "white",
+                }}
+              >
+                {children}
+              </div>
+            )}
+
+          </div>
+        </div>
+
+        {/* ── STATUS BAR ── */}
+        <div
+          style={{
+            background: "#f0f0f0",
+            borderTop: "1px solid #aaa",
+            padding: "2px 12px",
+            fontSize: "11px",
+            fontWeight: "bold",
+            color: "#555",
+            display: "flex",
+            justifyContent: "space-between",
+            flexShrink: 0,
+          }}
+        >
+          <span style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            <span style={{ borderRight: "1px solid #aaa", paddingRight: "16px" }}>Total Page No: 1</span>
+            <span>READY</span>
           </span>
           <span>ZOOM: 100%</span>
         </div>
+
       </div>
-      
+
       <style>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 14px;
-          height: 14px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: #c0c0c0;
-          box-shadow: inset 1px 1px 2px rgba(0,0,0,0.4);
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #e0e0e0;
-          border: 2px solid #808080;
-          box-shadow: inset 1px 1px 0px white;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:active {
-          background: #d0d0d0;
+        .custom-scrollbar::-webkit-scrollbar { width: 10px; height: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #d1d5db; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #9ca3af; }
+        .printable-area { width: 100% !important; max-width: 100% !important; }
+        @media print {
+          body { margin: 0 !important; padding: 0 !important; }
+          .no-print { display: none !important; }
+          .printable-area { width: 100% !important; overflow: visible !important; }
+          tr { page-break-inside: avoid !important; }
         }
       `}</style>
     </div>
   );
 };
+
+// Shared cell style helper (UI only)
+const tdStyle = (align = "left") => ({
+  border: "1px solid #ccc",
+  padding: "5px 10px",
+  textAlign: align,
+  fontSize: "12px",
+  whiteSpace: "nowrap",
+});
 
 export default WindowModal;

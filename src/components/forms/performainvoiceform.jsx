@@ -434,478 +434,323 @@ const edititem = (index) => {
     setInvoiceno(data.invoice_no);
   };
 
-  return (
-     <div className="p-6 min-h-screen bg-gray-50 p-6 font-sans">
-        <div>
-            <button onClick={() => navigate(-1)}
-            className="flex items-center gap-2 px-4 py-2 border rounded-xl bg-white hover:bg-gray-50 text-[15px] font-medium w-fit"
-             >
-                Go Back
-            </button>
-         </div>
+  const labelCls = "block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5";
+  const inputCls = "w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black focus:outline-none focus:border-blue-400 bg-white shadow-sm";
+  const roInputCls = "w-full p-2.5 border border-blue-100 rounded-lg text-[13px] font-semibold text-blue-800 bg-blue-50 cursor-not-allowed focus:outline-none";
+  const dropdownCls = "absolute top-full left-0 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 max-h-52 overflow-y-auto";
 
-        <div className="max-w-[1500px] mx-auto bg-white p-8 mt-8 shadow-sm border border-gray-200">
-          <div className="flex justify-between items-center mb-8">
-          <h2 className="text-xl font-bold text-black tracking-tight">Sales Invoice</h2>
-          <div className="flex gap-1.5">
-             <button onClick={resetall}  className='border px-3 py-1.5 rounded-lg hover:bg-green-600 hover:text-white'>NEW</button>
-              <button onClick={SaveInvoice} className='border px-3 py-1.5 rounded-lg hover:bg-green-600 hover:text-white'>SAVE</button>
-              <button className='border px-3 py-1.5 rounded-lg hover:bg-green-600 hover:text-white'>EDIT</button>
-              <button onClick={deletInvoice} className='border px-3 py-1.5 rounded-lg hover:bg-red-600 hover:text-white'>DELETE</button>
+  return (
+    <div className="min-h-screen bg-gray-50/70 p-6 font-sans">
+
+      <button onClick={() => navigate(-1)}
+        className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl bg-white hover:bg-gray-50 text-[14px] font-semibold w-fit mb-6 shadow-sm">
+        ← Go Back
+      </button>
+
+      <div className="max-w-[1400px] mx-auto bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+
+        {/* Title + Buttons */}
+        <div className="flex justify-between items-start mb-8">
+          <div>
+            <h2 className="text-xl font-black text-gray-900 tracking-tight">Direct Invoice</h2>
+            <p className="text-[12px] text-gray-400 mt-1">Customer → Products → Save</p>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={resetall} className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-gray-800 hover:text-white transition-colors">NEW</button>
+            <button onClick={SaveInvoice} className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-green-600 hover:text-white transition-colors">SAVE</button>
+            <button onClick={deletInvoice} className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-red-600 hover:text-white transition-colors">DELETE</button>
           </div>
         </div>
 
-        {/* Inputs */}
-             
-             <div className="flex flex-row items-end gap-20 border-b border-gray-100 pb-8 mb-6">
-                <div className='flex flex-col gap-2 flex-1 relative'>
-                    <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">
-                      Name 
-                    </label>
-                      <input type="text"
-                       placeholder="Enter Customer" 
-                       value={formData.customer_name}
-                       onFocus={() => setclientopen(true)}
-                       onChange={(e) => {
-                        const value = e.target.value;
-                        setFormdata({...formData,customer_name:value});
-                        setsearch(value);
-                       }}
-                      className="w-full max-w-[400px] p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black focus:outline-none bg-white cursor-pointer shadow-sm" />
-                     
-                     {/* Drop down */}
-                    
-                    {clientopen && (
-                    <div className='absolute top-[65px] left-0 bg-white shadow-lg z-50 w-full border border-gray-200 rounded-[2px] overflow-y-auto'>
-                       {Array.isArray(customername) && customername.length > 0 ? (
-                         <div className="border border-gray-200  shadow-lg z-50 max-h-40 overflow-y-auto">
-                            {customername.slice(0, 5).map((client) => (
-                              <div key={client.id}
-                               onClick={() => {
-                                setFormdata({...formData, customer_name:client.customer_name});
-                                setclientopen(false);
-                               }}
-                               className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm">
-                                {client.customer_name}
-                              </div>
-                            ))}
-                         </div>
-                        ) : (
-                          <div className="px-3 py-2 text-gray-400 text-sm">No clients found</div>
-                        )}
+        {/* Step 1 — Invoice Header */}
+        <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-5 border border-gray-100 mb-5">
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Step 1 — Invoice Header</p>
+          <div className="grid grid-cols-4 gap-5">
+            {/* Customer */}
+            <div className="relative col-span-2">
+              <label className={labelCls}>Customer / Company <span className="text-red-500">*</span></label>
+              <input type="text" placeholder="Type to search customers…"
+                value={formData.customer_name}
+                onFocus={() => setclientopen(true)}
+                onChange={(e) => { const v = e.target.value; setFormdata({...formData, customer_name: v}); setsearch(v); }}
+                className={inputCls} />
+              {clientopen && (
+                <div className={dropdownCls}>
+                  {Array.isArray(customername) && customername.length > 0 ? customername.slice(0, 5).map((client) => (
+                    <div key={client.id}
+                      onClick={() => { setFormdata({...formData, customer_name: client.customer_name}); setclientopen(false); }}
+                      className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0">
+                      {client.customer_name}
                     </div>
-                    )}
-               </div>
-
-               {/* Invoice Number */}
-
-                 <div className='flex flex-col gap-2 flex-1 relative'>
-                    <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">
-                      Invoice Number 
-                    </label>
-                      <input type="text"
-                       value={invoiceno}
-                       onChange={(e) => setFormdata({...formData,invoice_no:e.target.value})}
-                       placeholder="Enter Customer" 
-                      className="w-full max-w-[400px] p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black focus:outline-none bg-white cursor-pointer shadow-sm" />
-               </div>
-               
-                {/* Invoice Date */}
-
-                  <div className='flex flex-col gap-2 flex-1'>
-                    <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">
-                      Date
-                    </label>
-                    <input type="date"
-                    value={formData.invoice_date}
-                    onChange={(e) => setFormdata({...formData,invoice_date:e.target.value})}
-                  className="w-full max-w-[400px] p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black focus:outline-none bg-white cursor-pointer shadow-sm" />
-                </div>
-          </div>
-
-          {/* next Row  */}
-
-             <div className=" flex border-gray-100 pb-8 ">
-               <div className='flex flex-col gap-2 flex-1 '>
-                <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">
-                  DC No
-                </label>
-                 <input type="text"
-                  value={formData.dc_no}
-                  onChange={(e) => setFormdata({...formData, dc_no:e.target.value})}
-                  placeholder="Enter Dc No"
-                  className="w-full max-w-[200px] p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black focus:outline-none bg-white cursor-pointer shadow-sm" />
-               </div>
-
-               {/*  */}
-
-                <div className='flex flex-col gap-2 flex-1 '>
-                 <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">
-                    DC DATE
-                  </label>
-                  <input type="Date" 
-                  value={formData.dc_date}
-                   onChange={(e) => setFormdata({...formData, dc_date:e.target.value})}
-                  className="w-full max-w-[200px] p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black focus:outline-none bg-white cursor-pointer shadow-sm" />
-                </div>
-
-                {/*  */}
-
-                <div className='flex flex-col gap-2 flex-1 '>
-                 <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">
-                    ORDER NO
-                  </label>
-                  <input type="text" 
-                   value={formData.order_no}
-                   onChange={(e) => setFormdata({...formData, order_no:e.target.value})}
-                  placeholder="Enter Order No"
-                  className="w-full max-w-[200px] p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black focus:outline-none bg-white cursor-pointer shadow-sm" />
-                </div>
-
-                {/*  */}
-
-                <div className='flex flex-col gap-2 flex-1 '>
-                 <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">
-                    ORDER DATE
-                  </label>
-                  <input type="Date" 
-                  value={formData.order_date}
-                  onChange={(e) => setFormdata({...formData, order_date:e.target.value})}
-                  className="w-full max-w-[200px] p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black focus:outline-none bg-white cursor-pointer shadow-sm" />
-                </div>
-           </div>
-
-           {/* Next Row */}
-
-             <div className="flex">
-                <div className='flex flex-col gap-2 flex-1'>
-                 <label htmlFor=""
-                 className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">
-                  PAYEMENT TERMS
-                </label>
-                 <input type="text"
-                 value={formData.payment_terms}
-                  onChange={(e) => setFormdata({...formData, payment_terms:e.target.value})}
-                 placeholder="Enter Payment Terms"
-                 className="w-full max-w-[300px] p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black focus:outline-none bg-white cursor-pointer shadow-sm"/>
-                </div>
-
-                {/*  */}
-
-                 <div className='flex flex-col gap-2 flex-1'>
-                     <label htmlFor=""
-                     className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">
-                      DESPATCH THROUGH
-                    </label>
-                    <input type="text"
-                    value={formData.dispatch_through}
-                     onChange={(e) => setFormdata({...formData, dispatch_through:e.target.value})}
-                    placeholder="Enter Dispatch Through"
-                    className="w-full max-w-[300px] p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black focus:outline-none bg-white cursor-pointer shadow-sm"/>
-                 </div>
-            </div>
-{/*  */}
-
-    <div className="flex flex-col gap-2  mt-5 shrink-0">
-    <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">
-      Description
-    </label>
-    <div className="flex items-center gap-4 h-[42px]">
-      <label className="flex items-center gap-2 text-[11px] font-bold text-gray-700 cursor-pointer">
-        <input type="radio" name="ordertype" checked={ordertype === "service"} onChange={() => typechange("service")} className="w-4 h-4 accent-black" /> Service
-      </label>
-      <label className="flex items-center gap-2 text-[11px] font-bold text-gray-700 cursor-pointer">
-        <input type="radio" name="ordertype" checked={ordertype === "spare"} onChange={() => typechange("spare")} className="w-4 h-4 accent-black" /> Spares
-      </label>
-      <label className="flex items-center gap-2 text-[11px] font-bold text-gray-700 cursor-pointer">
-        <input type="radio" name="ordertype" checked={ordertype === "purchase_item"} onChange={() => typechange("purchase_item")} className="w-4 h-4 accent-black" /> Purchase Items
-      </label>
-    </div>
-  </div>
-
-   {/* Inside Items */}
-        <div className="grid grid-cols-8 gap-3 mt-6 mb-4 bg-white">
-             
-             <div className="flex flex-col col-span-2 relative">
-              <input type="text"
-                placeholder="Search Item"
-                value={currentrow.item_name}
-                onFocus={() => setitemopen(true)}
-                onChange={(e) =>{
-                  const value = e.target.value;
-                  setcurrentrow({...currentrow,item_name:value})
-                  setitemsearch(value);
-                }}
-                className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black outline-none bg-gray-50/50 transition"/>
-               
-               {/* Item Open */}
-
-               {itemopen && (
-               <div className="absolute top-0 left-0 w-full mt-12 rounded-lg bg-white shadow-lg z-50 max-h-40 overflow-y-auto border border-gray-200">
-                  {Array.isArray(items) && items.length > 0 ? (
-                    items.map((item, index) => (
-                      <div
-                        key={`${item.item_name}-${index}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setitemopen(false);
-                          selectitem(item);
-                        }}
-                        className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
-                      >
-                        {item.item_name}
-                      </div>
-                    ))
-                  ) : (
-                    <div className="px-3 py-2 text-gray-400 text-sm">No items found</div>
+                  )) : (
+                    <div className="px-4 py-3 text-[13px] text-gray-400">No clients found</div>
                   )}
                 </div>
-               )}
-            
+              )}
             </div>
+            {/* Invoice No */}
+            <div>
+              <label className={labelCls}>Invoice No (Auto)</label>
+              <input type="text" value={invoiceno} readOnly className={roInputCls} />
+            </div>
+            {/* Invoice Date */}
+            <div>
+              <label className={labelCls}>Invoice Date</label>
+              <input type="date" value={formData.invoice_date}
+                onChange={(e) => setFormdata({...formData, invoice_date: e.target.value})}
+                className={inputCls} />
+            </div>
+          </div>
+        </div>
 
-            {/*  */}
-             <div className="">
-              <input type="number"
-                placeholder="Quantity"
-                value={currentrow.quantity}
-                onChange={(e) => setcurrentrow({...currentrow, quantity:e.target.value})}
-                className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black outline-none bg-gray-50/50 transition"/>
+        {/* Step 2 — DC & Order Details */}
+        <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-5 border border-gray-100 mb-5">
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Step 2 — DC &amp; Order Details</p>
+          <div className="grid grid-cols-6 gap-5">
+            <div>
+              <label className={labelCls}>DC No</label>
+              <input type="text" placeholder="Enter DC No" value={formData.dc_no}
+                onChange={(e) => setFormdata({...formData, dc_no: e.target.value})} className={inputCls} />
             </div>
-            {/*  */}
-             <div className="">
-              <input type="number"
-                 placeholder="Price"
-                 value={currentrow.price}
-                  onChange={(e) => setcurrentrow({...currentrow, price: Number(e.target.value) || ''})}
-                className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black outline-none bg-gray-50/50 transition"/>
+            <div>
+              <label className={labelCls}>DC Date</label>
+              <input type="date" value={formData.dc_date}
+                onChange={(e) => setFormdata({...formData, dc_date: e.target.value})} className={inputCls} />
             </div>
-            {/*  */}
+            <div>
+              <label className={labelCls}>Order No</label>
+              <input type="text" placeholder="Order number" value={formData.order_no}
+                onChange={(e) => setFormdata({...formData, order_no: e.target.value})} className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Order Date</label>
+              <input type="date" value={formData.order_date}
+                onChange={(e) => setFormdata({...formData, order_date: e.target.value})} className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Payment Terms</label>
+              <input type="text" placeholder="Payment terms" value={formData.payment_terms}
+                onChange={(e) => setFormdata({...formData, payment_terms: e.target.value})} className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Despatch Through</label>
+              <input type="text" placeholder="Dispatch through" value={formData.dispatch_through}
+                onChange={(e) => setFormdata({...formData, dispatch_through: e.target.value})} className={inputCls} />
+            </div>
+          </div>
+        </div>
+
+        {/* Step 3 — Description + Add Products */}
+        <div className="mb-4">
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Step 3 — Add Products</p>
+
+          {/* Description type */}
+          <div className="flex items-center gap-6 mb-4">
+            {[["service","Service"],["spare","Spares"],["purchase_item","Purchase Items"]].map(([val, lbl]) => (
+              <label key={val} className="flex items-center gap-2 text-[12px] font-bold text-gray-700 cursor-pointer">
+                <input type="radio" name="ordertype" checked={ordertype === val} onChange={() => typechange(val)} className="w-4 h-4 accent-black" /> {lbl}
+              </label>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-8 gap-3 items-end">
+            {/* Item Name */}
+            <div className="col-span-2 relative">
+              <label className={labelCls}>Item Name <span className="text-red-500">*</span></label>
+              <input type="text" placeholder="Search item…"
+                value={currentrow.item_name}
+                onFocus={() => setitemopen(true)}
+                onChange={(e) => { const v = e.target.value; setcurrentrow({...currentrow, item_name: v}); setitemsearch(v); }}
+                className={`${inputCls} bg-gray-50/60`} />
+              {itemopen && (
+                <div className={dropdownCls}>
+                  {Array.isArray(items) && items.length > 0 ? items.map((item, i) => (
+                    <div key={`${item.item_name}-${i}`}
+                      onClick={(e) => { e.stopPropagation(); setitemopen(false); selectitem(item); }}
+                      className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0">
+                      {item.item_name}
+                    </div>
+                  )) : (
+                    <div className="px-4 py-3 text-[13px] text-gray-400">No items found</div>
+                  )}
+                </div>
+              )}
+            </div>
+            {/* Qty */}
+            <div>
+              <label className={labelCls}>Qty <span className="text-red-500">*</span></label>
+              <input type="number" placeholder="0" value={currentrow.quantity}
+                onChange={(e) => setcurrentrow({...currentrow, quantity: e.target.value})}
+                className={`${inputCls} bg-gray-50/60`} />
+            </div>
+            {/* Price */}
+            <div>
+              <label className={labelCls}>Rate <span className="text-red-500">*</span></label>
+              <input type="number" placeholder="0.00" value={currentrow.price}
+                onChange={(e) => setcurrentrow({...currentrow, price: Number(e.target.value) || ''})}
+                className={`${inputCls} bg-gray-50/60`} />
+            </div>
+            {/* Amount */}
+            <div>
+              <label className={labelCls}>Amount</label>
+              <input type="text" placeholder="Auto"
+                value={currentrow.quantity && currentrow.price ? (Number(currentrow.quantity) * Number(currentrow.price)).toFixed(2) : ''}
+                readOnly className={roInputCls} />
+            </div>
+            {/* UOM */}
             <div className="relative">
-              <input type="number"
-                 placeholder="Discount"
-                 value={currentrow.discount}
-                 onChange={(e) => setcurrentrow({...currentrow, discount: Number(e.target.value) || ''})}
-                className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black outline-none bg-gray-50/50 transition"/>
-            </div>
-            {/*  */}
-            <div className="relative">
-              <input type="text"
-                 placeholder="Select"
-                 value={currentrow.uom}
-                 onFocus={() => setopenUom(true)}
-                className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black outline-none bg-gray-50/50 transition"/>
-              
+              <label className={labelCls}>UOM</label>
+              <input type="text" placeholder="Select" value={currentrow.uom}
+                onFocus={() => setopenUom(true)}
+                onChange={(e) => setcurrentrow({...currentrow, uom: e.target.value})}
+                className={`${inputCls} bg-gray-50/60`} />
               {openUom && (
-                <div className="absolute top-0 left-0 w-full mt-12 rounded-lg bg-white shadow-lg z-50 max-h-40 overflow-y-auto border border-gray-200">
+                <div className={dropdownCls}>
                   {['NOS', 'KG', 'MTR', 'NO'].map((uom) => (
-                    <div
-                      key={uom}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setcurrentrow(prev => ({ ...prev, uom: uom }));
-                        setopenUom(false);
-                      }}
-                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
-                    >
+                    <div key={uom}
+                      onClick={(e) => { e.stopPropagation(); setcurrentrow(prev => ({...prev, uom})); setopenUom(false); }}
+                      className="px-4 py-2 hover:bg-gray-50 cursor-pointer text-[13px] font-medium border-b border-gray-50 last:border-0">
                       {uom}
                     </div>
                   ))}
                 </div>
               )}
             </div>
-            {/*  */}
-            <div className="">
-              <input type="text"
-                 placeholder="HSN"
-                 value={currentrow.hsn_number}
-                 onChange={(e) => setcurrentrow({...currentrow,hsn_number:e.target.value})}
-                className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black outline-none bg-gray-50/50 transition"/>
+            {/* HSN */}
+            <div>
+              <label className={labelCls}>HSN</label>
+              <input type="text" placeholder="HSN code" value={currentrow.hsn_number}
+                onChange={(e) => setcurrentrow({...currentrow, hsn_number: e.target.value})}
+                className={`${inputCls} bg-gray-50/60`} />
             </div>
-
             {/* Buttons */}
-            <div className="flex gap-2 shrink-0">
-           <button 
-            onClick={addrows}
-            className="px-4 h-[37px] bg-black text-white text-[13px] font-semibold rounded-lg flex items-center justify-center"    >
-            Add
-           </button>
-           <button 
-           onClick={clearrows}
-           className="px-4 h-[37px] border  text-black text-[13px] font-semibold rounded-lg flex items-center justify-center"    >
-           Clear
-         </button>
-         </div>
+            <div className="flex gap-2">
+              <button onClick={addrows} className="flex-1 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-[13px] font-bold transition-colors">Add</button>
+              <button onClick={clearrows} className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-[13px] font-bold transition-colors">Clear</button>
+            </div>
+          </div>
         </div>
 
-        {/* Table */}
-          <div className="mt-6 flex gap-2 items-start">
-          <div className="flex-grow border border-gray-200 rounded-lg overflow-hidden shadow-sm bg-white min-h-[200px]">
+        {/* Items Table */}
+        <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm mt-3 min-h-[220px]">
           <table className="w-full border-collapse">
             <thead>
-             <tr className="bg-gray-50 border-b border-gray-200 text-left">
-             <th className="p-3 text-[11px] font-black text-gray-500 border-r border-gray-100 w-16 uppercase">S.No</th>
-             <th className="p-3 text-[11px] font-black text-gray-500 border-r border-gray-100 uppercase">Item Name</th>
-             <th className="p-3 text-[11px] font-black text-gray-500 border-r border-gray-100 w-28 uppercase text-center">Quantity</th>
-             <th className="p-3 text-[11px] font-black text-gray-500 border-r border-gray-100 w-28 uppercase text-center">Price</th>
-             <th className="p-3 text-[11px] font-black text-gray-500 border-r border-gray-100 w-32 uppercase text-center">Amount</th>
-            <th className="p-3 text-[11px] font-black text-gray-500 border-r border-gray-100 w-24 uppercase text-center">UOM</th>
-            <th className="p-3 text-[11px] font-black text-gray-500 w-28 uppercase text-center">HSN No</th>
-             <th className="p-3 text-[11px] font-black text-gray-500 w-28 uppercase text-center">Actions</th>
-           </tr>
+              <tr className="bg-gray-50 border-b border-gray-200">
+                {["#", "Item Name", "Quantity", "Price", "Amount", "UOM", "HSN No", "Actions"].map((h, i) => (
+                  <th key={i} className={`px-4 py-3 text-[11px] font-black text-gray-400 uppercase tracking-wide ${i === 0 ? "w-10 text-center" : i === 1 ? "text-left" : "text-center"}`}>{h}</th>
+                ))}
+              </tr>
             </thead>
-
             <tbody>
-
-              {tabledata.length > 0 ? (
-                tabledata.map((item, index) => (
-              <tr key={`${item.item_name}-${index}`} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                <td className="p-3 text-[12px] font-bold text-gray-600 border-r border-gray-50 text-center">{index + 1}</td>
-                <td className="p-3 text-[12px] font-bold text-black border-r border-gray-50">{item.item_name} </td>
-                <td className="p-3 text-[12px] font-bold text-gray-700 border-r border-gray-50 text-center">{item.quantity}</td>
-                <td className="p-3 text-[12px] font-bold text-gray-700 border-r border-gray-50 text-center">{item.price}</td>
-                <td className="p-3 text-[12px] font-bold text-gray-700 border-r border-gray-50 text-center">{item.amount}</td>
-                <td className="p-3 text-[12px] font-bold text-gray-700 border-r border-gray-50 text-center">{item.uom}</td>
-                <td className="p-3 text-[12px] font-bold text-gray-700 text-center">{item.hsn_number}</td>
-                <td className="p-3 text-[12px]">
-                  <div className='flex gap-4'>
-                    <SquarePen onClick={() => edititem(index)} className="text-blue-600 hover:text-blue-800 font-medium mx-auto" size={18} />
-                    <Trash2 onClick={() => deleteitem(index)} className="text-red-600 hover:text-red-800 font-medium mx-auto" size={18} />
-                  </div>
-                </td>
-              </tr>
-                ))
-                
-              ) : (
-                <tr>
-                  <td colSpan="8" className="p-8 text-center text-gray-400">
-                    No Items Added
+              {tabledata.length > 0 ? tabledata.map((item, index) => (
+                <tr key={`${item.item_name}-${index}`} className="border-b border-gray-100 hover:bg-gray-50/70 transition-colors">
+                  <td className="px-4 py-3 text-[12px] font-semibold text-gray-400 text-center">{index + 1}</td>
+                  <td className="px-4 py-3 text-[13px] font-semibold text-gray-800 uppercase">{item.item_name}</td>
+                  <td className="px-4 py-3 text-[13px] font-semibold text-gray-800 text-center">{item.quantity}</td>
+                  <td className="px-4 py-3 text-[13px] font-medium text-gray-700 text-center">₹{item.price}</td>
+                  <td className="px-4 py-3 text-[13px] font-bold text-gray-900 text-center">₹{Number(item.amount).toFixed(2)}</td>
+                  <td className="px-4 py-3 text-[13px] text-gray-600 text-center uppercase">{item.uom}</td>
+                  <td className="px-4 py-3 text-[13px] text-gray-600 text-center">{item.hsn_number || "—"}</td>
+                  <td className="px-4 py-3 text-center">
+                    <div className="flex justify-center gap-3">
+                      <button onClick={() => edititem(index)} title="Edit"><SquarePen size={16} className="text-blue-500 hover:text-blue-700 transition-colors" /></button>
+                      <button onClick={() => deleteitem(index)} title="Delete"><Trash2 size={16} className="text-red-400 hover:text-red-600 transition-colors" /></button>
+                    </div>
                   </td>
-              </tr>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan="8" className="py-14 text-center">
+                    <div className="text-gray-300 text-4xl mb-3">🧾</div>
+                    <p className="text-[13px] text-gray-400 font-medium">No products added yet.</p>
+                    <p className="text-[12px] text-gray-300 mt-1">Select customer → products to begin.</p>
+                  </td>
+                </tr>
               )}
             </tbody>
-            </table>
-            
-         </div>
-
+          </table>
         </div>
-        {/* Grand Totals */}
-    <div className="space-y-3 mt-10 grid grid-cols-2">
 
-       {/* select and modify */}
-    <div className="mt-[120px] p-5 bg-gray-100 border-2 h-[70px] border-dashed border-gray-300 rounded-lg flex flex-col md:flex-row items-center gap-6">
-        <label className="text-[11px] font-black text-gray-600 uppercase tracking-[0.2em] italic">
-            Select Invoice No To View / Modify Details :
-        </label>
+        {/* Bottom: Load Invoice + Grand Total */}
+        <div className="grid grid-cols-2 gap-10 mt-8">
 
-       <div className="relative">
-          <input type="text"
-           value={loadInvoice}
-           onFocus={() => {setLoadInvoiceOpen(true); 
-            searchINV(loadInvoice);
-            }}
-            onChange={(e) => {
-              const value = e.target.value;
-              setLoadInvoice(value);
-              searchINV(value);
-            }}
-           className="w-full p-2.5 border rounded-lg outline-0"/>
-        
-        {/* Dropdown */}
-
-        {loadInvoiceOpen && (
-          <div className="absolute top-0 left-0 w-full mt-12 rounded-lg bg-white shadow-lg z-50 max-h-40 overflow-y-auto border border-gray-200">
-            {Array.isArray(invoiceList) && invoiceList.length > 0 ? (
-              invoiceList.map((inv) => (
-                <div
-                  key={inv.id}
-                 onClick={(e) => {
-                 e.stopPropagation();
-                 setLoadInvoice(inv.invoice_no);
-                 setLoadInvoiceOpen(false);
-                  LoadInvoice(inv.invoice_no); 
-                  }}
-                  className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
-                >
-                  {inv.invoice_no}
+          {/* Left: Load Invoice */}
+          <div className="pt-6 border-t border-gray-100">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Load / Edit Existing Invoice</p>
+            <div className="relative w-64">
+              <label className={labelCls}>Invoice No</label>
+              <input type="text" value={loadInvoice}
+                onFocus={() => { setLoadInvoiceOpen(true); searchINV(loadInvoice); }}
+                onChange={(e) => { const v = e.target.value; setLoadInvoice(v); searchINV(v); }}
+                className={`${inputCls} w-64`} placeholder="DI/INV-001" />
+              {loadInvoiceOpen && (
+                <div className={`${dropdownCls} w-64`}>
+                  {Array.isArray(invoiceList) && invoiceList.length > 0 ? invoiceList.map((inv) => (
+                    <div key={inv.id}
+                      onClick={(e) => { e.stopPropagation(); setLoadInvoice(inv.invoice_no); setLoadInvoiceOpen(false); LoadInvoice(inv.invoice_no); }}
+                      className="px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0">
+                      {inv.invoice_no}
+                    </div>
+                  )) : (
+                    <div className="px-4 py-3 text-[13px] text-gray-400">No invoices found</div>
+                  )}
                 </div>
-              ))
-            ) : (
-              <div className="px-3 py-2 text-gray-400 text-sm">No invoices found</div>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-
-    <div className="flex justify-end">
-      <div className="w-full max-w-sm bg-gray-50/50 p-6 rounded-xl border border-gray-200 shadow-sm">
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <label className="text-[12px] font-black text-gray-500 uppercase">Subtotal :</label>
-            <input type="text" value={subtotal.toFixed(2)} readOnly className="w-32 p-1.5  border-b mt-[-10px] border-gray-300 bg-transparent text-right font-black text-black outline-none focus:border-black" />
-          </div>
-
-           <div className="flex justify-between items-center">
-    <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">
-      DIS (-)
-    </label>
-    <input 
-      type="text"
-      value={formData.discount}
-      onChange={(e) => setFormdata({...formData, discount: e.target.value})}
-      className="w-32 p-1.5 border-b mt-[-10px] border-gray-300 bg-transparent text-right font-black text-black outline-none focus:border-black"      />
-  </div>
-
-          <div className="flex justify-between items-center">
-            <label className="text-[12px] font-black text-gray-500 uppercase">CGST (9%) :</label>
-            <div className="flex gap-2">
-              <input type="text"  
-               value={cgstpercentage}
-              onChange={(e) => setCgstpercentage(e.target.value)}
-               className="w-10 p-1 border border-gray-300 rounded text-center text-[11px] font-bold outline-none" />
-              <input type="text" value={cgst.toFixed(2) || 0}  readOnly className="w-24 p-1.5 border-b border-gray-300 bg-transparent text-right font-black text-black outline-none" />
+              )}
             </div>
           </div>
 
-          <div className="flex justify-between items-center">
-            <label className="text-[12px] font-black text-gray-500 uppercase">SGST (9%) :</label>
-            <div className="flex gap-2">
-              <input type="text" 
-               value={sgstpercentage}
-               onChange={(e) => setSgstpercentage(e.target.value)} 
-               className="w-10 p-1 border border-gray-300 rounded text-center text-[11px] font-bold outline-none" />
-              <input type="text" value={sgst.toFixed(2) || 0}  readOnly className="w-24 p-1.5 border-b border-gray-300 bg-transparent text-right font-black text-black outline-none" />
+          {/* Right: Grand Total */}
+          <div className="pt-6 border-t border-gray-100">
+            <div className="bg-gray-50/50 rounded-xl border border-gray-200 p-6 space-y-3 max-w-sm ml-auto">
+              <div className="flex justify-between items-center">
+                <span className="text-[12px] font-black text-gray-500 uppercase">Subtotal</span>
+                <span className="text-[13px] font-bold text-gray-900">₹{subtotal.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[12px] font-black text-gray-500 uppercase">Discount (−)</span>
+                <input type="number" min="0" value={formData.discount}
+                  onChange={(e) => setFormdata({...formData, discount: e.target.value})}
+                  className="w-28 p-1.5 border-b border-gray-300 bg-transparent text-right font-bold text-black outline-none focus:border-black text-[13px]" />
+              </div>
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <span className="text-[12px] font-black text-gray-500 uppercase">CGST</span>
+                  <input type="number" value={cgstpercentage} onChange={(e) => setCgstpercentage(e.target.value)}
+                    className="w-10 p-1 border border-gray-200 rounded text-center text-[11px] font-bold outline-none" />
+                  <span className="text-[11px] text-gray-400">%</span>
+                </div>
+                <span className="text-[13px] font-bold text-gray-700">₹{cgst.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <span className="text-[12px] font-black text-gray-500 uppercase">SGST</span>
+                  <input type="number" value={sgstpercentage} onChange={(e) => setSgstpercentage(e.target.value)}
+                    className="w-10 p-1 border border-gray-200 rounded text-center text-[11px] font-bold outline-none" />
+                  <span className="text-[11px] text-gray-400">%</span>
+                </div>
+                <span className="text-[13px] font-bold text-gray-700">₹{sgst.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[12px] font-black text-gray-500 uppercase">IGST</span>
+                <span className="text-[13px] font-bold text-gray-700">₹{igst.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[12px] font-black text-gray-500 uppercase">Transport (+)</span>
+                <input type="number" min="0" value={formData.transport || 0}
+                  onChange={(e) => setFormdata({...formData, transport: e.target.value})}
+                  className="w-28 p-1.5 border-b border-gray-300 bg-transparent text-right font-bold text-black outline-none focus:border-black text-[13px]" />
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[12px] font-black text-gray-500 uppercase">Round Off</span>
+                <span className="text-[13px] font-bold text-gray-700">{round_off.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center pt-4 border-t-2 border-gray-300 mt-2">
+                <span className="text-[15px] font-black text-black uppercase">Grand Total</span>
+                <span className="text-[24px] font-black text-indigo-700">₹{grandtotal || 0}</span>
+              </div>
             </div>
-          </div>
-
-          <div className="flex justify-between items-center">
-            <label className="text-[12px] font-black text-gray-500 uppercase">IGST :</label>
-            <input type="text" value={igst.toFixed(2) || 0} readOnly className="w-32 p-1.5 border-b border-gray-300 bg-transparent text-right font-black text-black outline-none" />
-          </div>
-
-            <div className="flex justify-between items-center">
-              <label className="text-[12px] font-black text-gray-500 uppercase">Transport :</label>
-              <input type="text"
-              value={formData.transport || 0}
-               onChange={(e) => setFormdata({...formData, transport: e.target.value})}
-              className="w-32 p-1.5 border-b border-gray-300 bg-transparent text-right font-black text-black outline-none" />
-            </div>
-
-          <div className="flex justify-between items-center">
-            <label className="text-[12px] font-black text-gray-500 uppercase">Round Off :</label>
-            <input type="text" value={round_off.toFixed(2) || 0}  readOnly className="w-32 p-1.5 border-b border-gray-300 bg-transparent text-right font-black text-black outline-none" />
-          </div>
-
-          <div className="flex justify-between items-center pt-4 mt-2 border-t-2 border-gray-300">
-            <label className="text-[14px] font-black text-black uppercase tracking-tighter">Grand Total :</label>
-            <span className="text-[22px] font-black text-[#311B92] italic tracking-tighter">{grandtotal || 0}</span>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
-
 
       </div>
     </div>

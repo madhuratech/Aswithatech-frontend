@@ -323,8 +323,16 @@ useEffect(  () => {
   // Save Purchase Entry 
 
   const Savetaxentry = async () => {
-    if(tabledata.length === 0){
-      alert("Please add at least one item to the table.")
+    if (!formData.supplier_name?.trim()) {
+      toast.error("Supplier Name is required");
+      return;
+    }
+    if (!formData.bill_date) {
+      toast.error("Bill Date is required");
+      return;
+    }
+    if (tabledata.length === 0) {
+      toast.error("Please add at least one item");
       return;
     }
     const purchaseData = {

@@ -202,8 +202,16 @@ const resetall = async () =>{
 // Save and Edit
 
 const SaveQuotation = async () =>{
-  if(tableItems.length === 0){
-    alert("Please Add Items");
+  if (!formdata.customer_name?.trim()) {
+    toast.error("Customer Name is required");
+    return;
+  }
+  if (!formdata.quotation_date) {
+    toast.error("Quotation Date is required");
+    return;
+  }
+  if (tableItems.length === 0) {
+    toast.error("Please add at least one item");
     return;
   }
 
@@ -437,530 +445,334 @@ const deleteitem = (index) => {
     errorToast(error.message || "Failed to delete quotation");
   }
 };
+  const labelCls = "block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5";
+  const inputCls = "w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black focus:outline-none focus:border-blue-400 bg-white shadow-sm";
+  const roInputCls = "w-full p-2.5 border border-blue-100 rounded-lg text-[13px] font-semibold text-blue-800 bg-blue-50 cursor-not-allowed focus:outline-none";
+  const dropdownCls = "absolute top-full left-0 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 max-h-52 overflow-y-auto";
+
   return (
-    <div className="min-h-screen bg-gray-50 p-6 font-sans">
+    <div className="min-h-screen bg-gray-50/70 p-6 font-sans">
 
-         <div>
-            <button onClick={() => navigate(-1)}
-            className="flex items-center gap-2 px-4 py-2 border rounded-xl bg-white hover:bg-gray-50 text-[15px] font-medium w-fit"
-             >
-                Go Back
-            </button>
-         </div>
-   
+      <button onClick={() => navigate(-1)}
+        className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl bg-white hover:bg-gray-50 text-[14px] font-semibold w-fit mb-6 shadow-sm">
+        ← Go Back
+      </button>
 
-      <div className="max-w-[1500px] mx-auto bg-white p-8 mt-8 shadow-sm border border-gray-200">
-        
-        {/* SECTION 1: Heading & Buttons */}
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-xl font-bold text-black tracking-tight">Quotation</h2>
-          <div className="flex gap-1.5">
-             <button onClick={resetall} className='border px-3 py-1.5 rounded-lg hover:bg-green-600 hover:text-white'>NEW</button>
-              <button onClick={SaveQuotation} className='border px-3 py-1.5 rounded-lg hover:bg-green-600 hover:text-white'>SAVE</button>
-              <button className='border px-3 py-1.5 rounded-lg hover:bg-green-600 hover:text-white'>EDIT</button>
-              <button onClick={deleteQuotation} className='border px-3 py-1.5 rounded-lg hover:bg-red-600 hover:text-white'>DELETE</button>
+      <div className="max-w-[1400px] mx-auto bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+
+        {/* Title + Buttons */}
+        <div className="flex justify-between items-start mb-8">
+          <div>
+            <h2 className="text-xl font-black text-gray-900 tracking-tight">Quotation</h2>
+            <p className="text-[12px] text-gray-400 mt-1">Customer → Products → Save</p>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={resetall} className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-gray-800 hover:text-white transition-colors">NEW</button>
+            <button onClick={SaveQuotation} className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-green-600 hover:text-white transition-colors">SAVE</button>
+            <button onClick={deleteQuotation} className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-red-600 hover:text-white transition-colors">DELETE</button>
           </div>
         </div>
 
-        {/* SECTION 2: Corrected Order & Alignment */}
-        {/* SECTION 2 & 3: Vertical Label & Input Layout */}
-<div className="flex flex-row items-end gap-20 border-b border-gray-100 pb-8 mb-6">
-  
-  {/* 1. Name Dropdown Section */}
-  <div className="flex gap-2 w-full w-full max-w-md">
-     <div className='flex flex-col gap-2 flex-1 relative'>
-     <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">
-      Name 
-    </label>
-     <input type="text" 
-      value={formdata.customer_name}
-      onFocus={() => setclientopen(true)}
-      onChange={(e) => {
-        const value = e.target.value;
-        setformdata({...formdata,customer_name:value});
-        setsearch(value);
-      }}
-      placeholder='Enter Customer'
-      className="w-full max-w-[400px] p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black focus:outline-none bg-white cursor-pointer shadow-sm" />
-    
-    {/* Dropdown */}
-    {clientopen && (
-        <div className='absolute top-[65px] left-0 bg-white shadow-lg z-50 w-[385px] border border-gray-200 rounded-[2px] overflow-y-auto'>
-            {clients.length > 0 ? (
-                clients.map((client) => (
+        {/* Step 1 — Header */}
+        <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-5 border border-gray-100 mb-5">
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Step 1 — Quotation Header</p>
+          <div className="grid grid-cols-4 gap-5">
+            {/* Customer */}
+            <div className="relative col-span-2">
+              <label className={labelCls}>Customer / Company <span className="text-red-500">*</span></label>
+              <input type="text"
+                value={formdata.customer_name}
+                onFocus={() => setclientopen(true)}
+                onChange={(e) => { const v = e.target.value; setformdata({...formdata, customer_name: v}); setsearch(v); }}
+                placeholder="Type to search customers…"
+                className={inputCls} />
+              {clientopen && (
+                <div className={dropdownCls}>
+                  {clients.length > 0 ? clients.map((client) => (
                     <div key={client.id}
-                    onClick={() => {
-                        setformdata({...formdata, customer_name: client.customer_name});
-                        setclientopen(false);
-                    }}
-                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-100 last:border-0">
-                        {client.customer_name}
+                      onClick={() => { setformdata({...formdata, customer_name: client.customer_name}); setclientopen(false); }}
+                      className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0">
+                      {client.customer_name}
                     </div>
-                ))
-            ):(
-                <p>No clients found</p>
-            )}
-        </div>
-    )}
-    </div>
-
-      {/* Small Menu Button */}
-      <button className="flex flex-col ml-2 mt-[25px] gap-[3px] p-2.5 border border-gray-200 rounded-lg hover:bg-gray-100 transition items-center justify-center h-10 w-11 shrink-0 bg-white">
-        <div className="w-5 h-[2px] bg-gray-600"></div>
-        <div className="w-5 h-[2px] bg-gray-600"></div>
-      </button>
-  </div>
-
-  {/* 2. QTNO Section */}
-  <div className="flex flex-col gap-2">
-    <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">
-      QTNO
-    </label>
-    <input 
-      type="text" 
-       value={quotationNo} 
-       onChange={(e) => setQuotationNo(e.target.value)}     
-       className="w-48 p-2.5 border border-gray-200 rounded-lg text-[13px] font-bold text-gray-500 bg-gray-50 outline-none"
-    />
-  </div>
-
-  {/* 3. Date Section */}
-  <div className="flex flex-col gap-2 ">
-    <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight text-right sm:text-left">
-      Date
-    </label>
-    <input 
-      type="date" 
-      value={formdata.quotation_date || ""}
-      onChange={(e) => setformdata({...formdata,quotation_date:e.target.value})}
-      className="p-2.5 border border-gray-200 rounded-lg text-[13px] font-bold text-black outline-none focus:border-black bg-white w-48 shadow-sm"
-    />
-  </div>
-
-</div>       
-
-       {/* SECTION 4: Description & Quick Input Section */}
-<div className="flex flex-row items-end gap-6 border-b border-gray-100 pb-8 mb-6">
-  
-  {/* 1. Description & Radio Buttons Group */}
-  <div className="flex flex-col gap-2 shrink-0">
-    <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">
-      Description
-    </label>
-    <div className="flex items-center gap-4 h-[42px]">
-      <label className="flex items-center gap-2 text-[11px] font-bold text-gray-700 cursor-pointer">
-        <input type="radio" name="ordertype" checked={ordertype === "service"} onChange={() => typechange("service")} className="w-4 h-4 accent-black" /> Service
-      </label>
-      <label className="flex items-center gap-2 text-[11px] font-bold text-gray-700 cursor-pointer">
-        <input type="radio" name="ordertype" checked={ordertype === "spare"} onChange={() => typechange("spare")} className="w-4 h-4 accent-black" /> Spares
-      </label>
-      <label className="flex items-center gap-2 text-[11px] font-bold text-gray-700 cursor-pointer">
-        <input type="radio" name="ordertype" checked={ordertype === "purchase_item"} onChange={() => typechange("purchase_item")} className="w-4 h-4 accent-black" /> Purchase Items
-      </label>
-    </div>
-  </div>
-
-  {/* 2. Menu Button (Vertical alignment maintain panna kela push pannirukkaen) */}
-  <div className="flex flex-col gap-2">
-    <label className="text-[12px] font-bold text-transparent select-none uppercase">.</label> {/* Empty label for alignment */}
-    <button className="flex flex-col gap-[3px] p-2.5 border border-gray-200 rounded-lg hover:bg-gray-100 transition items-center justify-center h-[42px] w-11 shrink-0 bg-white">
-      <div className="w-5 h-[2px] bg-gray-600"></div>
-      <div className="w-5 h-[2px] bg-gray-600"></div>
-    </button>
-  </div>
-
-  
-</div>
-        {/* SECTION 5: Item Input with Dropdown */}
-        {/* MODERN INPUT ROW: 1st image fields in 2nd image structure */}
-<div className="grid grid-cols-8 gap-3 mt-6 mb-4 bg-white">
-  
-  {/* 1. Item Name Dropdown (Flex-grow to take space) */}
-  <div className="flex flex-col col-span-2 relative">
-     <input type="text" placeholder='Item Name'
-     value={currentrow.item_name}
-      onFocus={() => setitemopen(true)}
-      onChange={(e) => {
-        const value = e.target.value;
-        setcurrentrow({...currentrow,item_name:value});
-          setitemsearch(value)
-        }} 
-      className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black  outline-none bg-gray-50/50 transition"/>
-  
-   {/* Item Open */}
-
-   {itemopen && (
-    <div className="absolute top-0 left-0 w-full mt-12 rounded-lg bg-white shadow-lg z-50 max-h-40 overflow-y-auto border border-gray-200">
-            {Array.isArray(items) && items.length > 0 ? (
-             items.map((item, index) =>(
-            <div key={`${item.item_name}-${index}`}
-             onClick={(e) => {e.stopPropagation(); 
-              selectitem(item)
-             }}
-            className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm">
-               {item.item_name}
+                  )) : (
+                    <div className="px-4 py-3 text-[13px] text-gray-400">No clients found</div>
+                  )}
+                </div>
+              )}
             </div>
-            ))
-          ) : (
-       <div className="px-3 py-2 text-gray-400 text-sm">No items found</div>
-         )}
-    </div>
-   )}
-  
-  </div>
+            {/* QT No */}
+            <div>
+              <label className={labelCls}>Quotation No (Auto)</label>
+              <input type="text" value={quotationNo} readOnly className={roInputCls} />
+            </div>
+            {/* Date */}
+            <div>
+              <label className={labelCls}>Date</label>
+              <input type="date" value={formdata.quotation_date || ""}
+                onChange={(e) => setformdata({...formdata, quotation_date: e.target.value})}
+                className={inputCls} />
+            </div>
+          </div>
+        </div>
 
-  {/* 2. Map other inputs (QTY, PRICE, etc.) in a row structure */}
-  <div>
-    <input type="number" 
-    value={currentrow.quantity || ""}
-    onChange={(e) => setcurrentrow({...currentrow, quantity:e.target.value})}
-    placeholder='Quantity'
-    className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black  outline-none bg-gray-50/50 transition"/>
-  </div>
+        {/* Step 2 — Description Type */}
+        <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-5 border border-gray-100 mb-5">
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Step 2 — Description Type</p>
+          <div className="flex items-center gap-6">
+            {[["service","Service"],["spare","Spares"],["purchase_item","Purchase Items"]].map(([val, label]) => (
+              <label key={val} className="flex items-center gap-2 text-[12px] font-bold text-gray-700 cursor-pointer">
+                <input type="radio" name="ordertype" checked={ordertype === val} onChange={() => typechange(val)} className="w-4 h-4 accent-black" /> {label}
+              </label>
+            ))}
+          </div>
+        </div>
 
-  {/* Price */}
+        {/* Step 3 — Add Products */}
+        <div className="mb-4">
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Step 3 — Add Products</p>
+          <div className="grid grid-cols-8 gap-3 items-end">
+            {/* Item Name */}
+            <div className="col-span-2 relative">
+              <label className={labelCls}>Item Name <span className="text-red-500">*</span></label>
+              <input type="text" placeholder="Search item…"
+                value={currentrow.item_name}
+                onFocus={() => setitemopen(true)}
+                onChange={(e) => { const v = e.target.value; setcurrentrow({...currentrow, item_name: v}); setitemsearch(v); }}
+                className={`${inputCls} bg-gray-50/60`} />
+              {itemopen && (
+                <div className={dropdownCls}>
+                  {Array.isArray(items) && items.length > 0 ? items.map((item, i) => (
+                    <div key={`${item.item_name}-${i}`}
+                      onClick={(e) => { e.stopPropagation(); selectitem(item); }}
+                      className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0">
+                      {item.item_name}
+                    </div>
+                  )) : (
+                    <div className="px-4 py-3 text-[13px] text-gray-400">No items found</div>
+                  )}
+                </div>
+              )}
+            </div>
+            {/* Qty */}
+            <div>
+              <label className={labelCls}>Qty <span className="text-red-500">*</span></label>
+              <input type="number" placeholder="0"
+                value={currentrow.quantity || ""}
+                onChange={(e) => setcurrentrow({...currentrow, quantity: e.target.value})}
+                className={`${inputCls} bg-gray-50/60`} />
+            </div>
+            {/* Price */}
+            <div>
+              <label className={labelCls}>Rate <span className="text-red-500">*</span></label>
+              <input type="number" placeholder="0.00"
+                value={currentrow.price || ""}
+                onChange={(e) => setcurrentrow({...currentrow, price: parseFloat(e.target.value) || ''})}
+                className={`${inputCls} bg-gray-50/60`} />
+            </div>
+            {/* Amount */}
+            <div>
+              <label className={labelCls}>Amount</label>
+              <input type="text" placeholder="Auto"
+                value={currentrow.quantity && currentrow.price ? (currentrow.quantity * currentrow.price).toFixed(2) : ''}
+                readOnly className={roInputCls} />
+            </div>
+            {/* HSN */}
+            <div>
+              <label className={labelCls}>HSN</label>
+              <input type="text" placeholder="HSN code"
+                value={currentrow.part_no || ""}
+                onChange={(e) => setcurrentrow({...currentrow, part_no: e.target.value})}
+                className={`${inputCls} bg-gray-50/60`} />
+            </div>
+            {/* UOM */}
+            <div className="relative">
+              <label className={labelCls}>UOM</label>
+              <input type="text" placeholder="UOM"
+                onFocus={() => setopenUom(true)}
+                value={currentrow.uom || ""}
+                onChange={(e) => setcurrentrow({...currentrow, uom: e.target.value})}
+                className={`${inputCls} bg-gray-50/60`} />
+              {openUom && (
+                <div className={dropdownCls}>
+                  {['NOS', 'KG', 'MTR', 'NO'].map((uom) => (
+                    <div key={uom}
+                      onClick={(e) => { e.stopPropagation(); setcurrentrow(prev => ({...prev, uom})); setopenUom(false); }}
+                      className="px-4 py-2 hover:bg-gray-50 cursor-pointer text-[13px] font-medium border-b border-gray-50 last:border-0">
+                      {uom}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            {/* Buttons */}
+            <div className="flex gap-2">
+              <button onClick={additem} className="flex-1 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-[13px] font-bold transition-colors">Add</button>
+              <button onClick={clearrow} className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-[13px] font-bold transition-colors">Clear</button>
+            </div>
+          </div>
+        </div>
 
-  <div>
-    <input type="number" placeholder='Price' 
-    value={currentrow.price || ""}
-    onChange={(e) => setcurrentrow({...currentrow, price: parseFloat(e.target.value) || ''})}
-    className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black 
-     outline-none bg-gray-50/50 transition"/>
+        {/* Items Table */}
+        <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm mt-3 min-h-[220px]">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200">
+                {["#", "Item Name", "Quantity", "Price", "Amount", "UOM", "Part No", "Actions"].map((h, i) => (
+                  <th key={i} className={`px-4 py-3 text-[11px] font-black text-gray-400 uppercase tracking-wide ${i === 0 ? "w-10 text-center" : i === 1 ? "text-left" : "text-center"}`}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {tableItems.length > 0 ? tableItems.map((item, index) => (
+                <tr key={`${item.item_name}-${index}`} className="border-b border-gray-100 hover:bg-gray-50/70 transition-colors">
+                  <td className="px-4 py-3 text-[12px] font-semibold text-gray-400 text-center">{index + 1}</td>
+                  <td className="px-4 py-3 text-[13px] font-semibold text-gray-800 uppercase">{item.item_name}</td>
+                  <td className="px-4 py-3 text-[13px] font-semibold text-gray-800 text-center">{item.quantity}</td>
+                  <td className="px-4 py-3 text-[13px] font-medium text-gray-700 text-center">₹{item.price}</td>
+                  <td className="px-4 py-3 text-[13px] font-bold text-gray-900 text-center">₹{Number(item.amount).toFixed(2)}</td>
+                  <td className="px-4 py-3 text-[13px] text-gray-600 text-center uppercase">{item.uom}</td>
+                  <td className="px-4 py-3 text-[13px] text-gray-600 text-center">{item.part_no || "—"}</td>
+                  <td className="px-4 py-3 text-center">
+                    <div className="flex justify-center gap-3">
+                      <button onClick={() => edititem(index)} title="Edit"><SquarePen size={16} className="text-blue-500 hover:text-blue-700 transition-colors" /></button>
+                      <button onClick={() => deleteitem(index)} title="Delete"><Trash2 size={16} className="text-red-400 hover:text-red-600 transition-colors" /></button>
+                    </div>
+                  </td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan="8" className="py-14 text-center">
+                    <div className="text-gray-300 text-4xl mb-3">📋</div>
+                    <p className="text-[13px] text-gray-400 font-medium">No products added yet.</p>
+                    <p className="text-[12px] text-gray-300 mt-1">Select customer → products to begin.</p>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
 
-  </div>
-{/* Total */}
+        {/* Bottom: Load Quotation + Grand Total */}
+        <div className="grid grid-cols-2 gap-10 mt-8">
 
-  <div>
-     <input type="number" placeholder='Total'
-     value={currentrow.quantity && currentrow.price ? (currentrow.quantity * currentrow.price).toFixed(2) : ''}
-     className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black 
-     outline-none bg-gray-50/50 transition" />
-  </div>
+          {/* Left: Load + Reference */}
+          <div className="pt-6 border-t border-gray-100 space-y-4">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Load / Edit Existing Quotation</p>
+            <div className="relative w-64">
+              <label className={labelCls}>Quotation No</label>
+              <input type="text" value={loadquotation}
+                onFocus={() => { setloadqtopen(true); searchQt(loadquotation || ""); }}
+                onChange={(e) => { const v = e.target.value; setloadquotation(v); searchQt(v); }}
+                className={`${inputCls} w-64`} />
+              {loadqtopen && (
+                <div className={`${dropdownCls} w-64`}>
+                  {Array.isArray(qtlist) && qtlist.length > 0 ? qtlist.map((qt, i) => (
+                    <div key={qt.quotation_no || i}
+                      onClick={() => { setloadquotation(qt.quotation_no); loadQuotation(qt.quotation_no); setloadqtopen(false); }}
+                      className="px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0">
+                      {qt.quotation_no}
+                    </div>
+                  )) : (
+                    <div className="px-4 py-3 text-[13px] text-gray-400">No Quotations found</div>
+                  )}
+                </div>
+              )}
+            </div>
+            <div>
+              <label className={labelCls}>Reference</label>
+              <input type="text" placeholder="Enter reference number…"
+                value={formdata.reference}
+                onChange={(e) => setformdata({...formdata, reference: e.target.value})}
+                className={inputCls} />
+            </div>
+          </div>
 
-  {/* HSN */}
+          {/* Right: Grand Total */}
+          <div className="pt-6 border-t border-gray-100">
+            <div className="bg-gray-50/50 rounded-xl border border-gray-200 p-6 space-y-3 max-w-sm ml-auto">
+              <div className="flex justify-between items-center">
+                <span className="text-[12px] font-black text-gray-500 uppercase">Subtotal</span>
+                <span className="text-[13px] font-bold text-gray-900">₹{subtotal.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[12px] font-black text-gray-500 uppercase">Discount (−)</span>
+                <input type="number" min="0" value={formdata.discount}
+                  onChange={(e) => setformdata({...formdata, discount: e.target.value})}
+                  className="w-28 p-1.5 border-b border-gray-300 bg-transparent text-right font-bold text-black outline-none focus:border-black text-[13px]" />
+              </div>
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <span className="text-[12px] font-black text-gray-500 uppercase">CGST</span>
+                  <input type="number" value={cgstpercentage} onChange={(e) => setCgstpercentage(e.target.value)}
+                    className="w-10 p-1 border border-gray-200 rounded text-center text-[11px] font-bold outline-none" />
+                  <span className="text-[11px] text-gray-400">%</span>
+                </div>
+                <span className="text-[13px] font-bold text-gray-700">₹{cgst.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <span className="text-[12px] font-black text-gray-500 uppercase">SGST</span>
+                  <input type="number" value={sgstpercentage} onChange={(e) => setSgstpercentage(e.target.value)}
+                    className="w-10 p-1 border border-gray-200 rounded text-center text-[11px] font-bold outline-none" />
+                  <span className="text-[11px] text-gray-400">%</span>
+                </div>
+                <span className="text-[13px] font-bold text-gray-700">₹{sgst.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[12px] font-black text-gray-500 uppercase">IGST</span>
+                <span className="text-[13px] font-bold text-gray-700">₹0.00</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[12px] font-black text-gray-500 uppercase">Transport (+)</span>
+                <input type="number" min="0" value={formdata.transport}
+                  onChange={(e) => setformdata({...formdata, transport: e.target.value})}
+                  className="w-28 p-1.5 border-b border-gray-300 bg-transparent text-right font-bold text-black outline-none focus:border-black text-[13px]" />
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[12px] font-black text-gray-500 uppercase">Round Off</span>
+                <span className="text-[13px] font-bold text-gray-700">{roundOff.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center pt-4 border-t-2 border-gray-300 mt-2">
+                <span className="text-[15px] font-black text-black uppercase">Grand Total</span>
+                <span className="text-[24px] font-black text-indigo-700">₹{grandtotal || 0}</span>
+              </div>
+            </div>
+          </div>
+        </div>
 
-   <div>
-    <input type="text" placeholder='HSN'
-    value={currentrow.part_no || ""}
-    onChange={(e) => setcurrentrow({...currentrow, part_no: e.target.value})}
-    className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black 
-     outline-none bg-gray-50/50 transition"/>
-   </div>
-
- <div className='relative'>
-        <input type="text" placeholder='Uom' 
-         onFocus={() => setopenUom(true)}
-         value={currentrow.uom || ""}
-         onChange={(e) => setcurrentrow({...currentrow, uom:e.target.value})}
-         className='w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black outline-none bg-gray-50/50 transition' />
- 
-      {openUom && (
-          <div className='absolute top-30 left-0
-          w-full  border border-gray-200 rounded-[4px] bg-white text-[13px] 
-          font-medium text-black outline-none  transition'>
-            {['NOS', 'KG', 'MTR', 'NO'].map((uom) => (
-                <div key={uom} 
-                 onClick={(e) =>{ e.stopPropagation(); setcurrentrow(prev => ({...prev, uom: uom}));
-                   setopenUom(false);}}
-                className="px-3 py-2 hover:bg-gray-200 cursor-pointer">
-                  {uom}
+        {/* Terms & Conditions */}
+        <div className="mt-8 pt-6 border-t border-gray-100">
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Terms &amp; Conditions</p>
+          <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-4">
+              {[
+                ["Taxes", "tax_text"], ["Transport", "transport_terms"],
+                ["Delivery Period", "delivery_period"], ["Validity", "validity"],
+              ].map(([lbl, key]) => (
+                <div key={key}>
+                  <label className={labelCls}>{lbl}</label>
+                  <input type="text" value={formdata[key]}
+                    onChange={(e) => setformdata({...formdata, [key]: e.target.value})}
+                    className={inputCls} />
                 </div>
               ))}
-              <div>
-
-              </div>
-
-          </div>
-
-      )}
- </div>
-
-
-  {/* 3. Add & Clear Buttons (Right next to inputs as in image 2) */}
-  <div className="flex gap-2 shrink-0">
-    <button 
-       onClick={additem}
-      className="px-4 h-[37px] bg-black text-white text-[13px] font-semibold rounded-lg flex items-center justify-center"    >
-       Add
-    </button>
-    <button 
-      onClick={clearrow}
-     className="px-4 h-[37px] border  text-black text-[13px] font-semibold rounded-lg flex items-center justify-center"    >
-      Clear
-    </button>
-  </div>
-</div>
-{/* SECTION 6: Table with Side Buttons (Image-la irukura mariye) */}
-{/* TABLE SECTION: Modern Header with Dynamic Body */}
-<div className="mt-6 flex gap-2 items-start">
-  
-  {/* Main Table Structure */}
-  <div className="flex-grow border border-gray-200 rounded-lg overflow-hidden shadow-sm bg-white min-h-[200px]">
-    <table className="w-full border-collapse">
-      <thead>
-        {/* Modern Header (Image 2 style) */}
-        <tr className="bg-gray-50 border-b border-gray-200 text-left">
-          <th className="p-3 text-[11px] font-black text-gray-500 border-r border-gray-100 w-16 uppercase">S.No</th>
-          <th className="p-3 text-[11px] font-black text-gray-500 border-r border-gray-100 uppercase">Item Name</th>
-          <th className="p-3 text-[11px] font-black text-gray-500 border-r border-gray-100 w-28 uppercase text-center">Quantity</th>
-          <th className="p-3 text-[11px] font-black text-gray-500 border-r border-gray-100 w-28 uppercase text-center">Price</th>
-          <th className="p-3 text-[11px] font-black text-gray-500 border-r border-gray-100 w-32 uppercase text-center">Amount</th>
-          <th className="p-3 text-[11px] font-black text-gray-500 border-r border-gray-100 w-24 uppercase text-center">UOM</th>
-          <th className="p-3 text-[11px] font-black text-gray-500 w-28 uppercase text-center">Part No</th>
-          <th className="p-3 text-[11px] font-black text-gray-500 w-28 uppercase text-center">Actions</th>
-        </tr>
-      </thead>
-      
-      {/* Table Body - Data inga dhaan add aagum */}
-      <tbody>
-        {tableItems.length > 0 ? (
-          tableItems.map((item, index) => (
-            <tr key={`${item.item_name}-${index}`} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-              <td className="p-3 text-[12px] font-bold text-gray-600 border-r border-gray-50 text-center">{index + 1}</td>
-              <td className="p-3 text-[12px] font-bold text-black border-r border-gray-50">{item.item_name}</td>
-              <td className="p-3 text-[12px] font-bold text-gray-700 border-r border-gray-50 text-center">{item.quantity}</td>
-              <td className="p-3 text-[12px] font-bold text-gray-700 border-r border-gray-50 text-center">{item.price}</td>
-              <td className="p-3 text-[12px] font-bold text-gray-700 border-r border-gray-50 text-center">{item.amount}</td>
-              <td className="p-3 text-[12px] font-bold text-gray-700 border-r border-gray-50 text-center">{item.uom}</td>
-              <td className="p-3 text-[12px] font-bold text-gray-700 text-center">{item.part_no}</td>
-                <td className="p-3 text-[12px]">
-                  <div className='flex gap-4'>
-                    <SquarePen onClick={() => edititem(index)} className="text-blue-600 hover:text-blue-800 font-medium mx-auto" size={18} />
-                    <Trash2 onClick={() => deleteitem(index)} className="text-red-600 hover:text-red-800 font-medium mx-auto" size={18} />
-                  </div>
-                </td>
-            </tr>
-          ))
-        ) : (
-          <tr>
-            <td colSpan="7" className="p-12 text-center text-gray-400 italic font-medium tracking-wide">
-              No Data Added To Table
-            </td>
-          </tr>
-        )}
-      </tbody>
-    </table>
-  </div>
-
-  
-</div>
-        {/* SECTION 7: Reference, DIS, and Percentage Row */}
-<div className="flex flex-row items-end gap-6 mt-4 border-t border-gray-100 pt-8">
-  
-  {/* 1. Reference Part */}
-  <div className="flex flex-col gap-2 flex-grow">
-    <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">
-      Reference
-    </label>
-    <input 
-      type="text" 
-      placeholder="Enter reference number..."
-      value={formdata.reference}
-      onChange={(e) => setformdata({...formdata,reference:e.target.value})}
-      className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black outline-none focus:border-black bg-white shadow-sm transition-all"
-    />
-  </div>
-
-  {/* 2. DIS (-) Part */}
-  <div className="flex flex-col gap-2 shrink-0">
-    <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">
-      DIS (-)
-    </label>
-    <input 
-      type="text" 
-      value={formdata.discount}
-      onChange={(e) => setformdata({...formdata,discount:e.target.value})}
-      className="w-24 p-2.5 border border-gray-200 rounded-lg text-[13px] font-bold text-right text-black bg-gray-50 outline-none"
-    />
-  </div>
-
-</div>
-        
-       {/* SECTION 9: Grouped Terms & Grand Total Row */}
-<div className="grid grid-cols-1 md:grid-cols-2 gap-10 mt-6 pt-3">
-  
-  {/* Left Side: Paired Labels & Inputs (Label Top / Input Bottom) */}
-  <div className="space-y-6">
-    
-    {/* Row 1: Taxes & Transport */}
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div className="flex flex-col gap-2">
-        <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Taxes :</label>
-        <input type="text" value={formdata.tax_text}
-        onChange={(e) => setformdata({...formdata, tax_text:e.target.value})}  className="w-full p-2.5 border border-gray-300 rounded-lg text-[13px] font-semibold text-black outline-none focus:border-black bg-white shadow-sm" />
-      </div>
-      <div className="flex flex-col gap-2">
-        <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Transport :</label>
-        <input type="text" value={formdata.transport_terms}
-        onChange={(e) => setformdata({...formdata, transport_terms:e.target.value})}
-        className="w-full p-2.5 border border-gray-300 rounded-lg text-[13px] font-semibold text-black outline-none focus:border-black bg-white shadow-sm" />
-      </div>
-    </div>
-
-    {/* Row 2: Delivery Period & Validity */}
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div className="flex flex-col gap-2">
-        <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Delivery Period :</label>
-        <input type="text"
-        value={formdata.delivery_period}
-        onChange={(e) => setformdata({...formdata, delivery_period:e.target.value})}
-        defaultValue="3-4 DAYS from the date of Firm order" className="w-full p-2.5 border border-gray-300 rounded-lg text-[13px] font-semibold text-black outline-none focus:border-black bg-white shadow-sm" />
-      </div>
-      <div className="flex flex-col gap-2">
-        <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Validity :</label>
-        <input type="text"
-        value={formdata.validity}
-        onChange={(e) => setformdata({...formdata,validity:e.target.value})} defaultValue="30 days from the date of offer." className="w-full p-2.5 border border-gray-300 rounded-lg text-[13px] font-semibold text-black outline-none focus:border-black bg-white shadow-sm" />
-      </div>
-    </div>
-
-    {/* Row 3: Payment & Guarantee */}
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div className="flex flex-col gap-2">
-        <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Payment :</label>
-        <input type="text" 
-        value={formdata.payment_terms}
-        onChange={(e) => setformdata({...formdata, payment_terms:e.target.value})}
-        className="w-full p-2.5 border border-gray-300 rounded-lg text-[13px] font-semibold text-black outline-none focus:border-black bg-white shadow-sm" />
-      </div>
-      <div className="flex flex-col gap-2">
-        <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Guarantee :</label>
-        <input type="text" value={formdata.guarantee_text}
-         onChange={(e) => setformdata({...formdata, guarantee_text:e.target.value})}
-         className="w-full p-2.5 border border-gray-300 rounded-lg text-[13px] font-semibold text-black outline-none focus:border-black bg-white shadow-sm" />
-      </div>
-    </div>
-
-    {/* Row 4: Pack Frd & Warranty */}
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div className="flex flex-col gap-2">
-        <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Pack Frd :</label>
-        <input type="text"
-        value={formdata.pack_frd}
-        onChange={(e) => setformdata({...formdata, pack_frd:e.target.value})}
-          className="w-full p-2.5 border border-gray-300 rounded-lg text-[13px] font-semibold text-black outline-none focus:border-black bg-white shadow-sm" />
-      </div>
-      <div className="flex flex-col gap-2">
-        <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Warranty :</label>
-        <input type="text" value={formdata.waranty}
-        onChange={(e) => setformdata({...formdata, waranty:e.target.value})}
-        className="w-full p-2.5 border border-gray-300 rounded-lg text-[13px] font-semibold text-black outline-none focus:border-black bg-white shadow-sm" />
-      </div>
-    </div>
-
-    {/* Row 5: For Sign (Full width in left column) */}
-    <div className="flex flex-col gap-2">
-      <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">For Sign :</label>
-      <input type="text"
-      value={formdata.for_sign}
-      onChange={(e) => setformdata({...formdata, for_sign:e.target.value})}
-       className="w-full p-2.5 border border-gray-300 rounded-lg text-[13px] font-semibold text-black outline-none focus:border-black bg-white shadow-sm" />
-    </div>
-
-  </div>
-
-  {/* Right Side: Totals & Sign Details  */}
-  <div className="space-y-3">
-    <div className="flex justify-end">
-      <div className="w-full max-w-sm bg-gray-50/50 p-6 rounded-xl border border-gray-200 shadow-sm">
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <label className="text-[12px] font-black text-gray-500 uppercase">Subtotal :</label>
-            <input type="text" value={subtotal.toFixed(2)} readOnly className="w-32 p-1.5 border-b border-gray-300 bg-transparent text-right font-black text-black outline-none focus:border-black" />
-          </div>
-
-          <div className="flex justify-between items-center">
-            <label className="text-[12px] font-black text-gray-500 uppercase">CGST (9%) :</label>
-            <div className="flex gap-2">
-              <input type="text"  value={cgstpercentage}
-               onChange={(e) => setCgstpercentage(e.target.value)}
-               className="w-10 p-1 border border-gray-300 rounded text-center text-[11px] font-bold outline-none" />
-              <input type="text" value={cgst.toFixed(2)} readOnly className="w-24 p-1.5 border-b border-gray-300 bg-transparent text-right font-black text-black outline-none" />
+            </div>
+            <div className="space-y-4">
+              {[
+                ["Payment Terms", "payment_terms"], ["Guarantee", "guarantee_text"],
+                ["Pack Frd", "pack_frd"], ["Warranty", "waranty"], ["For Sign", "for_sign"],
+              ].map(([lbl, key]) => (
+                <div key={key}>
+                  <label className={labelCls}>{lbl}</label>
+                  <input type="text" value={formdata[key]}
+                    onChange={(e) => setformdata({...formdata, [key]: e.target.value})}
+                    className={inputCls} />
+                </div>
+              ))}
             </div>
           </div>
-
-          <div className="flex justify-between items-center">
-            <label className="text-[12px] font-black text-gray-500 uppercase">SGST (9%) :</label>
-            <div className="flex gap-2">
-              <input type="text"  value={sgstpercentage}
-              onChange={(e) => setSgstpercentage(e.target.value)} className="w-10 p-1 border border-gray-300 rounded text-center text-[11px] font-bold outline-none" />
-              <input type="text" value={sgst.toFixed(2)} readOnly className="w-24 p-1.5 border-b border-gray-300 bg-transparent text-right font-black text-black outline-none" />
-            </div>
-          </div>
-
-          <div className="flex justify-between items-center">
-            <label className="text-[12px] font-black text-gray-500 uppercase">IGST :</label>
-            <input type="text" readOnly className="w-32 p-1.5 border-b border-gray-300 bg-transparent text-right font-black text-black outline-none" />
-          </div>
-
-            <div className="flex justify-between items-center">
-              <label className="text-[12px] font-black text-gray-500 uppercase">Transport :</label>
-              <input type="text"
-              value={formdata.transport}
-              onChange={(e) => setformdata({...formdata, transport:e.target.value })}
-              className="w-32 p-1.5 border-b border-gray-300 bg-transparent text-right font-black text-black outline-none" />
-            </div>
-
-          <div className="flex justify-between items-center">
-            <label className="text-[12px] font-black text-gray-500 uppercase">Round Off :</label>
-            <input type="text" value={roundOff.toFixed(2) || 0} readOnly className="w-32 p-1.5 border-b border-gray-300 bg-transparent text-right font-black text-black outline-none" />
-          </div>
-
-          <div className="flex justify-between items-center pt-4 mt-2 border-t-2 border-gray-300">
-            <label className="text-[14px] font-black text-black uppercase tracking-tighter">Grand Total :</label>
-            <span className="text-[22px] font-black text-[#311B92] italic tracking-tighter">{grandtotal || 0 }</span>
-          </div>
         </div>
-      </div>
-    </div>
-  </div>
-</div>
-        {/* SECTION 10: Selection Dropdown - Flexible & Clean */}
-        <div className="mt-10 p-5 bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg flex flex-col md:flex-row items-center gap-6">
-          <label className="text-[11px] font-black text-gray-600 uppercase tracking-[0.2em] italic">
-            Select Quotation No To View / Modify Details :
-          </label>
-             <div className="relative">
-  <input
-    type="text"
-    value={loadquotation}
-    onFocus={() => {setloadqtopen(true); searchQt(loadquotation || "")}}
-    onChange={(e) =>
-    {const value = e.target.value
-      setloadquotation(value);
-      searchQt(value);
-    }
-    }
-    className="w-full p-2.5 border rounded-lg outline-0"
-  />
 
-  {loadqtopen && (
-    <div className="absolute top-12 left-0 w-full bg-white border rounded-lg shadow-lg z-50">
-
-      {Array.isArray(qtlist) && qtlist.length > 0 ? (
-        qtlist.map((qt, index) => (
-          <div
-            key={qt.quotation_no || index}
-            onClick={() => {
-              setloadquotation(qt.quotation_no);
-              loadQuotation(qt.quotation_no);
-              setloadqtopen(false);
-            }}
-            className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
-          >
-            {qt.quotation_no}
-          </div>
-        ))
-      ) : (
-        <div className="px-3 py-2 text-gray-400">
-          No Quotations found
-        </div>
-      )}
-
-    </div>
-  )}
-</div>
-        </div>
       </div>
     </div>
   );

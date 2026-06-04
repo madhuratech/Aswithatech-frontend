@@ -1,354 +1,571 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { X,Square,Minus} from "lucide-react";
+import React, { useCallback, useEffect, useState, useRef } from "react";
+import { X, Square, Minus, Printer } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import html2pdf from "html2pdf.js";
+import Logo from "../../asset/Logo.jpeg";
 
-const PurchaseReport = ({onMinimize, onClose, setIsMinimizedInternal,title}) => {
-  
-     const [data , setdata] = useState([]);
-     const [isMaximized, setIsMaximized] = useState(false);
-     const navigate = useNavigate();
-     const [isMinimized, setIsMinimized] = useState(false); 
+const API = "http://localhost:3000/api/taxpurchases";
 
-
-    //  State 
-
-    const [receiptlist, setReceiptlist] = useState([]);
-    const [supplierlist, setsupplierlist] = useState([]);
-
-    const [openbillno,setopenbillno] = useState(false);
-    const [supplieropen, setsupplieropen]=useState(false);
- 
-      const [filters , setfilters] = useState({
-        fromdate : "",
-        todate : "",
-        bill_no : "",
-        supplier_name: ""
-      });
-
-      const Api_urls = "http://localhost:3000/api/taxpurchases"
-
-     const gentratereport = useCallback(async () => {
-    try {
-    const params = new URLSearchParams();
-
-    if (filters.fromdate && filters.todate) {
-      params.append("fromdate", filters.fromdate);
-      params.append("todate", filters.todate);
-    }
-
-    if (filters.bill_no) {
-      params.append("billno", filters.bill_no);
-    }
-
-    if (filters.supplier_name) {
-      params.append("suppliername", filters.supplier_name);
-    }
-
-    const response = await fetch(`${Api_urls}/report?${params.toString()}`);
-    const result = await response.json();
-
-    setdata(result);
-
-  } catch (error) {
-    console.error("Error generating report:", error);
-  }
-}, [Api_urls, filters]);
-
-
-    //   Fetch Functions
-    const fetchsuppliers = async(value) =>{
-        try{
-          const res = await fetch (`${Api_urls}/supplier/search?q=${encodeURIComponent(value)}`);
-          const data = await res.json();
-
-          const uniquesuppliers =[...new Set(data.map(item => item.supplier_name))].map((name) =>({supplier_name:name}))
-          
-         setsupplierlist(uniquesuppliers);
-        }catch(error){
-          console.error("Error fetching suppliers:", error);
-        }
-      }
-
-    //   Fetch Receipt
-
-    const fetchReceipts = async(value) =>{
-        try{
-          const res = await fetch (`${Api_urls}/billno/search?q=${value}`);
-          const data = await res.json();
-          setReceiptlist(Array.isArray(data) ? data : []);
-        }catch(error){
-          console.error("Error fetching receipts:", error);
-        }
-      }
-
-   useEffect(() => {
-  gentratereport();
-},[gentratereport]);
-
-
-   const handleMinimize = () => {
-        if(setIsMinimizedInternal){
-            setIsMinimizedInternal(true);
-        }
-        if(onMinimize){
-            onMinimize();
-        }else{
-            setIsMinimized(true);
-        }
-      }
-
-   const handleclose = () => {
-        if(onClose){
-            onClose();
-        }else{
-            navigate(-1);
-        }
-      }
-      
-    if(isMinimized){
-        return(
-        <div className="fixed bottom-0 left-0 right-0 h-10 bg-[#e0e0e0] border-t border-gray-400 flex items-center px-4 z-[99999] shadow-[0_-2px_10px_rgba(0,0,0,0.1)]">
-          <button onClick={() => {setIsMinimized(false);
-            if(setIsMinimizedInternal) setIsMinimizedInternal(false);
-          }}
-          className="flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-blue-700 to-blue-500
-          text-white text-xs font-bold rounded-sm border border-gray-600 shadow-[inset_1px_1px_0px_rgba(255,255,255,0.3)]
-          hover:from-blue-600 hover:to-blue-400 active:translate-x-[0.5px]
-          active:translate-y-[0.5px] transition-all">
-              <div>
-                <div className="w-3 h-3 border border-white/50"></div>
-              </div>
-              {title || "Purchase Report"}  
-          </button>
-
-        </div>
-        )
-    }  
-
-
-    return (
-    <div className={`fixed inset-0 z-[9999] flex ${isMaximized ? "items-stretch" : "items-center justify-center p-6 bg-black/30 transition-colors"}`}>
-     
-      <div className={`${isMaximized ? "h-screen w-screen" : "w-[1200px] h-[100vh]"} bg-gray  border-2 border-white  shadow-2xl transitions-all duration-200 pointer-events-auto flex flex-col`}>
-
-    {/* Title Bar */}
-      
-       <div onDoubleClick={() => setIsMaximized(!isMaximized)}
-        className="bg-white text-black px-2 py-1 flex justify-between items-center cursor-default select-none">
-         <div className="font-bold text-sm">Purchase Report</div>
-         
-         <div className="flex shrink-0">
-
-             {/*minimize */}
-
-             <button onClick={handleMinimize}
-             className="w-7 h-5 hover:bg-white/20 border border-transparent hover:border-white/30 flex justify-center items-center transitions-colors"
-             title="Minimize"
-             >
-               <Minus size={10} strokeWidth={3}/>
-             </button>
-
-             {/* MAXIMIZE */}
-
-             <button  onClick={() => setIsMaximized(!isMaximized)}
-             className="w-7 h-5 hover:bg-white/20 border border-transparent hover:border-white/30 flex justify-center items-center transitions-colors"
-              title={isMaximized ? "Restore Down" : "Maximize"} >
-               <Square size={10} strokeWidth={3}/>
-            </button>
-
-            {/* close */}
-          
-             <button onClick={handleclose}
-              className="w-8 h-5 hover:bg-red-500 border border-transparent flex justify-center items-center transition-colors ml-0.5">
-               <X size={14} strokeWidth={3}/>   
-            </button>
-         </div>
-       </div>
-
-       {/* Tool Bar */}
-        
-         <div className="bg-black text-white border-white px-3 flex justify-between text-xs font-bold shadow-[inset_1px_1px_0px_#ffffff]">
-            <div className="px-4 py-3 flex items-end gap-6 text-xs font-semibold">
-             
-              {/* Filter Date */}
-
-               <div className="flex flex-col text-white">
-                 <label htmlFor="" className="text-gray-700 mb-1 text-white">FROM DATE</label>
-                  <input type="date" placeholder="From Date"
-                   value={filters.fromdate}
-                    onChange={(e) => setfilters({...filters,fromdate:e.target.value})}
-                   className="w-[130px] px-2 py-1 border text-black border-gray-300 rounded-sm  outline-none " />
-              </div>
-
-              <div className="flex flex-col text-white">
-                 <label htmlFor="" className="text-gray-700 mb-1 text-white">FROM DATE</label>
-                  <input type="date" placeholder="To Date"
-                   value={filters.todate}
-                   onChange={(e) => setfilters({...filters,todate:e.target.value})}
-                   className="w-[130px] px-2 py-1 border text-black border-gray-300 rounded-sm  outline-none " />
-              </div>
-
-
-               <div className="flex flex-col text-white relative">
-                 <label htmlFor="" className="text-gray-700 mb-1 text-white">FROM DATE</label>
-                  <input type="text" placeholder="Bill Number"
-                   value={filters.bill_no}
-                    onFocus={() => {setopenbillno(true); fetchReceipts(""); }}
-                   onChange={(e) => {const value = e.target.value
-                    setfilters({...filters, bill_no:value});
-                    fetchReceipts(value);
-                   }}
-                   className="w-[130px] px-2 py-1 border text-black border-gray-300 rounded-sm  outline-none " />
-
-                   {/* Dropdown */}
-
-                   {openbillno && receiptlist.length > 0 && (
-                    <div className="absolute top-[100%] left-0 w-full bg-white border border-gray-300 shadow-lg z-[10000] max-h-40 overflow-y-auto mt-1">
-                      {receiptlist.map((item, index) => (
-                         <div key={index} className="px-2 py-1 hover:bg-gray-100 cursor-pointer text-black border-b border-gray-100 text-[11px]"
-                         onClick={() => {
-                            setfilters({...filters, bill_no:item.bill_no});
-                            setopenbillno(false);
-                         }}
-                         >
-                            {item.bill_no}
-                         </div>
-                      ))}
-                    </div>
-
-                   )}
-                   
-              </div>
-
-              <div className="flex flex-col text-white relative">
-                 <label htmlFor="" className="text-gray-700 mb-1 text-white">FROM DATE</label>
-                  <input type="text" placeholder="Supplier Name"
-                   value={filters.supplier_name}
-                   onFocus={() => {setsupplieropen(true); fetchsuppliers("") }}
-                   onChange={(e) => {
-                    const value = e.target.value;
-                    setfilters({...filters,supplier_name:value});
-                    fetchsuppliers(value);
-                   }}
-                   className="w-[130px] px-2 py-1 border text-black border-gray-300 rounded-sm  outline-none " />
-                  
-                  {/* drop down */}
-
-                  {supplieropen && supplierlist.length > 0 && (
-                   <div className="absolute top-[42px] left-0 w-full  border border-gray-300 bg-white shadow-lg z-[10000]  max-h-40 overflow-y-auto mt-1">
-                      {supplierlist.map((item, index) => (
-                         <div key={index} className="px-2 truncate py-1 w-full hover:bg-gray-100 cursor-pointer text-black border-b border-gray-100 text-[11px]"
-                         onClick={() => {
-                            setfilters({...filters, supplier_name:item.supplier_name});
-                            setsupplieropen(false);
-                         }} >
-                            {item.supplier_name}
-                         </div>
-                      ))}         
-                   </div>
-
-                  )}
-
-              </div>
-
-            </div>
-
-   {/* Gentrate Report */}
-
-           <div className="flex gap-5 mr-20">
-              <button onClick={gentratereport} className="border h-[30px] mt-7 text-black border-gray-500 px-3 py-0.5 bg-white shadow-[1px_1px_0px_rgba(0,0,0,0.5)] active:shadow-none active:translate-x-[0.5px] active:translate-y-[0.5px] hover:bg-gray-50">
-                GENERATE REPORT
-              </button>
-
-              <button onClick={handleclose} className="border h-[30px] mt-7 text-black border-gray-500 px-3 py-0.5 bg-white shadow-[1px_1px_0px_rgba(0,0,0,0.5)] active:shadow-none active:translate-x-[0.5px] active:translate-y-[0.5px] hover:bg-gray-50">
-                 CLOSE
-            </button>
-           </div>
-         </div>
-
-         {/* Content */}
-
-         <div className="flex-1 overflow-auto bg-white p-6 custom-scrollbar">
-             <div>
-                <button className="bg-green-400 border border-green-400 text-white px-1 py-1.5 rounded-[3px]">Main Report</button>
-            </div>
-
-            {/* Form To  */}
-
-             <div className="mt-5 leading-9">
-                <div className="inline-flex gap-5">
-                   <h2 className="text-black font-bold">FROM : <span className="text-red-600 font-semibold">{filters.fromdate}</span></h2>
-                    <h2 className="text-black font-bold">TO : <span className="text-red-600 font-semibold">{filters.todate}</span></h2>
-                </div>
-                <h2 className="text-black font-bold">SUPPLIER NAME :  <span className="text-red-600 font-semibold">{filters.supplier_name}</span></h2>
-             </div>
-
-             {/* Table */}
-              <div className="overflow-x-auto">
-              <table className="w-full mt-4 relative border-t border-b border-gray-400 w-[1000px] border-collapse">
-                <thead>
-                     <tr className="border-b border-gray-400 text-[14px]">
-                        <th className=" text-left p-2 ">SNO</th>
-                       <th className="text-left p-2 truncate ">BILL NUMBER</th>
-                        <th className="text-left p-2 truncate ">SUPPLIER NAME</th>
-                        <th className="text-left p-2 truncate">BILL DATE</th>
-                       <th className="text-right p-2 truncate ">PURCHASE ITEMS</th>
-                         <th className="text-right p-2  ">QUANTITY</th>
-                       <th className="text-center p-2  ">PRICE</th>
-                       <th className="text-center p-2 ">UOM</th>
-                        <th className="text-center p-2 ">HSN</th>
-                        <th className="text-center p-2 ">SUBTOTAL</th>
-                        <th className="text-center p-2 ">CGST</th>
-                        <th className="text-center p-2 ">SGST</th>
-                        <th className="text-center p-2 truncate ">OTHER CHARGES</th>
-                        <th className="text-center p-2 ">DISCOUNT</th>
-                        <th className="text-center p-2 ">GRANDTOTAL</th>
-
-                     </tr>
-                </thead>
-                 <tbody>
-                 
-                  {Array.isArray(data) && data.length > 0 ? (
-                    data.map((row, i) => (
-                      
-                     <tr key={i} className="border-b border-gray-400 text-[14px]">
-                        <td className="p-2 text-left truncate">{i + 1}</td>
-                        <td className="p-2 text-left truncate">{row.bill_no}</td>
-                        <td className="p-2 text-left truncate">{row.supplier_name}</td>
-                        <td className="p-2 text-left truncate">{row.bill_date}</td>
-                        <td className="p-2 text-center truncate">{row.item_name}</td>
-                        <td className="p-2 text-center">{row.quantity}</td>
-                        <td className="p-2 text-center">{row.price}</td>
-                        <td className="p-2 text-center">{row.uom}</td>
-                        <td className="p-2 text-center">{row.hsn}</td>
-                        <td className="p-2 text-center">{row.subtotal}</td>
-                        <td className="p-2 text-center">{row.cgst}</td>
-                        <td className="p-2 text-center">{row.sgst}</td>
-                        <td className="p-2 text-center">{row.other_charges}</td>
-                        <td className="p-2 text-center">{row.discount}</td>
-                         <td className="p-2 text-center font-semibold text-blue-600">{row.grand_total}</td>
-                     </tr>
-                    ))
-                ) : (
-                    <tr>
-                       <td colSpan="13" className="text-center p-4 text-gray-400">
-                        No data found
-                        </td>        
-                    </tr>
-
-                  )}
-
-                 </tbody>
-
-
-              </table>
-              </div>
-
-         </div>
-          
-         
-      </div>
-    </div>
-  )
+const COMPANY = {
+  name: "ASWITHA TECH",
+  addr1: "231-D,Sri Balaji Nilayam,",
+  addr2: "Venkataswamy Road New Siddhapudur,",
+  addr3: "Coimbatore-641 044 TamilNadu.",
+  email: "Email :aswithatech2020@gmail.com",
+  ph1: "80725  37036",
+  ph2: "96551  48537",
+  gstin: "33GYLPS7134C1Z9",
 };
+
+function numberToWords(amount) {
+  let n = Math.round(Number(amount) || 0);
+  if (n === 0) return "ZERO ONLY";
+  const ones = [
+    "", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE",
+    "TEN", "ELEVEN", "TWELVE", "THIRTEEN", "FOURTEEN", "FIFTEEN", "SIXTEEN",
+    "SEVENTEEN", "EIGHTEEN", "NINETEEN",
+  ];
+  const tens = ["", "", "TWENTY", "THIRTY", "FORTY", "FIFTY", "SIXTY", "SEVENTY", "EIGHTY", "NINETY"];
+  const b100  = (x) => x < 20 ? ones[x] : tens[Math.floor(x / 10)] + (x % 10 ? " " + ones[x % 10] : "");
+  const b1000 = (x) => x < 100 ? b100(x) : ones[Math.floor(x / 100)] + " HUNDRED" + (x % 100 ? " " + b100(x % 100) : "");
+  const parts = [];
+  if (n >= 10000000) { parts.push(b1000(Math.floor(n / 10000000)) + " CRORE"); n %= 10000000; }
+  if (n >= 100000)   { parts.push(b100(Math.floor(n / 100000))    + " LAKH");  n %= 100000;  }
+  if (n >= 1000)     { parts.push(b1000(Math.floor(n / 1000))     + " THOUSAND"); n %= 1000; }
+  if (n > 0)         { parts.push(b1000(n)); }
+  return parts.join(" ") + " ONLY";
+}
+
+const fmt = (val) => Number(val || 0).toFixed(2);
+
+const fmtDate = (d) => {
+  if (!d) return "";
+  const dt = new Date(d);
+  if (isNaN(dt)) return d;
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  return `${String(dt.getDate()).padStart(2, "0")}-${months[dt.getMonth()]}-${dt.getFullYear()}`;
+};
+
+function groupByBill(rows) {
+  const map = new Map();
+  rows.forEach((row) => {
+    if (!map.has(row.bill_no)) {
+      map.set(row.bill_no, {
+        bill_no:       row.bill_no,
+        supplier_name: row.supplier_name,
+        bill_date:     row.bill_date,
+        other_charges: row.other_charges,
+        discount:      row.discount,
+        grand_total:   row.grand_total,
+        items: [],
+      });
+    }
+    map.get(row.bill_no).items.push({
+      item_name: row.item_name,
+      hsn:       row.hsn,
+      uom:       row.uom,
+      quantity:  row.quantity,
+      price:     row.price,
+      subtotal:  row.subtotal,
+      cgst:      row.cgst,
+      sgst:      row.sgst,
+    });
+  });
+  return Array.from(map.values());
+}
+
+/* ─── Single Purchase Order Voucher ─────────────────────────────────────── */
+const PurchaseVoucher = ({ voucher }) => {
+  const items      = voucher.items || [];
+  const emptyRows  = Math.max(0, 7 - items.length);
+  const grandTotal = Number(voucher.grand_total  || 0);
+  const discount   = Number(voucher.discount     || 0);
+  const otherChg   = Number(voucher.other_charges || 0);
+
+  const totalCgst     = items.reduce((s, i) => s + Number(i.cgst     || 0), 0);
+  const totalSgst     = items.reduce((s, i) => s + Number(i.sgst     || 0), 0);
+  const totalSubtotal = items.reduce((s, i) => s + Number(i.subtotal || 0), 0);
+
+  const cellStyle = (align = "left", extra = {}) => ({
+    border: "1px solid #000",
+    padding: "3px 5px",
+    textAlign: align,
+    fontSize: "11px",
+    ...extra,
+  });
+
+  const thStyle = (align = "left", width) => ({
+    border: "1px solid #000",
+    padding: "4px 5px",
+    textAlign: align,
+    fontWeight: "bold",
+    fontSize: "10px",
+    background: "#fff",
+    whiteSpace: "nowrap",
+    ...(width ? { width, minWidth: width } : {}),
+  });
+
+  return (
+    <div
+      className="voucher-page"
+      style={{
+        width: "740px",
+        background: "#fff",
+        border: "1px solid #000",
+        fontFamily: "Arial, sans-serif",
+        marginBottom: "24px",
+        pageBreakAfter: "always",
+      }}
+    >
+      {/* ── TOP HEADER ─────────────────────────────────────────── */}
+      <table style={{ width: "100%", borderCollapse: "collapse", borderBottom: "1px solid #000" }}>
+        <tbody>
+          {/* Row 1 — Logo (left) + Company Name & Info (right) — same row */}
+          <tr>
+            <td style={{ width: "50%", padding: "8px 10px", verticalAlign: "middle", borderBottom: "1px solid #000" }}>
+              <img
+                src={Logo}
+                alt="Logo"
+                style={{ width: "200px", maxWidth: "200px", height: "100px", objectFit: "contain", display: "block" }}
+              />
+            </td>
+            <td style={{ width: "80%", padding: "8px 10px", verticalAlign: "middle", borderLeft: "1px solid #000", borderBottom: "1px solid #000" }}>
+              <div style={{ fontSize: "22px", fontWeight: "bold", color: "#cc0000", letterSpacing: "1px" }}>
+                {COMPANY.name}
+              </div>
+              <div style={{ fontSize: "13px", lineHeight: "1.55", color: "#222", marginTop: "2px" }}>
+                <div>{COMPANY.addr1}</div>
+                <div>{COMPANY.addr2}</div>
+                <div>{COMPANY.addr3}</div>
+                <div>{COMPANY.email}</div>
+              </div>
+              <div style={{ fontSize: "10px", marginTop: "3px", display: "flex", gap: "14px", alignItems: "center" }}>
+                <span>
+                  <span style={{ color: "#1a5ea8", fontWeight: "bold", marginRight: "3px" }}>&#9990;</span>
+                  {COMPANY.ph1}
+                </span>
+                <span>
+                  <span style={{ color: "#cc0000", fontWeight: "bold", marginRight: "3px" }}>&#9990;</span>
+                  {COMPANY.ph2}
+                </span>
+              </div>
+              <div style={{ fontSize: "13px", marginTop: "4px", fontWeight: "bold" }}>
+                GSTIN : {COMPANY.gstin}
+              </div>
+            </td>
+          </tr>
+
+          {/* Row 2 — Supplier Info (left) + PO title & NO & DATE (right) — same row */}
+          <tr>
+            <td style={{ padding: "6px 10px", verticalAlign: "top", minHeight: "68px" }}>
+              <div style={{ fontSize: "16px", fontWeight: "bold", color: "#008080" }}>FROM :</div>
+              <div style={{ fontSize: "15px", fontWeight: "bold", color: "#00008b", marginTop: "1px" }}>
+                {(voucher.supplier_name || "").toUpperCase()}
+              </div>
+            </td>
+            <td style={{
+              padding: "10px 14px",
+              verticalAlign: "top",
+              borderLeft: "1px solid #000",
+              textAlign: "center",
+            }}>
+              <div style={{
+                fontSize: "22px",
+                fontWeight: "bold",
+                color: "#cc0000",
+                textDecoration: "underline",
+                letterSpacing: "3px",
+                marginBottom: "10px",
+              }}>
+                PURCHASE ORDER
+              </div>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "16px" }}>
+                <tbody>
+                  <tr>
+                    <td style={{ fontWeight: "bold", padding: "2px 6px 2px 0", textAlign: "right", width: "40%" }}>NO</td>
+                    <td style={{ padding: "2px 4px", textAlign: "left", width: "5%" }}>:</td>
+                    <td style={{ padding: "2px 0", textAlign: "left", fontWeight: "bold" }}>{voucher.bill_no}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: "bold", padding: "2px 6px 2px 0", textAlign: "right" }}>DATE</td>
+                    <td style={{ padding: "2px 4px", textAlign: "left" }}>:</td>
+                    <td style={{ padding: "2px 0", textAlign: "left" }}>{fmtDate(voucher.bill_date)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* ── ITEMS TABLE ────────────────────────────────────────── */}
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <thead>
+          <tr>
+            <th style={thStyle("center", "36px")}>SNO</th>
+            <th style={thStyle("left")}>ITEM NAME</th>
+            <th style={thStyle("center", "60px")}>HSN</th>
+            <th style={thStyle("center", "50px")}>UOM</th>
+            <th style={thStyle("right",  "55px")}>QTY</th>
+            <th style={thStyle("right",  "70px")}>PRICE</th>
+            <th style={thStyle("right",  "75px")}>SUBTOTAL</th>
+            <th style={thStyle("right",  "62px")}>CGST</th>
+            <th style={thStyle("right",  "62px")}>SGST</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item, i) => (
+            <tr key={i}>
+              <td style={cellStyle("center")}>{i + 1}</td>
+              <td style={cellStyle("left")}>{item.item_name}</td>
+              <td style={cellStyle("center")}>{item.hsn}</td>
+              <td style={cellStyle("center")}>{item.uom}</td>
+              <td style={cellStyle("right")}>{fmt(item.quantity)}</td>
+              <td style={cellStyle("right")}>{fmt(item.price)}</td>
+              <td style={cellStyle("right")}>{fmt(item.subtotal)}</td>
+              <td style={cellStyle("right")}>{fmt(item.cgst)}</td>
+              <td style={cellStyle("right")}>{fmt(item.sgst)}</td>
+            </tr>
+          ))}
+          {Array.from({ length: emptyRows }).map((_, i) => (
+            <tr key={`e${i}`} style={{ height: "22px" }}>
+              {[...Array(9)].map((_, j) => (
+                <td key={j} style={{ border: "1px solid #000", padding: "3px 5px" }}>&nbsp;</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {/* ── SUMMARY BAR ────────────────────────────────────────── */}
+      <table style={{ width: "100%", borderCollapse: "collapse", borderTop: "1px solid #000", fontSize: "11px" }}>
+        <tbody>
+          <tr>
+            <td style={{ padding: "4px 10px", width: "25%", borderRight: "1px solid #ddd" }}>
+              <span style={{ fontWeight: "bold" }}>Subtotal:</span>
+              <span style={{ marginLeft: "6px" }}>{fmt(totalSubtotal)}</span>
+            </td>
+            <td style={{ padding: "4px 10px", width: "20%", borderRight: "1px solid #ddd" }}>
+              <span style={{ fontWeight: "bold" }}>CGST:</span>
+              <span style={{ marginLeft: "6px" }}>{fmt(totalCgst)}</span>
+            </td>
+            <td style={{ padding: "4px 10px", width: "20%", borderRight: "1px solid #ddd" }}>
+              <span style={{ fontWeight: "bold" }}>SGST:</span>
+              <span style={{ marginLeft: "6px" }}>{fmt(totalSgst)}</span>
+            </td>
+            <td style={{ padding: "4px 10px", textAlign: "right" }}>
+              <span style={{ fontWeight: "bold" }}>Grand Total:</span>
+              <span style={{ marginLeft: "8px", fontWeight: "bold" }}>{fmt(grandTotal)}</span>
+            </td>
+          </tr>
+          {(discount > 0 || otherChg > 0) && (
+            <tr>
+              <td colSpan={2} style={{ padding: "4px 10px", borderTop: "1px solid #ddd" }}>
+                <span style={{ fontWeight: "bold" }}>Other Charges:</span>
+                <span style={{ marginLeft: "6px" }}>{fmt(otherChg)}</span>
+              </td>
+              <td colSpan={2} style={{ padding: "4px 10px", textAlign: "right", borderTop: "1px solid #ddd" }}>
+                <span style={{ fontWeight: "bold" }}>Discount:</span>
+                <span style={{ marginLeft: "6px" }}>{fmt(discount)}</span>
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+
+      {/* ── AMOUNT IN WORDS ─────────────────────────────────────── */}
+      <div style={{ padding: "5px 12px", borderTop: "1px solid #000", fontSize: "11px", display: "flex", gap: "16px", alignItems: "baseline" }}>
+        <span style={{ fontWeight: "bold", whiteSpace: "nowrap" }}>Rupees :</span>
+        <span style={{ fontWeight: "bold", color: "#cc0000", letterSpacing: "0.3px" }}>
+          {numberToWords(grandTotal)}
+        </span>
+      </div>
+
+      {/* ── FOOTER ──────────────────────────────────────────────── */}
+      <table style={{ width: "100%", borderCollapse: "collapse", borderTop: "1px solid #000" }}>
+        <tbody>
+          <tr>
+            <td style={{ padding: "6px 12px", width: "50%", fontSize: "10px", verticalAlign: "top" }}>
+              &nbsp;
+            </td>
+            <td style={{ padding: "6px 12px", textAlign: "right", fontSize: "11px", verticalAlign: "top" }}>
+              <span style={{ fontWeight: "bold", color: "#008080" }}>For &nbsp; {COMPANY.name}</span>
+            </td>
+          </tr>
+          <tr>
+            <td style={{ height: "38px" }}></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td style={{ padding: "4px 12px", fontSize: "10px", borderTop: "1px solid #ddd" }}>
+              Receiver's Signature
+            </td>
+            <td style={{ padding: "4px 12px", textAlign: "right", fontSize: "10px", borderTop: "1px solid #ddd" }}>
+              Authorised Signatory
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+/* ─── Main Report Window ─────────────────────────────────────────────────── */
+const PurchaseReport = ({ onMinimize, onClose, setIsMinimizedInternal, title = "Purchase Order" }) => {
+  const navigate = useNavigate();
+  const contentRef = useRef(null);
+
+  const [isMaximized, setIsMaximized] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [loading,     setLoading]     = useState(false);
+
+  const [rawData,      setRawData]      = useState([]);
+  const [receiptlist,  setReceiptlist]  = useState([]);
+  const [supplierlist, setsupplierlist] = useState([]);
+  const [openbillno,   setopenbillno]   = useState(false);
+  const [supplieropen, setsupplieropen] = useState(false);
+
+  const [filters, setfilters] = useState({
+    fromdate:      "",
+    todate:        "",
+    bill_no:       "",
+    supplier_name: "",
+  });
+
+  const generateReport = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (filters.fromdate && filters.todate) {
+        params.append("fromdate", filters.fromdate);
+        params.append("todate",   filters.todate);
+      }
+      if (filters.bill_no)       params.append("billno",       filters.bill_no);
+      if (filters.supplier_name) params.append("suppliername", filters.supplier_name);
+      const res  = await fetch(`${API}/report?${params.toString()}`);
+      const json = await res.json();
+      setRawData(Array.isArray(json) ? json : []);
+    } catch (err) {
+      console.error(err);
+      setRawData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [filters]);
+
+  const fetchSuppliers = async (value) => {
+    try {
+      const res  = await fetch(`${API}/supplier/search?q=${encodeURIComponent(value)}`);
+      const data = await res.json();
+      const unique = [...new Set(data.map((i) => i.supplier_name))].map((name) => ({ supplier_name: name }));
+      setsupplierlist(unique);
+    } catch { setsupplierlist([]); }
+  };
+
+  const fetchBillNos = async (value) => {
+    try {
+      const res  = await fetch(`${API}/billno/search?q=${value}`);
+      const data = await res.json();
+      setReceiptlist(Array.isArray(data) ? data : []);
+    } catch { setReceiptlist([]); }
+  };
+
+  useEffect(() => { generateReport(); }, []);
+
+  const handleMinimize = () => {
+    setIsMinimized(true);
+    if (setIsMinimizedInternal) setIsMinimizedInternal(true);
+    if (onMinimize) onMinimize();
+  };
+
+  const handleClose = () => { if (onClose) onClose(); else navigate(-1); };
+
+  const handlePrint = () => {
+    const win = window.open("", "", "width=900,height=700");
+    win.document.write(`
+      <html><head><title>${title}</title>
+      <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; padding: 16px; font-family: Arial, sans-serif; font-size: 11px; background: #fff; }
+        @page { size: A4 portrait; margin: 8mm; }
+        .voucher-page { width: 720px; border: 1px solid #000; margin: 0 auto 20px; page-break-after: always; }
+        table { width: 100%; border-collapse: collapse; }
+        @media print { body { padding: 0; } .voucher-page { margin-bottom: 0; } }
+      </style>
+      </head><body>${contentRef.current.innerHTML}</body></html>
+    `);
+    win.document.close();
+    win.focus();
+    setTimeout(() => win.print(), 500);
+  };
+
+  const exportPDF = () => {
+    if (!contentRef.current) return;
+    html2pdf().set({
+      margin: [5, 10, 5, 10],
+      filename: `PurchaseOrder_${filters.supplier_name || "All"}.pdf`,
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+    }).from(contentRef.current).save();
+  };
+
+  const vouchers = groupByBill(rawData);
+
+  if (isMinimized) {
+    return (
+      <div className="fixed bottom-0 left-0 right-0 h-10 bg-[#e0e0e0] border-t border-gray-400 flex items-center px-4 z-[99999]">
+        <button
+          onClick={() => { setIsMinimized(false); if (setIsMinimizedInternal) setIsMinimizedInternal(false); }}
+          className="flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-blue-700 to-blue-500 text-white text-xs font-bold rounded-sm border border-gray-600"
+        >
+          <div className="w-3 h-3 border border-white/50" />
+          {title}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`fixed inset-0 z-[9999] flex ${isMaximized ? "items-stretch" : "items-center justify-center p-4 bg-black/30"}`}>
+      <div className={`bg-[#f0f0f0] border-2 border-white flex flex-col transition-all duration-200 ${isMaximized ? "w-full h-full border-none" : "w-[98vw] h-[95vh]"}`}>
+
+        {/* ── Title Bar ── */}
+        <div onDoubleClick={() => setIsMaximized(!isMaximized)}
+          className="bg-gradient-to-r from-[#0050a0] to-[#0078d7] text-white px-2 py-1 flex justify-between items-center cursor-default select-none">
+          <span className="text-xs font-bold tracking-wide">{title}</span>
+          <div className="flex shrink-0">
+            <button onClick={handleMinimize} className="w-7 h-5 hover:bg-white/20 flex justify-center items-center" title="Minimize"><Minus size={12} strokeWidth={3} /></button>
+            <button onClick={() => setIsMaximized(!isMaximized)} className="w-7 h-5 hover:bg-white/20 flex justify-center items-center" title="Maximize"><Square size={10} strokeWidth={3} /></button>
+            <button onClick={handleClose} className="w-8 h-5 hover:bg-red-500 flex justify-center items-center ml-0.5"><X size={14} strokeWidth={3} /></button>
+          </div>
+        </div>
+
+        {/* ── Filter Toolbar ── */}
+        <div className="bg-black px-4 py-2 flex flex-wrap items-end gap-4">
+          <div className="flex flex-col gap-0.5">
+            <label className="text-[10px] font-bold text-white tracking-widest">FROM DATE</label>
+            <input
+              type="date" value={filters.fromdate}
+              onChange={(e) => setfilters((p) => ({ ...p, fromdate: e.target.value }))}
+              className="w-[130px] px-2 py-[3px] border border-gray-400 text-[11px] bg-white text-black outline-none focus:border-blue-400"
+            />
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <label className="text-[10px] font-bold text-white tracking-widest">TO DATE</label>
+            <input
+              type="date" value={filters.todate}
+              onChange={(e) => setfilters((p) => ({ ...p, todate: e.target.value }))}
+              className="w-[130px] px-2 py-[3px] border border-gray-400 text-[11px] bg-white text-black outline-none focus:border-blue-400"
+            />
+          </div>
+          <div className="flex flex-col gap-0.5 relative">
+            <label className="text-[10px] font-bold text-white tracking-widest">BILL NUMBER</label>
+            <input
+              type="text" placeholder="Bill Number" value={filters.bill_no}
+              onFocus={() => { setopenbillno(true); fetchBillNos(""); }}
+              onChange={(e) => { const v = e.target.value; setfilters((p) => ({ ...p, bill_no: v })); fetchBillNos(v); }}
+              className="w-[150px] px-2 py-[3px] border border-gray-400 text-[11px] bg-white text-black outline-none focus:border-blue-400"
+            />
+            {openbillno && receiptlist.length > 0 && (
+              <div className="absolute top-full left-0 w-full bg-white border border-gray-300 shadow-lg z-[10000] max-h-40 overflow-y-auto mt-1">
+                {receiptlist.map((item, i) => (
+                  <div key={i}
+                    className="px-2 py-1 hover:bg-gray-100 cursor-pointer text-black border-b border-gray-100 text-[11px]"
+                    onClick={() => { setfilters((p) => ({ ...p, bill_no: item.bill_no })); setopenbillno(false); }}
+                  >
+                    {item.bill_no}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="flex flex-col gap-0.5 relative">
+            <label className="text-[10px] font-bold text-white tracking-widest">SUPPLIER NAME</label>
+            <input
+              type="text" placeholder="Supplier Name" value={filters.supplier_name}
+              onFocus={() => { setsupplieropen(true); fetchSuppliers(""); }}
+              onChange={(e) => { const v = e.target.value; setfilters((p) => ({ ...p, supplier_name: v })); fetchSuppliers(v); }}
+              className="w-[180px] px-2 py-[3px] border border-gray-400 text-[11px] bg-white text-black outline-none focus:border-blue-400"
+            />
+            {supplieropen && supplierlist.length > 0 && (
+              <div className="absolute top-full left-0 w-full bg-white border border-gray-300 shadow-lg z-[10000] max-h-40 overflow-y-auto mt-1">
+                {supplierlist.map((item, i) => (
+                  <div key={i}
+                    className="px-2 py-1 hover:bg-gray-100 cursor-pointer text-black border-b border-gray-100 text-[11px] truncate"
+                    onClick={() => { setfilters((p) => ({ ...p, supplier_name: item.supplier_name })); setsupplieropen(false); }}
+                  >
+                    {item.supplier_name}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="flex gap-2 ml-auto items-end">
+            <button
+              onClick={generateReport}
+              className="px-4 py-[3px] text-[11px] font-bold bg-white text-black border border-gray-400 hover:bg-gray-100 active:bg-gray-200 tracking-wide"
+              style={{ height: "26px" }}
+            >
+              GENERATE REPORT
+            </button>
+            <button
+              onClick={handleClose}
+              className="px-4 py-[3px] text-[11px] font-bold bg-white text-black border border-gray-400 hover:bg-gray-100 active:bg-gray-200 tracking-wide"
+              style={{ height: "26px" }}
+            >
+              CLOSE
+            </button>
+          </div>
+        </div>
+
+        {/* ── Action Strip ── */}
+        <div className="flex gap-1.5 px-3 py-2 bg-[#ececec] border-b border-gray-300 no-print">
+          <button
+            onClick={handlePrint}
+            className="bg-[#1a5ea8] text-white text-[10px] px-3 py-1 font-bold border border-[#154c8a] hover:bg-[#154c8a] flex items-center gap-1"
+          >
+            <Printer size={10} /> PRINT
+          </button>
+          <button
+            onClick={exportPDF}
+            className="bg-[#b22222] text-white text-[10px] px-3 py-1 font-bold border border-[#8b1a1a] hover:bg-[#8b1a1a]"
+          >
+            EXPORT PDF
+          </button>
+        </div>
+
+        {/* ── Voucher Display Area ── */}
+        <div className="flex-1 overflow-auto bg-white py-6 custom-scrollbar">
+          <div ref={contentRef} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+            {loading ? (
+              <div style={{ padding: "40px", fontFamily: "Arial", fontSize: "12px", color: "#555", fontStyle: "italic" }}>
+                Loading vouchers...
+              </div>
+            ) : vouchers.length === 0 ? (
+              <div style={{ padding: "40px", fontFamily: "Arial", fontSize: "12px", color: "#888", fontStyle: "italic" }}>
+                No purchase records found. Use filters above and click GENERATE REPORT.
+              </div>
+            ) : (
+              vouchers.map((voucher, i) => (
+                <PurchaseVoucher key={voucher.bill_no ?? i} voucher={voucher} />
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 14px; height: 14px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #c0c0c0; box-shadow: inset 1px 1px 2px rgba(0,0,0,0.4); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e0e0e0; border: 2px solid #808080; box-shadow: inset 1px 1px 0 white; }
+        @media print {
+          .no-print { display: none !important; }
+          body { margin: 0; padding: 0; }
+        }
+      `}</style>
+    </div>
+  );
+};
+
 export default PurchaseReport;

@@ -3,6 +3,8 @@ import { FileText, Truck, FileCheck, Receipt, FileMinus, CreditCard,FileBarChart
 import { useNavigate } from "react-router-dom";
 import SaleswindowModel from"../../ui/saleswindowModal";
 import QuotationFormat from "./quotationoverview";
+import InvoiceFormat from "./invoiceformat";
+import SalesDCFormat from "./salesdcformat";
 const SalesCard = ({ title, subtitle, icon: Icon, bgColor, iconColor, onClick }) => {
     return (
         <div
@@ -39,31 +41,68 @@ const SalesModule = () => {
     QtNumber : ""
     });
 
-    const openReport = async (type , mode = "Qt") => {
-        setModalTitle(type);
+const openReport = async (type) => {
 
-  try{
-        if(type === "Quotation Format"){
-        const res = await fetch("http://localhost:3000/api/quotations/QT/search?q=");
-        const data = await res.json();
-        const number = data[0]?.quotation_no || "";
-        setFilters(prev => ({...prev, QtNumber : number}));
+    setModalTitle(type);
+
+    try {
+
+        let latestNumber = "";
+
+        if (type === "Quotation Format") {
+
+            const res = await fetch(
+              "http://localhost:3000/api/quotations/QT/search?q="
+            );
+
+            const data = await res.json();
+
+            latestNumber = data[0]?.quotation_no || "";
         }
 
+        if (type === "Invoice Format") {
+
+            const res = await fetch(
+              "http://localhost:3000/api/salesinvoices/INV/search?q="
+            );
+
+            const data = await res.json();
+
+            latestNumber = data[0]?.invoice_no || "";
+        }
+
+        if (type === "DC Format") {
+
+            const res = await fetch(
+              "http://localhost:3000/api/salesdc/DC/search?q="
+            );
+
+            const data = await res.json();
+
+            latestNumber = data[0]?.dc_no || "";
+        }
+
+        setFilters({
+            fromDate: "",
+            toDate: "",
+            clientName: "",
+            QtNumber: latestNumber
+        });
+
         setviewtype(type);
+
         setShowModal(true);
-    }catch(error){
-        console.error("Error fetching number:", error);
+
+    } catch (error) {
+
+        console.error("Error fetching latest document:", error);
 
     }
-
-    setviewtype(type);
-    setShowModal(true);
 };
 
 const ShowReport = (item) => {
-    if(item.name === "Quotation Format"){
-        openReport(item.name, "qt", "qt");
+    if(item.name === "Quotation Format" || item.name === "Invoice Format" || item.name === "DC Format"){
+        openReport(item.name);
     }
     else{
         navigate(item.path);
@@ -121,7 +160,7 @@ const ShowReport = (item) => {
             icon: CreditCard,
             bgColor: "bg-cyan-50",
             iconColor: "text-cyan-600",
-            action: () => console.log("Receipts & Payments Clicked"),
+            action: () => navigate("/sales/receipt-advance"),
         },
         {
             title: "Receipts & Bill TO Bill",
@@ -129,7 +168,7 @@ const ShowReport = (item) => {
             icon: CreditCard,
             bgColor: "bg-cyan-50",
             iconColor: "text-cyan-600",
-            action: () => console.log("Receipts & Payments Clicked"),
+            action: () => navigate("/sales/receipt"),
         },
          {
             title: "Sales Reports",
@@ -211,6 +250,12 @@ const ShowReport = (item) => {
          >
         {viewtype === "Quotation Format" &&
         <QuotationFormat QtNumber={filters.QtNumber} /> 
+        }        
+        {viewtype === "Invoice Format" &&
+        <InvoiceFormat InvNumber={filters.QtNumber} />
+        }        
+        {viewtype === "DC Format" &&
+        <SalesDCFormat dcNumber={filters.QtNumber} />
         }        
         </SaleswindowModel>
 

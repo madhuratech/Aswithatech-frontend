@@ -1,0 +1,913 @@
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { SquarePen, Trash2, CheckCircle, Eye } from "lucide-react";
+import toast from "react-hot-toast";
+import InvoiceFormat from "../pages/Services/invoiceFormat";
+import ServiceWindowModal from "../ui/servicewindowModal";
+
+const TODAY = new Date().toISOString().split("T")[0];
+const API = "http://localhost:3000/api/serviceinvoice";
+
+const INIT_FORM = {
+    customer_name: "",
+    invoice_no: "",
+    invoice_date: TODAY,
+    dc_no: "",
+    dc_date: "",
+    order_no: "",
+    order_date: "",
+    payment_terms: "",
+    dispatch_through: "",
+    discount: 0,
+    transport: 0
+};
+
+const INIT_ROW = {
+    item_name: "",
+    quantity: "",
+    price: "",
+    gst_percent: 18,
+    discount: 0,
+    amount: 0,
+    uom: "",
+    hsn_number: ""
+};
+
+const UOM_LIST = ["NOS", "KG", "MTR", "NO", "SET", "PKT"];
+const DESPATCH_OPTIONS = ["By Hand", "By Courier", "FedEx", "DHL", "BlueDart", "Delhivery"];
+const GST_OPTIONS = [0, 5, 12, 18, 28];
+
+const ServiceInvoiceForm = () => {
+    const navigate = useNavigate();
+
+    const [formData, setFormData] = useState(INIT_FORM);
+    const [tabledata, settabledata] = useState([]);
+    const [currentrow, setCurrentrow] = useState(INIT_ROW);
+    const [dcItems, setDcItems] = useState([]);
+    const [editIndex, setEditIndex] = useState(-1);
+    const [loadInvoice, setLoadInvoice] = useState("");
+
+    // Totals
+    const [subtotal, setSubtotal] = useState(0);
+    const [cgstPct, setCgstPct] = useState(9);
+    const [sgstPct, setSgstPct] = useState(9);
+    const [cgst, setCgst] = useState(0);
+    const [sgst, setSgst] = useState(0);
+    const [igst, setIgst] = useState(0);
+    const [roundOff, setRoundOff] = useState(0);
+    const [grandTotal, setGrandTotal] = useState(0);
+
+    // Success modal
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [savedInvoiceNo, setSavedInvoiceNo] = useState("");
+    const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+    const [invoiceModalMin, setInvoiceModalMin] = useState(false);
+    const [viewInvoiceNo, setViewInvoiceNo] = useState("");
+
+    // Client dropdown
+    const [clients, setClients] = useState([]);
+    const [clientSearch, setClientSearch] = useState("");
+    const [clientOpen, setClientOpen] = useState(false);
+    const clientRef = useRef(null);
+
+    // DC dropdown
+    const [dcList, setDcList] = useState([]);
+    const [dcSearch, setDcSearch] = useState("");
+    const [dcOpen, setDcOpen] = useState(false);
+    const dcRef = useRef(null);
+
+    // Item dropdown
+    const [itemOpen, setItemOpen] = useState(false);
+    const itemRef = useRef(null);
+
+    // UOM dropdown
+    const [uomOpen, setUomOpen] = useState(false);
+    const uomRef = useRef(null);
+
+    // Despatch dropdown
+    const [despatchOpen, setDespatchOpen] = useState(false);
+    const despatchRef = useRef(null);
+
+    // Load invoice section
+    const [loadSearch, setLoadSearch] = useState("");
+    const [loadList, setLoadList] = useState([]);
+    const [loadOpen, setLoadOpen] = useState(false);
+    const loadRef = useRef(null);
+
+    const labelCls = "text-[12px] font-bold text-gray-600 uppercase tracking-tight";
+    const inputCls = "w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black focus:outline-none bg-white shadow-sm";
+    const roInputCls = "w-full p-2.5 border border-blue-100 rounded-lg text-[13px] font-semibold text-blue-800 bg-blue-50 cursor-not-allowed focus:outline-none";
+    const dropdownCls = "absolute top-full left-0 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-52 overflow-y-auto";
+
+    // Close dropdowns on outside click
+    useEffect(() => {
+        const handler = (e) => {
+            if (clientRef.current && !clientRef.current.contains(e.target)) setClientOpen(false);
+            if (dcRef.current && !dcRef.current.contains(e.target)) setDcOpen(false);
+            if (itemRef.current && !itemRef.current.contains(e.target)) setItemOpen(false);
+            if (uomRef.current && !uomRef.current.contains(e.target)) setUomOpen(false);
+            if (despatchRef.current && !despatchRef.current.contains(e.target)) setDespatchOpen(false);
+            if (loadRef.current && !loadRef.current.contains(e.target)) setLoadOpen(false);
+        };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, []);
+
+    // Fetch next invoice number on mount
+    useEffect(() => {
+        fetchNextInvoiceNo();
+    }, []);
+
+    const fetchNextInvoiceNo = async () => {
+        try {
+            const res = await fetch(`${API}/next-SV-no`);
+            const data = await res.json();
+            setFormData(p => ({ ...p, invoice_no: data.invoice_no || "" }));
+        } catch {
+            console.error("Could not fetch invoice no");
+        }
+    };
+
+    // Fetch clients (only Service DC customers)
+    useEffect(() => {
+        const fetchClients = async () => {
+            try {
+                const url = clientSearch
+                    ? `${API}/clients/search?q=${encodeURIComponent(clientSearch)}`
+                    : `${API}/clients`;
+                const res = await fetch(url);
+                setClients(await res.json());
+            } catch { setClients([]); }
+        };
+        fetchClients();
+    }, [clientSearch]);
+
+    // Fetch DC list when customer selected or search changes
+    useEffect(() => {
+        if (!formData.customer_name) { setDcList([]); return; }
+        const fetchDcList = async () => {
+            try {
+                const params = new URLSearchParams({ supplier: formData.customer_name });
+                if (dcSearch) params.set("q", dcSearch);
+                const res = await fetch(`${API}/service-dc/search?${params}`);
+                setDcList(await res.json());
+            } catch { setDcList([]); }
+        };
+        fetchDcList();
+    }, [formData.customer_name, dcSearch]);
+
+    // Recalculate totals whenever table or tax inputs change
+    useEffect(() => {
+        const sub = tabledata.reduce((s, r) => s + (Number(r.amount) || 0), 0);
+        setSubtotal(sub);
+
+        const disc = Number(formData.discount) || 0;
+        const trans = Number(formData.transport) || 0;
+        const taxable = sub - disc + trans;
+
+        const c = (taxable * Number(cgstPct)) / 100;
+        const s = (taxable * Number(sgstPct)) / 100;
+        setCgst(c);
+        setSgst(s);
+
+        const total = taxable + c + s + Number(igst);
+        const ro = Math.round(total) - total;
+        setRoundOff(ro);
+        setGrandTotal(Math.round(total));
+    }, [tabledata, formData.discount, formData.transport, cgstPct, sgstPct, igst]);
+
+    // Fetch invoice list for load section
+    useEffect(() => {
+        if (!loadSearch && !loadOpen) return;
+        const fetchLoad = async () => {
+            try {
+                const res = await fetch(`${API}/search-invoice?q=${encodeURIComponent(loadSearch || "")}`);
+                setLoadList(await res.json());
+            } catch { setLoadList([]); }
+        };
+        fetchLoad();
+    }, [loadSearch, loadOpen]);
+
+    const handleClientSelect = (c) => {
+        const invoiceNo = formData.invoice_no;
+        const invDate = formData.invoice_date;
+        setFormData({ ...INIT_FORM, invoice_no: invoiceNo, invoice_date: invDate, customer_name: c.customer_name });
+        setClientSearch(c.customer_name);
+        setDcSearch("");
+        setDcItems([]);
+        setClientOpen(false);
+        setDcOpen(true);
+    };
+
+    const handleDcSelect = async (dc) => {
+        const dcNo = dc.inward_dc_no || dc.dc_no || dc;
+        setDcSearch(dcNo);
+        setDcOpen(false);
+        try {
+            const res = await fetch(`${API}/service-dc/${encodeURIComponent(dcNo)}`);
+            const data = await res.json();
+            if (!res.ok) { toast.error(data.message); return; }
+            setFormData(p => ({
+                ...p,
+                dc_no: data.header?.inward_dc_no || dcNo,
+                dc_date: data.header?.dc_date ? data.header.dc_date.split("T")[0] : "",
+                payment_terms: data.header?.payment_terms || p.payment_terms,
+                dispatch_through: data.header?.despatch_through || p.dispatch_through
+            }));
+            setDcItems(data.items || []);
+        } catch {
+            toast.error("Failed to fetch DC data");
+        }
+    };
+
+    // Items filtered by search
+    const filteredDcItems = dcItems.filter(item =>
+        !currentrow.item_name ||
+        (item.item_name || "").toLowerCase().includes(currentrow.item_name.toLowerCase())
+    );
+
+    const handleItemSelect = (item) => {
+        const qty = Number(item.received_qty || item.quantity || 0);
+        const price = Number(currentrow.price) || 0;
+        const disc = Number(currentrow.discount) || 0;
+        setCurrentrow(p => ({
+            ...p,
+            item_name: item.item_name || "",
+            quantity: qty || p.quantity,
+            hsn_number: item.hsn_number || item.hsn || p.hsn_number,
+            uom: item.uom || p.uom,
+            amount: qty && price ? (qty * price) - disc : p.amount
+        }));
+        setItemOpen(false);
+    };
+
+    const calcAmount = (row) => {
+        const qty = Number(row.quantity) || 0;
+        const price = Number(row.price) || 0;
+        const disc = Number(row.discount) || 0;
+        return Math.max(0, (qty * price) - disc);
+    };
+
+    const addRow = () => {
+        if (!currentrow.item_name) { toast.error("Item Name is required"); return; }
+        if (!currentrow.quantity) { toast.error("Quantity is required"); return; }
+        if (!currentrow.price) { toast.error("Rate / Price is required"); return; }
+
+        const newRow = { ...currentrow, amount: calcAmount(currentrow) };
+
+        if (editIndex >= 0) {
+            const updated = [...tabledata];
+            updated[editIndex] = newRow;
+            settabledata(updated);
+            setEditIndex(-1);
+        } else {
+            settabledata(p => [...p, newRow]);
+        }
+        setCurrentrow(INIT_ROW);
+    };
+
+    const editItem = (idx) => {
+        setCurrentrow({ ...tabledata[idx] });
+        setEditIndex(idx);
+    };
+
+    const deleteItem = (idx) => settabledata(p => p.filter((_, i) => i !== idx));
+
+    const saveInvoice = async () => {
+        if (!formData.customer_name.trim()) { toast.error("Customer Name is required"); return; }
+        if (!formData.invoice_date) { toast.error("Invoice Date is required"); return; }
+        if (!tabledata.length) { toast.error("Please add at least one item"); return; }
+
+        const payload = {
+            ...formData,
+            cgst,
+            sgst,
+            igst,
+            round_off: roundOff,
+            grand_total: grandTotal,
+            items: tabledata.map(r => ({
+                item_name: r.item_name,
+                quantity: r.quantity,
+                price: r.price,
+                discount: r.discount,
+                amount: r.amount,
+                uom: r.uom,
+                hsn_number: r.hsn_number
+            }))
+        };
+
+        try {
+            const method = loadInvoice ? "PUT" : "POST";
+            const url = loadInvoice ? `${API}/update/${loadInvoice}` : `${API}/create`;
+            const res = await fetch(url, {
+                method,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || "Failed");
+            setSavedInvoiceNo(formData.invoice_no);
+            setShowSuccessModal(true);
+        } catch {
+            toast.error("Failed to Save Invoice");
+        }
+    };
+
+    const handleViewInvoice = () => {
+        setViewInvoiceNo(savedInvoiceNo);
+        setShowSuccessModal(false);
+        setInvoiceModalMin(false);
+        setShowInvoiceModal(true);
+    };
+
+    const handleCloseSuccessModal = () => {
+        setShowSuccessModal(false);
+        resetAll();
+    };
+
+    const loadInvoiceForEdit = async (invNo) => {
+        try {
+            const res = await fetch(`${API}/invoice/${encodeURIComponent(invNo)}`);
+            const data = await res.json();
+            if (!res.ok) throw new Error();
+            const h = data.header;
+            setFormData({
+                customer_name: h.customer_name || "",
+                invoice_no: h.invoice_no || "",
+                invoice_date: h.invoice_date ? h.invoice_date.split("T")[0] : TODAY,
+                dc_no: h.dc_no || "",
+                dc_date: h.dc_date ? h.dc_date.split("T")[0] : "",
+                order_no: h.order_no || "",
+                order_date: h.order_date ? h.order_date.split("T")[0] : "",
+                payment_terms: h.payment_terms || "",
+                dispatch_through: h.dispatch_through || "",
+                discount: h.discount || 0,
+                transport: h.transport || 0
+            });
+            setClientSearch(h.customer_name || "");
+            setDcSearch(h.dc_no || "");
+            setCgstPct(h.cgst && h.cgst > 0 ? 9 : 0);
+            setSgstPct(h.sgst && h.sgst > 0 ? 9 : 0);
+            setIgst(h.igst || 0);
+            settabledata(data.items || []);
+            setLoadInvoice(h.invoice_no);
+            toast.success("Invoice Loaded");
+        } catch {
+            toast.error("Failed to Load Invoice");
+        }
+    };
+
+    const deleteInvoice = async () => {
+        if (!loadInvoice) { toast.error("Load an invoice first to delete"); return; }
+        if (!window.confirm(`Delete ${loadInvoice}? This cannot be undone.`)) return;
+        try {
+            const res = await fetch(`${API}/delete/${encodeURIComponent(loadInvoice)}`, { method: "DELETE" });
+            if (!res.ok) throw new Error();
+            toast.success("Invoice Deleted");
+            resetAll();
+        } catch {
+            toast.error("Failed to Delete Invoice");
+        }
+    };
+
+    const resetAll = () => {
+        setFormData(INIT_FORM);
+        setClientSearch("");
+        setDcSearch("");
+        setLoadSearch("");
+        setDcItems([]);
+        settabledata([]);
+        setCurrentrow(INIT_ROW);
+        setEditIndex(-1);
+        setLoadInvoice("");
+        setSubtotal(0);
+        setCgst(0);
+        setSgst(0);
+        setIgst(0);
+        setRoundOff(0);
+        setGrandTotal(0);
+        fetchNextInvoiceNo();
+    };
+
+    return (
+        <div className="min-h-screen bg-gray-50 p-6 font-sans">
+
+            {/* ── Success Modal ── */}
+            {showSuccessModal && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl p-8 shadow-2xl w-full max-w-sm text-center">
+                        <div className="flex justify-center mb-4">
+                            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+                                <CheckCircle className="w-9 h-9 text-green-500" />
+                            </div>
+                        </div>
+                        <h2 className="text-xl font-black text-gray-800 mb-1">Service Invoice Saved Successfully!</h2>
+                        <p className="text-sm text-gray-500 mb-1">Invoice has been created.</p>
+                        <p className="text-sm font-black text-blue-600 mb-6">{savedInvoiceNo}</p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={handleViewInvoice}
+                                className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white py-2.5 rounded-xl font-bold hover:bg-blue-700 transition-colors"
+                            >
+                                <Eye className="w-4 h-4" /> View Invoice
+                            </button>
+                            <button
+                                onClick={handleCloseSuccessModal}
+                                className="flex-1 border border-gray-300 py-2.5 rounded-xl font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Invoice View Modal ── */}
+            <ServiceWindowModal
+                title="Service Invoice"
+                isOpen={showInvoiceModal}
+                type="Invoice Format"
+                isMinimized={invoiceModalMin}
+                onMinimize={() => setInvoiceModalMin(true)}
+                onClose={() => { setShowInvoiceModal(false); setInvoiceModalMin(false); resetAll(); }}
+                filters={{ dcNumber: viewInvoiceNo }}
+                onFilterChange={(f) => setViewInvoiceNo(f.dcNumber || viewInvoiceNo)}
+            >
+                <InvoiceFormat key={viewInvoiceNo} dcNumber={viewInvoiceNo} />
+            </ServiceWindowModal>
+
+            {/* ── Minimized bar ── */}
+            {showInvoiceModal && invoiceModalMin && (
+                <div className="fixed bottom-0 left-0 right-0 h-10 bg-[#e0e0e0] border-t border-gray-400 flex items-center px-4 z-[99999] shadow-[0_-2px_10px_rgba(0,0,0,0.1)]">
+                    <button
+                        onClick={() => setInvoiceModalMin(false)}
+                        className="flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-blue-700 to-blue-500 text-white text-xs font-bold rounded-sm border border-gray-600 shadow-[inset_1px_1px_0px_rgba(255,255,255,0.3)] hover:from-blue-600 hover:to-blue-400 transition-all"
+                    >
+                        <div className="w-3 h-3 border border-white/50"></div>
+                        Service Invoice
+                    </button>
+                </div>
+            )}
+
+            <button
+                onClick={() => navigate(-1)}
+                className="flex items-center gap-2 px-4 py-2 border rounded-xl bg-white hover:bg-gray-50 text-[15px] font-medium w-fit mb-6"
+            >
+                ← Go Back
+            </button>
+
+            <div className="max-w-[1500px] mx-auto bg-white p-8 shadow-sm border border-gray-200 rounded-xl">
+
+                {/* Header */}
+                <div className="flex justify-between items-center mb-8">
+                    <div>
+                        <h2 className="text-xl font-black text-black tracking-tight">SERVICE INVOICE</h2>
+                        <p className="text-[12px] text-gray-400 mt-1">Client → Service DC → Items → Save</p>
+                    </div>
+                    <div className="flex gap-1.5">
+                        <button onClick={resetAll} className="border px-3 py-1.5 rounded-lg text-[13px] font-bold hover:bg-gray-800 hover:text-white transition-colors">NEW</button>
+                        <button onClick={saveInvoice} className="border px-3 py-1.5 rounded-lg text-[13px] font-bold hover:bg-green-600 hover:text-white transition-colors">SAVE</button>
+                        <button onClick={saveInvoice} className="border px-3 py-1.5 rounded-lg text-[13px] font-bold hover:bg-blue-600 hover:text-white transition-colors">UPDATE</button>
+                        <button onClick={deleteInvoice} className="border px-3 py-1.5 rounded-lg text-[13px] font-bold hover:bg-red-600 hover:text-white transition-colors">DELETE</button>
+                    </div>
+                </div>
+
+                {/* ── Step 1 — Customer + Invoice Header ── */}
+                <div className="bg-gray-50 rounded-xl p-5 border border-gray-100 mb-5">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Step 1 — Customer & Invoice Details</p>
+                    <div className="grid grid-cols-4 gap-5">
+
+                        {/* Customer */}
+                        <div className="relative" ref={clientRef}>
+                            <label className={labelCls}>Customer <span className="text-red-500">*</span></label>
+                            <input
+                                type="text"
+                                value={clientSearch}
+                                onChange={(e) => {
+                                    setClientSearch(e.target.value);
+                                    setFormData(p => ({ ...p, customer_name: e.target.value }));
+                                    setClientOpen(true);
+                                }}
+                                onFocus={() => setClientOpen(true)}
+                                placeholder="Type to search customer…"
+                                className={inputCls}
+                            />
+                            {clientOpen && clients.length > 0 && (
+                                <div className={dropdownCls}>
+                                    {clients.map((c, i) => (
+                                        <div key={i} onClick={() => handleClientSelect(c)}
+                                            className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0">
+                                            {c.customer_name}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Invoice No */}
+                        <div>
+                            <label className={labelCls}>
+                                Invoice No <span className="ml-1 text-[10px] text-blue-500 font-black normal-case">Auto</span>
+                            </label>
+                            <input type="text" value={formData.invoice_no} readOnly className={roInputCls} />
+                        </div>
+
+                        {/* Invoice Date */}
+                        <div>
+                            <label className={labelCls}>Invoice Date <span className="text-red-500">*</span></label>
+                            <input type="date" value={formData.invoice_date}
+                                onChange={(e) => setFormData(p => ({ ...p, invoice_date: e.target.value }))}
+                                className={inputCls} />
+                        </div>
+
+                        {/* Order No */}
+                        <div>
+                            <label className={labelCls}>Order No</label>
+                            <input type="text" value={formData.order_no}
+                                onChange={(e) => setFormData(p => ({ ...p, order_no: e.target.value }))}
+                                placeholder="Enter order no"
+                                className={inputCls} />
+                        </div>
+                    </div>
+                </div>
+
+                {/* ── Step 2 — Service DC Details ── */}
+                <div className="bg-gray-50 rounded-xl p-5 border border-gray-100 mb-5">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Step 2 — Service DC Details</p>
+                    <div className="grid grid-cols-4 gap-5">
+
+                        {/* Service DC No */}
+                        <div className="relative" ref={dcRef}>
+                            <label className={labelCls}>
+                                Service DC No <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                value={dcSearch}
+                                onChange={(e) => {
+                                    setDcSearch(e.target.value);
+                                    setDcOpen(true);
+                                }}
+                                onFocus={() => { if (formData.customer_name) setDcOpen(true); }}
+                                placeholder={formData.customer_name ? "Select Service DC…" : "Select a customer first"}
+                                disabled={!formData.customer_name}
+                                className={`${inputCls} ${!formData.customer_name ? "bg-gray-100 cursor-not-allowed text-gray-400" : "cursor-pointer"}`}
+                            />
+                            {dcOpen && dcList.length > 0 && (
+                                <div className={dropdownCls}>
+                                    {dcList.map((dc, i) => (
+                                        <div key={i} onClick={() => handleDcSelect(dc)}
+                                            className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer border-b border-gray-50 last:border-0">
+                                            <div className="text-[13px] font-bold text-gray-900">{dc.inward_dc_no}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            {dcOpen && formData.customer_name && dcList.length === 0 && (
+                                <div className={`${dropdownCls} px-4 py-3 text-[13px] text-gray-400`}>
+                                    No Service DCs found for this customer.
+                                </div>
+                            )}
+                        </div>
+
+                        {/* DC Date (auto-filled) */}
+                        <div>
+                            <label className={labelCls}>
+                                DC Date
+                                {formData.dc_date && <span className="ml-1 text-[10px] text-blue-500 font-black normal-case">Auto</span>}
+                            </label>
+                            <input type="date" value={formData.dc_date}
+                                onChange={(e) => setFormData(p => ({ ...p, dc_date: e.target.value }))}
+                                className={inputCls} />
+                        </div>
+
+                        {/* Payment Terms */}
+                        <div>
+                            <label className={labelCls}>Payment Terms</label>
+                            <input type="text" value={formData.payment_terms}
+                                onChange={(e) => setFormData(p => ({ ...p, payment_terms: e.target.value }))}
+                                placeholder="Enter payment terms"
+                                className={inputCls} />
+                        </div>
+
+                        {/* Despatch Through */}
+                        <div className="relative" ref={despatchRef}>
+                            <label className={labelCls}>Despatch Through</label>
+                            <div onClick={() => setDespatchOpen(p => !p)}
+                                className={`${inputCls} flex justify-between items-center cursor-pointer select-none min-h-[43px]`}>
+                                <span className={formData.dispatch_through ? "text-black" : "text-gray-400"}>
+                                    {formData.dispatch_through || "Select despatch mode"}
+                                </span>
+                                <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                            {despatchOpen && (
+                                <div className={dropdownCls}>
+                                    {DESPATCH_OPTIONS.map((d) => (
+                                        <div key={d}
+                                            onClick={() => { setFormData(p => ({ ...p, dispatch_through: d })); setDespatchOpen(false); }}
+                                            className={`px-4 py-2.5 hover:bg-blue-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0 ${formData.dispatch_through === d ? "bg-blue-50 text-blue-700" : ""}`}>
+                                            {d}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Order Date + Order No */}
+                    <div className="grid grid-cols-4 gap-5 mt-4">
+                        <div>
+                            <label className={labelCls}>Order Date</label>
+                            <input type="date" value={formData.order_date}
+                                onChange={(e) => setFormData(p => ({ ...p, order_date: e.target.value }))}
+                                className={inputCls} />
+                        </div>
+                    </div>
+
+                    {/* DC Items chip list */}
+                    {dcItems.length > 0 && (
+                        <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                            <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-2">
+                                Items from Service DC — click to auto-fill
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                                {dcItems.map((item, i) => (
+                                    <button key={i} type="button"
+                                        onClick={() => {
+                                            const qty = Number(item.received_qty || item.quantity || 0);
+                                            setCurrentrow(p => ({
+                                                ...p,
+                                                item_name: item.item_name || "",
+                                                quantity: qty || p.quantity,
+                                                hsn_number: item.hsn_number || item.hsn || p.hsn_number,
+                                                uom: item.uom || p.uom
+                                            }));
+                                        }}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-blue-200 rounded-lg text-[12px] font-semibold text-blue-700 hover:bg-blue-100 transition-colors shadow-sm"
+                                    >
+                                        <span>{item.item_name}</span>
+                                        {item.uom && <span className="text-[10px] text-blue-400">{item.uom}</span>}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* ── Step 3 — Add Items ── */}
+                <div className="mb-4">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Step 3 — Add Items</p>
+                    <div className="grid grid-cols-9 gap-2">
+
+                        {/* Item Name */}
+                        <div className="col-span-2 relative" ref={itemRef}>
+                            <input type="text"
+                                value={currentrow.item_name}
+                                onFocus={() => { if (dcItems.length > 0) setItemOpen(true); }}
+                                onChange={(e) => {
+                                    setCurrentrow(p => ({ ...p, item_name: e.target.value }));
+                                    if (dcItems.length > 0) setItemOpen(true);
+                                }}
+                                placeholder={dcItems.length > 0 ? "Select from DC items…" : "Item Name"}
+                                className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black outline-none bg-gray-50/50"
+                            />
+                            {itemOpen && filteredDcItems.length > 0 && (
+                                <div className="absolute top-full left-0 w-full mt-1 rounded-lg bg-white shadow-lg z-50 max-h-48 overflow-y-auto border border-gray-200">
+                                    {filteredDcItems.map((item, i) => (
+                                        <div key={i} onClick={(e) => { e.stopPropagation(); handleItemSelect(item); }}
+                                            className="px-3 py-2.5 hover:bg-blue-50 cursor-pointer border-b border-gray-50 last:border-0">
+                                            <div className="text-[13px] font-semibold text-gray-900">{item.item_name}</div>
+                                            {item.uom && <div className="text-[11px] text-gray-400 mt-0.5">{item.uom} · Qty: {item.received_qty || item.quantity}</div>}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Quantity */}
+                        <div>
+                            <input type="number" placeholder="Qty"
+                                value={currentrow.quantity}
+                                onChange={(e) => setCurrentrow(p => ({ ...p, quantity: e.target.value }))}
+                                className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black outline-none bg-gray-50/50" />
+                        </div>
+
+                        {/* Rate */}
+                        <div>
+                            <input type="number" placeholder="Rate"
+                                value={currentrow.price}
+                                onChange={(e) => setCurrentrow(p => ({ ...p, price: e.target.value }))}
+                                className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black outline-none bg-gray-50/50" />
+                        </div>
+
+                        {/* GST % */}
+                        <div className="relative">
+                            <select
+                                value={currentrow.gst_percent}
+                                onChange={(e) => setCurrentrow(p => ({ ...p, gst_percent: Number(e.target.value) }))}
+                                className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black outline-none bg-gray-50/50 appearance-none"
+                            >
+                                {GST_OPTIONS.map(g => (
+                                    <option key={g} value={g}>{g}% GST</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Discount */}
+                        <div>
+                            <input type="number" placeholder="Disc"
+                                value={currentrow.discount}
+                                onChange={(e) => setCurrentrow(p => ({ ...p, discount: e.target.value }))}
+                                className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black outline-none bg-gray-50/50" />
+                        </div>
+
+                        {/* UOM */}
+                        <div className="relative" ref={uomRef}>
+                            <input type="text" placeholder="UOM"
+                                value={currentrow.uom}
+                                onFocus={() => setUomOpen(true)}
+                                onChange={(e) => setCurrentrow(p => ({ ...p, uom: e.target.value }))}
+                                className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black outline-none bg-gray-50/50" />
+                            {uomOpen && (
+                                <div className="absolute top-full left-0 w-full mt-1 rounded-lg bg-white shadow-lg z-50 max-h-40 overflow-y-auto border border-gray-200">
+                                    {UOM_LIST.map((uom) => (
+                                        <div key={uom} onClick={() => { setCurrentrow(p => ({ ...p, uom })); setUomOpen(false); }}
+                                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm">{uom}</div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* HSN */}
+                        <div>
+                            <input type="text" placeholder="HSN"
+                                value={currentrow.hsn_number}
+                                onChange={(e) => setCurrentrow(p => ({ ...p, hsn_number: e.target.value }))}
+                                className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black outline-none bg-gray-50/50" />
+                        </div>
+
+                        {/* ADD / CLR */}
+                        <div className="flex items-center gap-2">
+                            <button onClick={addRow} className="flex-1 bg-green-500 text-white py-2 px-3 rounded-lg hover:bg-green-600 text-[13px] font-bold">
+                                {editIndex >= 0 ? "UPD" : "ADD"}
+                            </button>
+                            <button onClick={() => { setCurrentrow(INIT_ROW); setEditIndex(-1); }} className="flex-1 bg-gray-100 text-gray-700 py-2 px-3 rounded-lg hover:bg-gray-200 text-[13px] font-bold">CLR</button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Items Table */}
+                <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm mt-4 min-h-[200px]">
+                    <table className="w-full border-collapse">
+                        <thead>
+                            <tr className="bg-gray-50 border-b border-gray-200">
+                                {["#", "Item Name", "Qty", "Rate", "GST%", "Disc", "Amount", "UOM", "HSN", "Actions"].map((h, i) => (
+                                    <th key={i} className="p-3 text-[11px] font-black text-gray-500 uppercase text-left border-r border-gray-100 last:border-0">{h}</th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {tabledata.length === 0 ? (
+                                <tr>
+                                    <td colSpan={10} className="py-14 text-center">
+                                        <div className="text-gray-300 text-4xl mb-3">🧾</div>
+                                        <p className="text-[13px] text-gray-400 font-medium">No products added yet.</p>
+                                        <p className="text-[12px] text-gray-300 mt-1">Select customer → Client DC → products to begin.</p>
+                                    </td>
+                                </tr>
+                            ) : (
+                                tabledata.map((item, idx) => (
+                                    <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50">
+                                        <td className="p-3 text-[12px] text-gray-500 border-r">{idx + 1}</td>
+                                        <td className="p-3 text-[12px] font-semibold border-r">{item.item_name}</td>
+                                        <td className="p-3 text-[12px] border-r">{item.quantity}</td>
+                                        <td className="p-3 text-[12px] border-r">{item.price}</td>
+                                        <td className="p-3 text-[12px] border-r">{item.gst_percent}%</td>
+                                        <td className="p-3 text-[12px] border-r">{item.discount || 0}</td>
+                                        <td className="p-3 text-[12px] font-semibold border-r">{Number(item.amount).toFixed(2)}</td>
+                                        <td className="p-3 text-[12px] border-r">{item.uom}</td>
+                                        <td className="p-3 text-[12px] border-r">{item.hsn_number}</td>
+                                        <td className="p-3">
+                                            <div className="flex gap-3">
+                                                <SquarePen onClick={() => editItem(idx)} className="w-4 h-4 text-blue-600 cursor-pointer hover:text-blue-800" />
+                                                <Trash2 onClick={() => deleteItem(idx)} className="w-4 h-4 text-red-500 cursor-pointer hover:text-red-700" />
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* ── Totals + Load Section ── */}
+                <div className="mt-10 grid grid-cols-2 gap-10">
+
+                    {/* Load Invoice section */}
+                    <div className="mt-auto p-5 bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg flex flex-col md:flex-row items-center gap-6" ref={loadRef}>
+                        <label className="text-[11px] font-black text-gray-600 uppercase tracking-[0.2em] italic shrink-0">
+                            Select Invoice To View / Modify :
+                        </label>
+                        <div className="relative w-[250px]">
+                            <input
+                                type="text"
+                                value={loadSearch}
+                                onFocus={() => setLoadOpen(true)}
+                                onChange={(e) => { setLoadSearch(e.target.value); setLoadOpen(true); }}
+                                placeholder="AT/INV/001"
+                                className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black outline-none bg-white"
+                            />
+                            {loadOpen && loadList.length > 0 && (
+                                <div className="absolute top-full left-0 w-full mt-1 rounded-lg bg-white shadow-lg z-50 max-h-40 overflow-y-auto border border-gray-200">
+                                    {loadList.map((inv, i) => (
+                                        <div key={i}
+                                            onClick={() => { loadInvoiceForEdit(inv.invoice_no); setLoadSearch(inv.invoice_no); setLoadOpen(false); }}
+                                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm font-semibold">
+                                            {inv.invoice_no}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Totals panel */}
+                    <div className="flex justify-end">
+                        <div className="w-full max-w-sm bg-gray-50/50 p-6 rounded-xl border border-gray-200 shadow-sm">
+                            <div className="space-y-3">
+
+                                <div className="flex justify-between items-center">
+                                    <label className={labelCls}>Subtotal :</label>
+                                    <input type="text" value={subtotal.toFixed(2)} readOnly
+                                        className="w-32 p-1.5 border-b border-gray-300 bg-transparent text-right font-black text-black outline-none" />
+                                </div>
+
+                                <div className="flex justify-between items-center">
+                                    <label className={labelCls}>Discount (-):</label>
+                                    <input type="number" value={formData.discount}
+                                        onChange={(e) => setFormData(p => ({ ...p, discount: e.target.value }))}
+                                        className="w-32 p-1.5 border-b border-gray-300 bg-transparent text-right font-black text-black outline-none" />
+                                </div>
+
+                                <div className="flex justify-between items-center">
+                                    <label className={labelCls}>Transport (+):</label>
+                                    <input type="number" value={formData.transport}
+                                        onChange={(e) => setFormData(p => ({ ...p, transport: e.target.value }))}
+                                        className="w-32 p-1.5 border-b border-gray-300 bg-transparent text-right font-black text-black outline-none" />
+                                </div>
+
+                                <div className="flex justify-between items-center">
+                                    <label className={labelCls}>CGST</label>
+                                    <div className="flex items-center gap-1">
+                                        <input type="number" value={cgstPct} onChange={(e) => setCgstPct(e.target.value)}
+                                            className="w-10 p-1 border border-gray-300 rounded text-center text-[11px] font-bold outline-none" />
+                                        <span className="text-[11px] text-gray-500 font-bold">%</span>
+                                        <input type="text" value={cgst.toFixed(2)} readOnly
+                                            className="w-24 p-1.5 border-b border-gray-300 bg-transparent text-right font-black text-black outline-none" />
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-between items-center">
+                                    <label className={labelCls}>SGST</label>
+                                    <div className="flex items-center gap-1">
+                                        <input type="number" value={sgstPct} onChange={(e) => setSgstPct(e.target.value)}
+                                            className="w-10 p-1 border border-gray-300 rounded text-center text-[11px] font-bold outline-none" />
+                                        <span className="text-[11px] text-gray-500 font-bold">%</span>
+                                        <input type="text" value={sgst.toFixed(2)} readOnly
+                                            className="w-24 p-1.5 border-b border-gray-300 bg-transparent text-right font-black text-black outline-none" />
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-between items-center">
+                                    <label className={labelCls}>IGST :</label>
+                                    <input type="number" value={igst}
+                                        onChange={(e) => setIgst(Number(e.target.value) || 0)}
+                                        className="w-32 p-1.5 border-b border-gray-300 bg-transparent text-right font-black text-black outline-none" />
+                                </div>
+
+                                <div className="flex justify-between items-center">
+                                    <label className={labelCls}>Round Off :</label>
+                                    <input type="text" value={roundOff.toFixed(2)} readOnly
+                                        className="w-32 p-1.5 border-b border-gray-300 bg-transparent text-right font-black text-black outline-none" />
+                                </div>
+
+                                <div className="flex justify-between items-center pt-4 mt-2 border-t-2 border-gray-300">
+                                    <label className="text-[14px] font-black text-black uppercase tracking-tighter">Grand Total :</label>
+                                    <span className="text-[22px] font-black text-[#311B92] italic tracking-tighter">
+                                        {grandTotal || 0}
+                                    </span>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    );
+};
+
+export default ServiceInvoiceForm;

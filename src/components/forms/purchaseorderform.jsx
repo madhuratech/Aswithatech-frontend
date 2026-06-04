@@ -277,8 +277,16 @@ const [totals, setTotals] = useState({
   // submit purchase order
 
   const submitPurchaseOrder = async () => {
+    if (!formData.client_name?.trim()) {
+      toast.error("Client Name is required");
+      return;
+    }
+    if (!formData.po_date) {
+      toast.error("PO Date is required");
+      return;
+    }
     if (tabledata.length === 0) {
-      alert("Please add at least one item to the order.");
+      toast.error("Please add at least one item");
       return;
     }
 
