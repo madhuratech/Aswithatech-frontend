@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
-import { errorToast } from '../ui/nottifications';
+import { errorToast } from '../../ui/nottifications';
 import { SquarePen, Trash2 } from 'lucide-react';
 
 const Quotation = () => {

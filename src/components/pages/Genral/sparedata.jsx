@@ -1,8 +1,8 @@
 import React,{useEffect, useState} from "react";
-import SpareModel from "../../forms/spare";
+import SpareModel from "../../forms/general/spare";
 import {Plus,Trash2,SquarePen} from "lucide-react";
 import {  errorToast} from "../../ui/nottifications";
-import Addpassword from "../../forms/addeditpassword";
+import Addpassword from "../../forms/general/addeditpassword";
 // import toast from "react-hot-toast";
 
 const Servicedata = () =>{

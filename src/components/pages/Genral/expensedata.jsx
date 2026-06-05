@@ -1,5 +1,5 @@
 import { useState,useEffect } from 'react';
-import ExpenseForm from "../../forms/expenseform";
+import ExpenseForm from "../../forms/general/expenseform";
 import { Plus } from "lucide-react";
 const ExpenseData = () => {
 

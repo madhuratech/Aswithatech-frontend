@@ -1,6 +1,6 @@
 import { useState,useEffect } from 'react';
 import React from "react";
-import { successToast,errorToast } from "../ui/nottifications";
+import { successToast,errorToast } from "../../ui/nottifications";
 import { X } from "lucide-react";
 
 const SpareModel = ({ onClose, refreshSpare, editMode, spare }) => { 

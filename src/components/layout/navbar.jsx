@@ -9,9 +9,8 @@ const Navbar = () => {
     { label: "PRODUCTIONS", path: "/production" },
     { label: "SALES", path: "/sales" },
     { label: "SERVICE", path: "/services" },
-    { label: "REPORTS", path: "/reports" },
-    { label: "CONTACT", path: "/report" },
-    { label: "EXIT", path: "/report" },
+    { label: "CONTACT", path: "/contact" },
+    { label: "EXIT", path: "/exit" },
   ];
 
 
@@ -19,7 +18,7 @@ const Navbar = () => {
 
     <div className="w-full flex items-center justify-between px-7 h-16 bg-white shadow-lg" style={{ paddingRight: 'calc(1.75rem + var(--scrollbar-compensation, 0px))' }}>
       <div>
-        <h3 className="text-lg font-[Arial] text-[24px] text-[#155DFC]  leading-[36px] font-[700]">Admin Software</h3>
+        <h3 className="text-lg font-[Arial] text-[24px] text-[#155DFC]  leading-[36px] font-[700]">Ashwitha Tech</h3>
       </div>
 
       <nav>

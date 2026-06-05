@@ -193,6 +193,11 @@ const gst = Number(purchase?.cgst || 0) + Number(purchase?.sgst || 0);
                     <span>{Number(gst).toFixed(2)}</span>
                   </div>
 
+                  <div className="flex justify-between px-4 py-2 ">
+                    <span>TDS</span>
+                    <span>{purchase.tds || 0}</span>
+                  </div>
+
                   <div className="flex justify-between px-4 py-2 font-bold">
                     <span>NET TOTAL</span>
                     <span>{purchase.grandTotal}</span>

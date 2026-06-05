@@ -7,7 +7,8 @@ import {
   Settings,
   Wrench,
    Box,
-   DollarSign
+   DollarSign,
+   FileText
 } from "lucide-react";
 
 const General = () =>{
@@ -18,6 +19,7 @@ const General = () =>{
      {title:"Spare", path:"/general/spare",icon:Box},
      {title:"Expense Master", path:"/general/expense",icon:DollarSign},
      {title:"Employee Master", path:"/general/employee",icon:UserCog},
+     {title:"Reports", path:"/general/reports", icon:FileText},
      {title:"System Settings", path:"/general/setting", icon:Settings}
 
    ]

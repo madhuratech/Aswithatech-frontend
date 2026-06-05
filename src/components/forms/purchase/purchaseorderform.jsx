@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
-import { errorToast} from "../ui/nottifications";
+import { errorToast} from "../../ui/nottifications";
 import toast from "react-hot-toast";
 import { SquarePen, Trash2 } from "lucide-react";
 
@@ -47,6 +47,8 @@ export default function Purchaseorder() {
       client_name: data.client_name || "",
       po_date: data.po_date?.split('T')[0] || "",
       narration: data.narration || "",
+      delivery_charges: data.delivery_charges || 0,
+      tds: data.tds || 0,
     });
 
     setOrderType(data.order_type || "");
@@ -126,6 +128,8 @@ const deleteItem = (index) => {
   const [formData, setFormData] = useState({
     client_name:'',
     po_date:'',
+    delivery_charges: 0,
+    tds: 0
   });
 
   const [currentRow, setCurrentRow] = useState({
@@ -144,6 +148,7 @@ const deleteItem = (index) => {
   const clientRef = useRef(null);
   const itemRef = useRef(null);
   const poRef = useRef(null);
+  const unitRef = useRef(null);
 
 // Load Clients
 
@@ -185,6 +190,9 @@ useEffect(() => {
       }
       if (poRef.current && !poRef.current.contains(event.target)) {
         setshowpodropdown(false);
+      }
+      if (unitRef.current && !unitRef.current.contains(event.target)) {
+        setShowUnitDropdown(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -300,6 +308,8 @@ const [totals, setTotals] = useState({
      roundOff: totals.roundOff,
      grandTotal: totals.grandTotal,
      narration: formData.narration || "",
+     delivery_charges: parseFloat(formData.delivery_charges) || 0,
+     tds: parseFloat(formData.tds) || 0,
      po_number: poNumber,
     };
 
@@ -322,11 +332,31 @@ const [totals, setTotals] = useState({
         throw new Error(data.message || "Failed to create purchase order");
       }
 
-       toast.success(method === "PUT" ? "Purchase order updated successfully!"
-        : "Purchase order created successfully!",
-      { id: toastId } );  
+       toast.dismiss(toastId);
 
-      navigate(`/purchase/po-format/${data.po_number || poNumber}`);
+       const poNum = data.po_number || poNumber;
+       toast.custom((t) => (
+         <div className="bg-white px-6 py-4 rounded-lg shadow-lg border border-gray-200">
+           <p className="text-green-600 font-semibold text-sm mb-3">
+             Purchase order {method === "PUT" ? "updated" : "created"} successfully!
+           </p>
+           <p className="text-xs text-gray-500 mb-3">PO No: {poNum}</p>
+           <div className="flex gap-3 justify-end">
+             <button
+               onClick={() => { toast.dismiss(t.id); navigate(`/purchase/po-format/${poNum}`); }}
+               className="px-4 py-1.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+             >
+               Print
+             </button>
+             <button
+               onClick={() => toast.dismiss(t.id)}
+               className="px-4 py-1.5 border border-gray-300 text-gray-700 text-xs rounded hover:bg-gray-50"
+             >
+               Close
+             </button>
+           </div>
+         </div>
+       ), { duration: Infinity });
 
     } catch (error) {
       toast.error(error.message, { id: toastId });
@@ -394,7 +424,9 @@ const [debouncedItemSearch] = useState(() => debounce(itemSearch, 300));
   const subtotal = tabledata.reduce((sum, item)=> sum + Number(item.amount || 0), 0);
   const cgst = subtotal * 0.09;
   const sgst = subtotal * 0.09;
-  const total = subtotal + cgst + sgst;
+  const delivery_charges = parseFloat(formData.delivery_charges) || 0;
+  const tds = parseFloat(formData.tds) || 0;
+  const total = subtotal + cgst + sgst + delivery_charges - tds;
   const roundedtotal = Math.round(total);
   const roundOff = roundedtotal - total;
 
@@ -406,7 +438,7 @@ const [debouncedItemSearch] = useState(() => debounce(itemSearch, 300));
     grandTotal: roundedtotal,
   });
 
- },[tabledata]);
+ },[tabledata, formData.delivery_charges, formData.tds]);
 
 
   return (
@@ -500,14 +532,14 @@ const [debouncedItemSearch] = useState(() => debounce(itemSearch, 300));
         <div className="mb-4">
           <p className="text-sm font-medium mb-2">Order Type</p>
           <div className="flex gap-6">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="radio" name="orderType" checked={orderType === "service"} onChange={() => typechannge("service")} /> Service
+            <label htmlFor="po-order-type-service" className="flex items-center gap-2 cursor-pointer">
+              <input id="po-order-type-service" type="radio" name="orderType" checked={orderType === "service"} onChange={() => typechannge("service")} /> Service
             </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="radio" name="orderType" checked={orderType === "spare"} onChange={() => typechannge("spare")} /> Spare
+            <label htmlFor="po-order-type-spare" className="flex items-center gap-2 cursor-pointer">
+              <input id="po-order-type-spare" type="radio" name="orderType" checked={orderType === "spare"} onChange={() => typechannge("spare")} /> Spare
             </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="radio" name="orderType" checked={orderType === "purchase_item"} onChange={() => typechannge("purchase_item")} /> Purchase Item
+            <label htmlFor="po-order-type-purchase" className="flex items-center gap-2 cursor-pointer">
+              <input id="po-order-type-purchase" type="radio" name="orderType" checked={orderType === "purchase_item"} onChange={() => typechannge("purchase_item")} /> Purchase Item
             </label>
           </div>
       {/* Item Entry Box */}
@@ -564,7 +596,7 @@ const [debouncedItemSearch] = useState(() => debounce(itemSearch, 300));
              className="outline-none border rounded-lg px-2 py-2 w-full" />
             </div>
  
-            <div className="relative">
+            <div className="relative" ref={unitRef}>
               <input type="text" placeholder="Unit" 
                value={currentRow.unit}
                onChange={(e) => setCurrentRow ({...currentRow, unit: e.target.value})}
@@ -660,46 +692,72 @@ const [debouncedItemSearch] = useState(() => debounce(itemSearch, 300));
         <div className="mt-4 border border-gray-200 rounded-xl bg-gray-50 p-6">
           <div className="flex justify-between ">
 
-            {/* Load PO */}
-            <div className="mb-4 relative" ref={poRef}>
-              <p className="text-sm font-medium mb-1">Load Purchase Order</p>
-              <div className="flex gap-2">
-                <input 
-                  type="text" 
-                  placeholder="Enter PO Number"
-                  value={loadPoNumber}
-                  onFocus={() => setshowpodropdown(true)}
-                  onChange={(e) => {
-                    const value = e.target.value; 
-                    setLoadPoNumber(value); 
-                    searchPo(value);
-                    if (value) setshowpodropdown(true);
-                  }}
-                  className="outline-none border rounded-lg px-3 py-2 w-full max-w-[200px]" 
-                />
+            {/* Load PO & Delivery Charges */}
+            <div className="flex flex-col gap-4">
+              
 
-                  {/* Show Drop Down */}
-                  {showpodropdown && polist && (
-                    <div className="absolute top-[65px] left-0 w-full max-w-[200px] bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-40 overflow-y-auto">
-                          {polist.length > 0 ? (
-                        polist.map((po) => (
-                          <div
-                            key={po.po_number}
-                            onClick={() => {
-                              setLoadPoNumber(po.po_number);
-                              setshowpodropdown(false);
-                              loadPo(po.po_number);
-                            }}
-                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-100 last:border-0"
-                          >
-                            {po.po_number}
-                          </div>
-                        ))
-                      ) : (
-                        <div className="px-3 py-2 text-gray-400 text-sm">No PO found</div>
-                      )}
-                    </div>
-              )}
+              <div>
+                <p className="text-sm font-medium mb-1">Delivery Charges</p>
+                <input
+                  type="number"
+                  placeholder="0.00"
+                  value={formData.delivery_charges}
+                  onChange={(e) => setFormData({...formData, delivery_charges: e.target.value})}
+                  className="outline-none border rounded-lg px-3 py-2 w-full max-w-[200px]"
+                />
+              </div>
+
+              <div>
+                <p className="text-sm font-medium mb-1">TDS</p>
+                <input
+                  type="number"
+                  placeholder="0.00"
+                  value={formData.tds}
+                  onChange={(e) => setFormData({...formData, tds: e.target.value})}
+                  className="outline-none border rounded-lg px-3 py-2 w-full max-w-[200px]"
+                />
+              </div>
+
+              <div className="relative" ref={poRef}>
+                <p className="text-sm font-medium mb-1">Load Purchase Order</p>
+                <div className="flex gap-2">
+                  <input 
+                    type="text" 
+                    placeholder="Enter PO Number"
+                    value={loadPoNumber}
+                    onFocus={() => setshowpodropdown(true)}
+                    onChange={(e) => {
+                      const value = e.target.value; 
+                      setLoadPoNumber(value); 
+                      searchPo(value);
+                      if (value) setshowpodropdown(true);
+                    }}
+                    className="outline-none border rounded-lg px-3 py-2 w-full max-w-[200px]" 
+                  />
+
+                    {/* Show Drop Down */}
+                    {showpodropdown && polist && (
+                      <div className="absolute top-[65px] left-0 w-full max-w-[200px] bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-40 overflow-y-auto">
+                            {polist.length > 0 ? (
+                          polist.map((po) => (
+                            <div
+                              key={po.po_number}
+                              onClick={() => {
+                                setLoadPoNumber(po.po_number);
+                                setshowpodropdown(false);
+                                loadPo(po.po_number);
+                              }}
+                              className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-100 last:border-0"
+                            >
+                              {po.po_number}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="px-3 py-2 text-gray-400 text-sm">No PO found</div>
+                        )}
+                      </div>
+                )}
+                </div>
               </div>
             </div>
 
@@ -718,6 +776,16 @@ const [debouncedItemSearch] = useState(() => debounce(itemSearch, 300));
               <div className="flex justify-between">
                 <span className="text-gray-600">SGST (9%):</span>
                 <span className="font-medium">{totals.sgst.toFixed(2) || "₹0.00"}</span>
+              </div>
+
+              <div className="flex justify-between">
+                <span className="text-gray-600">Delivery Charges:</span>
+                <span className="font-medium">{(parseFloat(formData.delivery_charges) || 0).toFixed(2)}</span>
+              </div>
+
+              <div className="flex justify-between">
+                <span className="text-gray-600">TDS:</span>
+                <span className="font-medium">-{(parseFloat(formData.tds) || 0).toFixed(2)}</span>
               </div>
 
               <div className="flex justify-between">

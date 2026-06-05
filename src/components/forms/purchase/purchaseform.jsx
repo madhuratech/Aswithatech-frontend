@@ -1,7 +1,7 @@
 import React,{useEffect}from "react";
 import { Search, X } from "lucide-react";
 import { useState } from "react";
-import { errorToast,loadingToast,successToast } from "../ui/nottifications";
+import { errorToast,loadingToast,successToast } from "../../ui/nottifications";
 import toast from "react-hot-toast";
 
 const PurchaseForm = ({ onclose, editItem, purchase, refresh }) => {

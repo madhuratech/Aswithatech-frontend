@@ -1,7 +1,7 @@
 import React,{useEffect, useState} from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
-import { errorToast } from "../ui/nottifications";
+import { errorToast } from "../../ui/nottifications";
 import { Trash2,SquarePen } from "lucide-react";
 
 const BillwisePayment = () => {
@@ -11,8 +11,11 @@ const BillwisePayment = () => {
      const [tabledata , settabledata] = useState([]);
      const [loadbillno, setloadbillno] = useState("");
      const[allbills , setallbills] = useState([]);
-     const [selectedBill, setSelectedBill] = useState("");
-      const [banks, setBanks] = useState([]);
+      const [selectedBill, setSelectedBill] = useState("");
+       const [banks, setBanks] = useState([]);
+       const [supplierBills, setSupplierBills] = useState([]);
+       const [billNoOpen, setBillNoOpen] = useState(false);
+       const [overallPending, setOverallPending] = useState(0);
      
     
      const [openclient, setopenclient] = useState(false);
@@ -68,6 +71,30 @@ const BillwisePayment = () => {
           console.log("Error fetching clients:", error);
       }
 }
+
+const fetchSupplierBills = async (supplierName) => {
+  try {
+    const res = await fetch(
+      `http://localhost:3000/api/purchaseorders/by-supplier?name=${encodeURIComponent(supplierName)}`
+    );
+    const data = await res.json();
+    if (Array.isArray(data)) setSupplierBills(data);
+  } catch (error) {
+    console.log("Error fetching supplier bills:", error);
+  }
+};
+
+const fetchOverallPending = async (supplierName) => {
+  try {
+    const res = await fetch(
+      `${Api_url}/supplier-pending/${encodeURIComponent(supplierName)}`
+    );
+    const data = await res.json();
+    setOverallPending(Number(data.total) || 0);
+  } catch (error) {
+    console.log("Error fetching overall pending:", error);
+  }
+};
 
 const Savebill = async () =>{
    if(tabledata.length === 0){
@@ -206,20 +233,6 @@ const loadAllBills = async() => {
 
 
 
-// Grand Totals
- 
-useEffect(() => {
-  const total = tabledata.reduce((sum, item) => {
-    return sum + Number(item.paid_amount || 0);
-  }, 0);
-
-  setformdata((prev) => ({
-    ...prev,
-    grand_total: total.toFixed(2),
-  }));
-}, [tabledata]);
-
-
 //  Bank list
 
 useEffect(() => {
@@ -264,10 +277,13 @@ const reset = async () => {
         remarks: "",
         reference_no: "",
         grand_total: "",
+        bank_date: "",
     });
     settabledata([]);
     setSupplierName("");
-    setloadbillno(false);
+    setSupplierBills([]);
+    setloadbillno("");
+    setOverallPending(0);
 }
 
 
@@ -374,12 +390,18 @@ const deleteBill = async () =>{
                          {openclient && (
                             <div className="absolute top-[70px] left-0 bg-white shadow-lg z-50  w-[317px]  border border-gray-200 rounded-[2px]  ">
                                 {clientlist.map((c) =>{
-                                    return <div key={c.id} 
-                                    onClick={() => {setformdata({...formdata,supplier_id:c.id});
-                                    setSupplierName(c.supplier_name);
-                                     setopenclient(false);}}
-                                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer">
-                                  {c.supplier_name}</div>
+                                     return <div key={c.id} 
+                                      onClick={() => {setformdata({...formdata, supplier_id:c.id, grand_total:""});
+                                       setSupplierName(c.supplier_name);
+                                        setopenclient(false);
+                                        setSupplierBills([]);
+                                        setcurrentrow({bill_no:"", bill_date:"", bill_amount:"", paid_amount:"", balance_amount:"", payment_mode:""});
+                                        settabledata([]);
+                                        setloadbillno("");
+                                        fetchSupplierBills(c.supplier_name);
+                                        fetchOverallPending(c.supplier_name);}}
+                                     className="px-3 py-2 hover:bg-gray-100 cursor-pointer">
+                                   {c.supplier_name}</div>
                                  })}        
 
                             </div>
@@ -407,12 +429,72 @@ const deleteBill = async () =>{
                   <div className="grid grid-cols-7 mt-10 gap-3 ">
                      {/* Bill No */}
 
-                     <div className="relative">
+                      <div className="relative">
                         <label htmlFor="" className="block text-sm font-medium text-gray-700 mb-1">Bill No</label>
-                        <input type="text" placeholder="Enter Bill"
+                        <input type="text" placeholder={supplierBills.length > 0 ? "Select Bill No" : "Enter Bill"}
                         value={currentrow.bill_no}
-                         onChange={(e) => setcurrentrow({...currentrow, bill_no:e.target.value})}
+                        onFocus={() => {if (supplierBills.length > 0) setBillNoOpen(true);}}
+                          onChange={async (e) => {
+                            const val = e.target.value;
+                            const match = supplierBills.find(b => b.po_number === val);
+                            if (match) {
+                              try {
+                                const res = await fetch(`${Api_url}/paid-amount/${match.po_number}`);
+                                const data = await res.json();
+                                const outstanding = Number(match.grandTotal) - Number(data.total_paid || 0);
+                                setcurrentrow({
+                                  ...currentrow,
+                                  bill_no: match.po_number,
+                                  bill_date: match.po_date,
+                                  bill_amount: String(match.grandTotal),
+                                  balance_amount: String(Math.max(0, outstanding)),
+                                });
+                              } catch {
+                                setcurrentrow({
+                                  ...currentrow,
+                                  bill_no: match.po_number,
+                                  bill_date: match.po_date,
+                                  bill_amount: String(match.grandTotal),
+                                  balance_amount: String(match.grandTotal),
+                                });
+                              }
+                            } else {
+                              setcurrentrow({...currentrow, bill_no: val});
+                            }
+                          }}
                          className="outline-none border mt-1 rounded-lg px-3 py-2 w-full text-[14px]"/>
+
+                         {billNoOpen && supplierBills.length > 0 && (
+                            <div className="absolute top-[71px] left-0 w-full border rounded shadow z-50 bg-white max-h-40 overflow-y-auto">
+                               {supplierBills.map((b) => (
+                                  <div key={b.po_number} onClick={async () => {
+                                     setBillNoOpen(false);
+                                     try {
+                                       const res = await fetch(`${Api_url}/paid-amount/${b.po_number}`);
+                                       const data = await res.json();
+                                       const outstanding = Number(b.grandTotal) - Number(data.total_paid || 0);
+                                       setcurrentrow({
+                                          ...currentrow,
+                                          bill_no: b.po_number,
+                                          bill_date: b.po_date,
+                                          bill_amount: String(b.grandTotal),
+                                          balance_amount: String(Math.max(0, outstanding)),
+                                       });
+                                     } catch {
+                                       setcurrentrow({
+                                          ...currentrow,
+                                          bill_no: b.po_number,
+                                          bill_date: b.po_date,
+                                          bill_amount: String(b.grandTotal),
+                                          balance_amount: String(b.grandTotal),
+                                       });
+                                     }
+                                  }} className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-[14px]">
+                                     {b.po_number}
+                                  </div>
+                               ))}
+                            </div>
+                         )}
                      </div>
 
                      {/* Bill Date */}
@@ -632,8 +714,8 @@ const deleteBill = async () =>{
 
                    <div className="mt-5">
                      <div className="flex gap-3 justify-end mt-5">
-                        <p className="text-right text-lg font-semibold mt-4">Grand Total : </p>
-                         <p className="text-right text-lg font-semibold mt-4 text-blue-600">{formdata.grand_total}</p>
+                        <p className="text-right text-lg font-semibold mt-4">Supplier Pending Amount : </p>
+                         <p className="text-right text-lg font-semibold mt-4 text-blue-600">{overallPending.toFixed(2)}</p>
                      </div>
                    </div>
               </div>

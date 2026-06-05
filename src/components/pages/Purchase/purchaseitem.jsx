@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import PurchaseItems from "../../forms/purchaseform";
+import PurchaseItems from "../../forms/purchase/purchaseform";
 import { ArrowLeft, Plus, SquarePen, Trash2 } from "lucide-react";
 import { errorToast, successToast } from "../../ui/nottifications";
 

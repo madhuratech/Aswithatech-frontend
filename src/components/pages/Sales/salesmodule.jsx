@@ -3,6 +3,9 @@ import { FileText, Truck, FileCheck, Receipt, FileMinus, CreditCard,FileBarChart
 import { useNavigate } from "react-router-dom";
 import SaleswindowModel from"../../ui/saleswindowModal";
 import QuotationFormat from "./quotationoverview";
+import InvoiceFormat from "./invoiceformat";
+import SalesDCFormat from "./salesdcformat";
+import Creditnoteview from "./creditnoteview";
 const SalesCard = ({ title, subtitle, icon: Icon, bgColor, iconColor, onClick }) => {
     return (
         <div
@@ -29,7 +32,7 @@ const SalesModule = () => {
     const [viewtype , setviewtype] = React.useState("");
     const [modalTitle, setModalTitle] = useState("");
     const [isMinimized, setIsMinimized] = useState(false);
-   // const [initialView, setInitialView] = useState("qt");
+    const [initialView, setInitialView] = useState("qt");
     
     
 
@@ -39,31 +42,79 @@ const SalesModule = () => {
     QtNumber : ""
     });
 
-    const openReport = async (type , mode = "Qt") => {
-        setModalTitle(type);
+const openReport = async (type) => {
 
-  try{
-        if(type === "Quotation Format"){
-        const res = await fetch("http://localhost:3000/api/quotations/QT/search?q=");
-        const data = await res.json();
-        const number = data[0]?.quotation_no || "";
-        setFilters(prev => ({...prev, QtNumber : number}));
+    setModalTitle(type);
+
+    try {
+
+        let latestNumber = "";
+
+        if (type === "Quotation Format") {
+
+            const res = await fetch(
+              "http://localhost:3000/api/quotations/QT/search?q="
+            );
+
+            const data = await res.json();
+
+            latestNumber = data[0]?.quotation_no || "";
         }
 
+        if (type === "Invoice Format") {
+
+            const res = await fetch(
+              "http://localhost:3000/api/salesinvoices/INV/search?q="
+            );
+
+            const data = await res.json();
+
+            latestNumber = data[0]?.invoice_no || "";
+        }
+
+        if (type === "DC Format") {
+
+            const res = await fetch(
+              "http://localhost:3000/api/salesdc/DC/search?q="
+            );
+
+            const data = await res.json();
+
+            latestNumber = data[0]?.dc_no || "";
+        }
+
+        if (type === "Credit Note") {
+
+            const res = await fetch(
+              "http://localhost:3000/api/creditnotes/cn/search?q="
+            );
+
+            const data = await res.json();
+
+            latestNumber = data[0]?.cn_number || "";
+        }
+
+        setFilters({
+            fromDate: "",
+            toDate: "",
+            clientName: "",
+            QtNumber: latestNumber
+        });
+
         setviewtype(type);
+
         setShowModal(true);
-    }catch(error){
-        console.error("Error fetching number:", error);
+
+    } catch (error) {
+
+        console.error("Error fetching latest document:", error);
 
     }
-
-    setviewtype(type);
-    setShowModal(true);
 };
 
 const ShowReport = (item) => {
-    if(item.name === "Quotation Format"){
-        openReport(item.name, "qt", "qt");
+    if(item.name === "Quotation Format" || item.name === "Invoice Format" || item.name === "DC Format" || item.name === "Credit Note"){
+        openReport(item.name);
     }
     else{
         navigate(item.path);
@@ -113,7 +164,7 @@ const ShowReport = (item) => {
             icon: FileMinus,
             bgColor: "bg-red-50",
             iconColor: "text-red-600",
-            action: () => console.log("Credit Note Clicked"),
+            action: () => navigate("/sales/credit"),
         },
         {
             title: "Receipts & Advance",
@@ -121,7 +172,7 @@ const ShowReport = (item) => {
             icon: CreditCard,
             bgColor: "bg-cyan-50",
             iconColor: "text-cyan-600",
-            action: () => console.log("Receipts & Payments Clicked"),
+            action: () => navigate("/sales/receipt-advance"),
         },
         {
             title: "Receipts & Bill TO Bill",
@@ -129,7 +180,7 @@ const ShowReport = (item) => {
             icon: CreditCard,
             bgColor: "bg-cyan-50",
             iconColor: "text-cyan-600",
-            action: () => console.log("Receipts & Payments Clicked"),
+            action: () => navigate("/sales/receipt"),
         },
          {
             title: "Sales Reports",
@@ -146,7 +197,7 @@ const ShowReport = (item) => {
         { name: "Sales Report", path: "/sales/sales-report" },
         { name: "Customer Ledger", path: "/sales/customer-Ledger" },
         { name: "DC Format", path: "/sales/stock-report" },
-        { name: "Credit Note", path: "/sales/profit-loss" },
+        { name: "Credit Note", path: "/sales/cn-format" },
         { name: "Invoice Format", path: "/sales/tax-report" },
         { name: "Reciept Format", path: "/sales/Reciept-Format" },
     ];
@@ -205,13 +256,22 @@ const ShowReport = (item) => {
           onClose={() => setShowModal(false)}
           isMinimized={isMinimized}
           setIsMinimized={setIsMinimized}
-  //        initialView={initialView}
+          initialView={initialView}
           onMinimize={() => setShowModal(false)}
            onFilterChange={setFilters}
          >
         {viewtype === "Quotation Format" &&
         <QuotationFormat QtNumber={filters.QtNumber} /> 
         }        
+        {viewtype === "Invoice Format" &&
+        <InvoiceFormat InvNumber={filters.QtNumber} />
+        }        
+        {viewtype === "DC Format" &&
+        <SalesDCFormat dcNumber={filters.QtNumber} />
+        }        
+        {viewtype === "Credit Note" &&
+        <Creditnoteview cnNumber={filters.QtNumber} />
+        }
         </SaleswindowModel>
 
          {showModal && isMinimized && (

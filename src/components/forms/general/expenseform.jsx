@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
-import { useScrollLock } from '../../hooks/useScrollLock';
-import { successToast,errorToast, loadingToast } from '../ui/nottifications';
+import { useScrollLock } from '../../../hooks/useScrollLock';
+import { successToast,errorToast, loadingToast } from '../../ui/nottifications';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 

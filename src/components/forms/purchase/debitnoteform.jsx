@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { errorToast } from "../ui/nottifications";
+import { errorToast } from "../../ui/nottifications";
 import { SquarePen, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -48,7 +48,9 @@ const Debitnote = () => {
   dn_date:'',
   bill_no:'',
   bill_date:'',
-  remarks:''
+  remarks:'',
+  delivery_charges: 0,
+  tds: 0
  });
 
 //  Row Items State;
@@ -80,7 +82,9 @@ const [currentrow , setcurrentrow] = useState({
         dn_date: data.dn_date?.split('T')[0] || "",
         bill_no: data.bill_no || "",
         bill_date: data.bill_date,
-        remarks: data.remarks || ""
+        remarks: data.remarks || "",
+        delivery_charges: data.delivery_charges || 0,
+        tds: data.tds || 0
        });
        setordertype(data.order_type || "");
        setdnNumber(data.dn_number || "");
@@ -151,7 +155,7 @@ useEffect(() =>{
   })
   .catch((error) => {
     console.warn("Retrying with backup client URL...");
-    fetch("http://loaclhost:3000/api/customers/all")
+    fetch("http://localhost:3000/api/customers/all")
     .then(res => res.json())
     .then(data =>{setclientName(Array.isArray(data) ? data : []);      
     })
@@ -289,8 +293,10 @@ useEffect(() => {
   const cgst = subtotal * 0.09;
   const sgst = subtotal * 0.09;
   const igst = 0;
+  const delivery_charges = parseFloat(Formdata.delivery_charges) || 0;
+  const tds = parseFloat(Formdata.tds) || 0;
  
-  const total = subtotal + cgst + sgst;
+  const total = subtotal + cgst + sgst + delivery_charges - tds;
   const rounded = Math.round(total);
   const roundOff = rounded - total
 
@@ -303,7 +309,7 @@ useEffect(() => {
     grandTotal: rounded,
   });
 
-}, [tabledata]);
+}, [tabledata, Formdata.delivery_charges, Formdata.tds]);
 
 
 // Clear reset Form;
@@ -315,10 +321,11 @@ const resetForm = async() =>{
     bill_no: '',
     bill_date: '',
     remarks: '',
+    delivery_charges: 0,
+    tds: 0,
     });
 
   settabledata([]);
-  tabledata([]);
   setcurrentrow({
     item_name: "",
     quantity: 0,
@@ -368,8 +375,11 @@ const payload = {
   cgst: totals.cgst,
   sgst: totals.sgst,
   igst: totals.igst,
+  roundOff: totals.roundOff,
   grandTotal: totals.grandTotal,
-  narration: Formdata.remarks || "",
+  remarks: Formdata.remarks || "",
+  delivery_charges: parseFloat(Formdata.delivery_charges) || 0,
+  tds: parseFloat(Formdata.tds) || 0,
   dn_number: dnNumber,
 };
       const toastId = toast.loading("Saving purchase order...");
@@ -639,14 +649,14 @@ const deleteItem = (index) =>{
           <div>
           <p className="text-sm font-medium mb-2">Order Type</p>
           <div className="flex gap-6">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="radio" name="orderType" checked ={ordertype === "service"} onChange={() => typechange("service")} /> Service
+            <label htmlFor="dn-order-type-service" className="flex items-center gap-2 cursor-pointer">
+              <input id="dn-order-type-service" type="radio" name="orderType" checked ={ordertype === "service"} onChange={() => typechange("service")} /> Service
             </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="radio" name="orderType" checked ={ordertype === "spare"} onChange={() => typechange("spare")} /> Spare
+            <label htmlFor="dn-order-type-spare" className="flex items-center gap-2 cursor-pointer">
+              <input id="dn-order-type-spare" type="radio" name="orderType" checked ={ordertype === "spare"} onChange={() => typechange("spare")} /> Spare
             </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="radio" name="orderType" checked={ordertype === "purchase_item"} onChange={() => typechange("purchase_item")} /> Purchase Item
+            <label htmlFor="dn-order-type-purchase" className="flex items-center gap-2 cursor-pointer">
+              <input id="dn-order-type-purchase" type="radio" name="orderType" checked={ordertype === "purchase_item"} onChange={() => typechange("purchase_item")} /> Purchase Item
             </label>
           </div>
           </div>
@@ -721,7 +731,7 @@ const deleteItem = (index) =>{
             className="w-[100px] outline-none border rounded-lg px-3 py-2 mt-1" type="text" />
             </div>
 
-             <div className="relative">
+             <div className="relative" ref={unitRef}>
             <label className="text-sm" >UOM</label>
             <input 
              value={currentrow.unit}
@@ -832,42 +842,68 @@ const deleteItem = (index) =>{
           <div className=" items-center justify-between gap-3">
                 <div className="flex justify-between">
 
-                    <div className="items-center gap-2 min-w-0 space-y-3 relative" ref={dnRef}>
-              <span>SELECT DN NO :</span>
-              <input
-                 value={loadDnnumber}
-                 onFocus={() => setshowdnNumber(true)}
-                 onChange={(e) => {const value = e.target.value;
-                  setloadDnnumber(value);
-                  SearchDn(value);
-                  if(value) setshowdnNumber(true);
-                 }}
-                className=" w-full border px-3 py-2 rounded flex-1 min-w-[150px] max-w-[250px] outline-none"
-                placeholder="Enter / Search DC No"
-              />
-              {/* dropdown */}
-              {showdnNumber && (
-              <div className="absolute top-[65px] left-0  w-[250px] bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-40 overflow-y-auto">
-                 {Dnlist.length > 0 ? (
-                Dnlist.map((dn) => (
-                  <div
-                    key={dn.dn_number}
-                    onClick={() => {
-                      setloadDnnumber(dn.dn_number);
-                      setshowdnNumber(false);
-                      loadDn(dn.dn_number);
-                    }}
-                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-100 last:border-0"
-                  >
-                    {dn.dn_number}
-                  </div>
-                ))
-              ) : (
-                <div className="px-3 py-2 text-gray-400 text-sm">No DN found</div>
-              )}
-            </div>
-            )}
+                    <div className="flex flex-col gap-4 min-w-0" ref={dnRef}>
+                      
 
+                    <div className="flex flex-col gap-4">
+                      <span className="block mb-1">DELIVERY CHARGES :</span>
+                      <input
+                        type="number"
+                        value={Formdata.delivery_charges}
+                        onChange={(e) => setFormData({...Formdata, delivery_charges: e.target.value})}
+                        className="w-full border px-3 py-2 rounded flex-1 min-w-[150px] max-w-[250px] outline-none"
+                        placeholder="0.00"
+                      />
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-medium mb-1">TDS</p>
+                      <input
+                        type="number"
+                        placeholder="0.00"
+                        value={Formdata.tds}
+                        onChange={(e) => setFormData({...Formdata, tds: e.target.value})}
+                        className="outline-none border rounded-lg px-3 py-2 w-full max-w-[200px]"
+                      />
+                    </div>
+
+
+                    <div className="items-center gap-2 relative">
+                        <span className="block mb-1">SELECT DN NO :</span>
+                        <input
+                           value={loadDnnumber}
+                           onFocus={() => setshowdnNumber(true)}
+                           onChange={(e) => {const value = e.target.value;
+                            setloadDnnumber(value);
+                            SearchDn(value);
+                            if(value) setshowdnNumber(true);
+                           }}
+                          className=" w-full border px-3 py-2 rounded flex-1 min-w-[150px] max-w-[250px] outline-none"
+                          placeholder="Enter / Search DC No"
+                        />
+                        {/* dropdown */}
+                        {showdnNumber && (
+                        <div className="absolute top-[65px] left-0  w-[250px] bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-40 overflow-y-auto">
+                           {Dnlist.length > 0 ? (
+                          Dnlist.map((dn) => (
+                            <div
+                              key={dn.dn_number}
+                              onClick={() => {
+                                setloadDnnumber(dn.dn_number);
+                                setshowdnNumber(false);
+                                loadDn(dn.dn_number);
+                              }}
+                              className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-100 last:border-0"
+                            >
+                              {dn.dn_number}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="px-3 py-2 text-gray-400 text-sm">No DN found</div>
+                        )}
+                      </div>
+                      )}
+                    </div>
             </div>
 
 
@@ -894,13 +930,23 @@ const deleteItem = (index) =>{
               </div>
 
               <div className="flex justify-between">
+                <span className="text-gray-600">Delivery Charges:</span>
+                <span className="font-medium">{(parseFloat(Formdata.delivery_charges) || 0).toFixed(2)}</span>
+              </div>
+
+              <div className="flex justify-between">
+                <span className="text-gray-600">TDS:</span>
+                <span className="font-medium">-{(parseFloat(Formdata.tds) || 0).toFixed(2)}</span>
+              </div>
+
+              <div className="flex justify-between">
                 <span className="text-gray-600">Round Off:</span>
                 <span className="font-medium">{(totals.roundOff || 0).toFixed(2)}</span>        
              </div>
 
               <div className="border-t pt-3 flex justify-between items-center">
                 <span className="font-semibold text-base">Grand Total:</span>
-                <span className="font-bold text-blue-600 text-lg">{totals.grandTotal}</span>
+                <span className="font-bold text-blue-600 text-lg">{totals.grandTotal.toFixed(2)}</span>
               </div>
 
             </div>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {useNavigate } from "react-router-dom";
-import { errorToast } from "../ui/nottifications";
+import { errorToast } from "../../ui/nottifications";
 import toast from "react-hot-toast";
 import {SquarePen, Trash2 } from "lucide-react";
 
@@ -52,6 +52,7 @@ const PurchaseEntry = () =>{
       discount:"",
       other_name:"", 
       other_charges:"",
+      tds: 0,
     });
 
     const [currentRow , setcuurentRow] = useState({
@@ -93,6 +94,7 @@ const PurchaseEntry = () =>{
       discount: data.discount || "",
       other_name: data.other_name || "",
       other_charges: data.other_charges || "",
+      tds: data.tds || 0,
     });
 
     setbillno(data.bill_no || '');
@@ -295,6 +297,7 @@ const [totals , settotals] = useState({
   igst: 0,
   other_charges: 0,
   discount: 0,
+  tds: 0,
   roundOff: 0,
   grandTotal: 0,
 })
@@ -306,7 +309,10 @@ useEffect(  () => {
     const igst = 0;
     const other_charges = parseFloat(formData.other_charges) || 0;
     const discount = parseFloat(formData.discount) || 0;
-    const grandTotal = subtotal + cgst + sgst + igst + other_charges - discount;
+    const tds = parseFloat(formData.tds) || 0;
+    const rawTotal = subtotal + cgst + sgst + igst + other_charges - discount - tds;
+    const grandTotal = Math.round(rawTotal);
+    const roundOff = grandTotal - rawTotal;
 
     settotals({
       subtotal: parseFloat(subtotal.toFixed(2)),
@@ -315,8 +321,9 @@ useEffect(  () => {
       igst: parseFloat(igst.toFixed(2)),
       other_charges,
       discount,
-      grandTotal: parseFloat(grandTotal.toFixed(2)),
-      roundOff: parseFloat((grandTotal - Math.floor(grandTotal)).toFixed(2)),
+      tds,
+      grandTotal,
+      roundOff: parseFloat(roundOff.toFixed(2)),
     });
   }, [tabledata, formData])
 
@@ -345,6 +352,7 @@ useEffect(  () => {
       grand_total: totals.grandTotal,
       other_charges: Number(formData.other_charges || 0),
       round_off: totals.roundOff,
+      tds: Number(formData.tds || 0),
       items: tabledata.map(item => ({
 
         item_name: item.item_name,
@@ -437,6 +445,7 @@ const edititem = (index) => {
     discount:"",
     other_name:"",
     other_charges:"",
+    tds: 0,
   });
 
   setTabledata([]);
@@ -614,18 +623,18 @@ useEffect(() =>{
                               </div>
                               {/*  */}
                               <div className="mt-4">
-                                  <p className="text-sm font-medium ">Order Type</p>
-                                    <div className="flex gap-6 mt-2">
-                                       <label htmlFor="" className="flex items-center gap-2 cursor-pointer">
-                                        <input type="radio" name="ordertype" checked={orderType === "service"} onChange={() => Loadordertype("service")} className="mr-1"/> Service
-                                       </label>
-                                       <label htmlFor="" className="flex item-center gap-2 cursor-pointer">
-                                        <input type="radio" name="ordertype" checked={orderType === "spare"} onChange={() => Loadordertype("spare")} className="mr-1"/> Spare
-                                       </label>
-                                       <label htmlFor="" className="flex item-center gap-2 cursor-pointer">
-                                        <input type="radio" name="ordertype" checked={orderType === "purchase_item"} onChange={() => Loadordertype("purchase_item")} className="mr-1"/> Purchase Items
-                                       </label>
-                                    </div>
+                                   <p className="text-sm font-medium ">Order Type</p>
+                                     <div className="flex gap-6 mt-2">
+                                        <label htmlFor="pe-order-type-service" className="flex items-center gap-2 cursor-pointer">
+                                         <input id="pe-order-type-service" type="radio" name="ordertype" checked={orderType === "service"} onChange={() => Loadordertype("service")} className="mr-1"/> Service
+                                        </label>
+                                        <label htmlFor="pe-order-type-spare" className="flex items-center gap-2 cursor-pointer">
+                                         <input id="pe-order-type-spare" type="radio" name="ordertype" checked={orderType === "spare"} onChange={() => Loadordertype("spare")} className="mr-1"/> Spare
+                                        </label>
+                                        <label htmlFor="pe-order-type-purchase" className="flex items-center gap-2 cursor-pointer">
+                                         <input id="pe-order-type-purchase" type="radio" name="ordertype" checked={orderType === "purchase_item"} onChange={() => Loadordertype("purchase_item")} className="mr-1"/> Purchase Items
+                                        </label>
+                                     </div>
                               </div>
 
                               {/* description Items */}
@@ -846,6 +855,15 @@ useEffect(() =>{
                                            onChange={(e) => setformData({...formData,discount:e.target.value})}
                                           className="outline-none border mt-2 rounded-lg px-3 py-2 w-full" placeholder="%"/>
                                         </div>
+
+                                        {/* TDS */}
+                                        <div>
+                                          <label htmlFor="" className="text-sm">TDS</label>
+                                          <input type="number" 
+                                          value={formData.tds}
+                                           onChange={(e) => setformData({...formData,tds:e.target.value})}
+                                          className="outline-none border mt-2 rounded-lg px-3 py-2 w-full" placeholder="TDS"/>
+                                        </div>
                                   </div>
                                     {/* Select Bill No */}
  
@@ -899,42 +917,47 @@ useEffect(() =>{
 
                                      <div className="flex justify-between">
                                        <span className="text-gray-600">Subtotal:</span>
-                                       <span className="font-medium">{totals.subtotal}</span>
+                                       <span className="font-medium">{totals.subtotal.toFixed(2)}</span>
                                      </div>
 
                                      <div className="flex justify-between">
                                        <span className="text-gray-600">CGST (9%):</span>
-                                       <span className="font-medium">{totals.cgst}</span>
+                                       <span className="font-medium">{totals.cgst.toFixed(2)}</span>
                                      </div>
 
                                      <div className="flex justify-between">
                                        <span className="text-gray-600">SGST (9%):</span>
-                                       <span className="font-medium">{totals.sgst}</span>
+                                       <span className="font-medium">{totals.sgst.toFixed(2)}</span>
                                      </div>
 
                                       <div className="flex justify-between">
                                        <span className="text-gray-600">IGST (18%):</span>
-                                       <span className="font-medium">{totals.igst}</span>
+                                       <span className="font-medium">{totals.igst.toFixed(2)}</span>
                                      </div>
 
                                      <div className="flex justify-between">
                                        <span className="text-gray-600">Discount (%):</span>
-                                       <span className="font-medium">{totals.discount}</span>
+                                       <span className="font-medium">{totals.discount.toFixed(2)}</span>
                                      </div>
 
                                      <div className="flex justify-between">
                                        <span className="text-gray-600">Othe Charges:</span>
-                                       <span className="font-medium">{totals.other_charges}</span>
+                                       <span className="font-medium">{totals.other_charges.toFixed(2)}</span>
+                                     </div>
+
+                                     <div className="flex justify-between">
+                                       <span className="text-gray-600">TDS:</span>
+                                       <span className="font-medium">-{totals.tds.toFixed(2)}</span>
                                      </div>
                                      
                                      <div className="flex justify-between">
                                        <span className="text-gray-600">Round Off:</span>
-                                       <span className="font-medium">{totals.roundOff}</span>
+                                       <span className="font-medium">{totals.roundOff.toFixed(2)}</span>
                                      </div>
 
                                      <div className="border-t pt-3 flex justify-between items-center">
                                        <span className="font-semibold text-base">Grand Total:</span>
-                                       <span className="font-bold text-blue-600 text-lg">{totals.grandTotal}</span>
+                                       <span className="font-bold text-blue-600 text-lg">{totals.grandTotal.toFixed(2)}</span>
                                      </div>
 
                                    </div>

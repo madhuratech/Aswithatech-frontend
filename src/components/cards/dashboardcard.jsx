@@ -1,93 +1,132 @@
 import React from "react";
-import {TrendingUp,Clock,CheckCircle2,Package,PackageOpen,ArrowLeftRight,
-AlertCircle,FileText,IndianRupee,Plus,Send,Search,
+import {
+  FileCheck,
+  FileMinus,
+  FilePlus,
+  Cpu,
+  CreditCard,
+  RotateCw,
+  Users,
+  Clock,
+  IndianRupee,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
-const Statcard = () =>{
- const Card = ({ title, value, icons }) => (
-    <div className="rounded-xl border border-black/10 bg-white text-black p-5 shadow-sm hover:shadow-md hover:border-blue-200 transition-all cursor-pointer group">
-      
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-lg font-semibold text-gray-900 leading-5 group-hover:text-blue-600 transition-colors">
-            {title}
-          </p>
-          <h3 className="text-2xl font-semibold leading-7 mt-2">
-            {value}
-          </h3>
-        </div>
+const Statcard = () => {
+  const navigate = useNavigate();
 
-          <div className="text-2xl text-gray-400">
-            {icons}
-          </div>
-        
+  const Card = ({ title, icon, action }) => (
+    <div 
+      onClick={action} 
+      className="flex items-center justify-between p-6 rounded-2xl border border-slate-100 bg-white shadow-sm hover:shadow-md hover:border-blue-200 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group"
+    >
+      <div>
+        <p className="text-lg font-bold text-slate-800 leading-snug group-hover:text-blue-600 transition-colors">
+          {title}
+        </p>
       </div>
-
+      <div className="flex-shrink-0">
+        {icon}
+      </div>
     </div>
- );
- const cards = [
-    { title: "Jobs", value: 0,icons:<TrendingUp className="bg-[#EFF6FF] text-[#155DFC] w-[40px] h-[40px] px-2 rounded-lg "/> },
-    { title: "Pending Jobs", value: 4,icons:<Clock className="bg-[#FFF7ED] text-[#F54900] w-[40px] h-[40px] px-2 rounded-lg "/>},
-    { title: "Completed Jobs", value: 12,icons:<CheckCircle2 className="bg-[#F0FDF4] text-[#00A63E] w-[40px] h-[40px] px-2 rounded-lg "/> },
-    { title: "Brand PCBS", value: 8,icons:<Package className="bg-[#FAF5FF] text-[#9810FA] w-[40px] h-[40px] px-2 rounded-lg "/>},
-    { title: "Non-Brand PCBS", value: 6,icons:<PackageOpen className="bg-[#EEF2FF] text-[#4F39F6] w-[40px] h-[40px] px-2 rounded-lg "/> },
-    { title: "Standby Issued", value: 3,icons:<ArrowLeftRight className="bg-[#ECFEFF] text-[#0092B8] w-[40px] h-[40px] px-2 rounded-lg "/> },
-    { title: "Overdue", value: 5,icons:<AlertCircle className="bg-[#FEF2F2] text-[#E7000B] w-[40px] h-[40px] px-2 rounded-lg "/> },
-    { title: "Pending Invoice", value: 120,icons:<FileText className="bg-[#FEFCE8] text-[#D08700] w-[40px] h-[40px] px-2 rounded-lg "/> },
-    { title: "Balance Payment", value: 9,icons:<IndianRupee className="bg-[#FFF1F2] text-[#EC003F] w-[40px] h-[40px] px-2 rounded-lg "/> },
+  );
+
+  const cards = [
+    { 
+      title: "Purchase Order",
+      icon: (
+        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-blue-50 text-blue-600 transition-colors group-hover:bg-blue-100">
+          <FileCheck size={22} />
+        </div>
+      ),
+      action: () => navigate("/purchase/orders") 
+    },
+    { 
+      title: "Debit Note",
+      icon: (
+        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-orange-50 text-orange-600 transition-colors group-hover:bg-orange-100">
+          <FileMinus size={22} />
+        </div>
+      ),
+      action: () => navigate("/purchase/debit")
+    },
+    { 
+      title: "Credit Note",
+      icon: (
+        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-green-50 text-green-600 transition-colors group-hover:bg-green-100">
+          <FilePlus size={22} />
+        </div>
+      ),
+      action: () => navigate("/sales/credit") 
+    },
+    { 
+      title: "PCB Stock", 
+      icon: (
+        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-purple-50 text-purple-600 transition-colors group-hover:bg-purple-100">
+          <Cpu size={22} />
+        </div>
+      ),
+      action: () => navigate("/production/pcb-stock")
+    },
+    { 
+      title: "BillWise Payment", 
+      icon: (
+        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 transition-colors group-hover:bg-indigo-100">
+          <CreditCard size={22} />
+        </div>
+      ),
+      action: () => navigate("/purchase/billwise") 
+    },
+    { 
+      title: "Standby Stock", 
+      icon: (
+        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-cyan-50 text-cyan-600 transition-colors group-hover:bg-cyan-100">
+          <RotateCw size={22} />
+        </div>
+      ),
+      action: () => navigate("/production/standby-stock") 
+    },
+    { 
+      title: "Customer Ledger", 
+      icon: (
+        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-rose-50 text-rose-600 transition-colors group-hover:bg-rose-100">
+          <Users size={22} />
+        </div>
+      ),
+      action: () => navigate("/purchase/supplier-ledger") 
+    },
+    { 
+      title: "Pending Reports", 
+      icon: (
+        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-amber-50 text-amber-600 transition-colors group-hover:bg-amber-100">
+          <Clock size={22} />
+        </div>
+      ),
+      action: () => navigate("/reports") 
+    },
+    { 
+      title: "Monthly Report", 
+      icon: (
+        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-rose-50 text-rose-600 transition-colors group-hover:bg-rose-100">
+          <IndianRupee size={22} />
+        </div>
+      ),
+      action: () => navigate("/purchase/tax-report") 
+    },
   ];
-    return(
-    <div className="min-h-screen">
-      <div className="grid grid-cols-3 w-[95%] px-[15px] ml-7 gap-7 mt-10">
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       {cards.map((card, index) => (
         <Card
           key={index}
           title={card.title}
-          value={card.value}
-          icons={card.icons}
+          icon={card.icon}
+          action={card.action}
         />
       ))}
     </div>
-      {/*  */}
-        <div className="grid grid-cols-2 gap-6 p-10">
-     <div className="rounded-xl border border-black/10 bg-white p-7 w-[320px] h-[280px]">  
-    <h5 className="text-sm font-semibold text-gray-700">
-      Quick Actions
-    </h5>
+  );
+};
 
-    <div className="mt-6 flex flex-col gap-3 font-[Times-New-Roman]">
-
-      <button className="flex items-center gap-2 bg-[#155DFC] w-[240px] h-[35px] px-3 text-white rounded-lg text-[15px]">
-        <Plus size={18} />
-        New Inward Entry
-      </button>
-
-      <button className="flex items-center gap-2 bg-[#00A63E] w-[240px] h-[35px] px-3 text-white rounded-lg text-[15px]">
-        <Send  size={18} />
-        Issue Standby PCB
-      </button>
-
-      <button className="flex items-center gap-2 bg-[#9810FA] w-[240px] h-[35px] px-3 text-white rounded-lg text-[15px]">
-        <FileText size={18} />
-        Create Service Invoice
-      </button>
-
-      <button className="flex items-center gap-2 bg-[#4F39F6] w-[240px] h-[35px] px-3 text-white rounded-lg text-[15px]">
-        <Search  size={18} />
-       View Job Details
-      </button>
-
-    </div>
-  </div>
-   {/*  */}
-   <div className="rounded-xl border border-black/10 bg-white p-4 relative right-[65px] w-[110%]">
-           <div>
-             <h5>Alert Notifications</h5>
-           </div>
-   </div>
-</div>
-
-    </div>
-    )
-}
 export default Statcard;

@@ -13,14 +13,18 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
 
      useEffect(() => {
   if (isOpen) {
-    setViewMode(initialViewMode || initialView || "qt");   
-    setReportData([]);                     
+    setViewMode(initialViewMode || initialView || ((type === "Credit Note" || type === "cn") ? "cn" : "qt"));   
+    setReportData([]);
+    loadAllClients();
   }
-}, [isOpen, initialViewMode, initialView]);
+}, [isOpen, initialViewMode, initialView, type]);
 
 
   
-  const Api_urls ="http://localhost:3000/api/quotations"
+  const Api_urls =
+    type === "Quotation Format" || type === "qt"
+      ? "http://localhost:3000/api/quotations"
+      : "http://localhost:3000/api/creditnotes";
 
 
  const [filters , setFilters] = useState({
@@ -43,6 +47,8 @@ useEffect(() => {
 useEffect(() =>{
   const searchurl = (type === "qt" || type === "Quotation Format")
    ? `${Api_urls}/QT/search?q=`
+   : (type === "Credit Note" || type === "cn")
+   ? `${Api_urls}/cn/search?q=`
    : null;
 
   if (searchurl) {
@@ -57,13 +63,23 @@ useEffect(() =>{
 
 
 // search client
-const searchclient = async(value) =>{
-  try{
-    const res = await fetch(`${Api_urls}/clients/search?q=${value}`);
+const searchclient = async(value) => {
+  try {
+    const res = await fetch(`http://localhost:3000/api/customers/search?q=${encodeURIComponent(value)}`);
     const data = await res.json();
     setclientlist(data);
-  }catch(error){
+  } catch(error) {
     console.error("Error fetching client list:", error);
+  }
+}
+
+const loadAllClients = async () => {
+  try {
+    const res = await fetch(`http://localhost:3000/api/customers/all`);
+    const data = await res.json();
+    setclientlist(data);
+  } catch(error) {
+    console.error("Error loading all clients:", error);
   }
 }
 
@@ -81,8 +97,8 @@ const gentratereport = async () => {
       params.append("quotationNo", filters.QtNumber); 
     }
 
-    if ((type === "qt" || type === "Quotation Format") && filters.clientName) {
-      params.append("clientName", filters.clientName);
+    if ((type === "Credit Note" || type === "cn") && filters.QtNumber) {
+      params.append("cnNumber", filters.QtNumber); 
     }
 
     const response = await fetch(
@@ -93,8 +109,17 @@ const gentratereport = async () => {
 
     console.log("REPORT DATA:", data); 
 
-    setReportData(data);
+    // Frontend filter by client name if provided
+    let filteredData = data;
+    if (filters.clientName) {
+      filteredData = data.filter(row => 
+        (row.customer_name || row.client_name || "")
+          .toLowerCase()
+          .includes(filters.clientName.toLowerCase())
+      );
+    }
 
+    setReportData(filteredData);
     setViewMode("report"); 
 
   } catch (error) {
@@ -113,8 +138,13 @@ const downloadExcel = () =>{
      }
 
      if((type === "qt" || type === "Quotation Format") && filters.QtNumber) {
-     params.append("quotationNo", filters.QtNumber);
+       params.append("quotationNo", filters.QtNumber);
      }
+
+     if((type === "Credit Note" || type === "cn") && filters.QtNumber) {
+       params.append("cnNumber", filters.QtNumber);
+     }
+
      const url = `${Api_urls}/report/excel?${params.toString()}`;
      window.open(url, "_blank");
 
@@ -126,10 +156,13 @@ const downloadExcel = () =>{
     if (!e.target.closest(".qt-dropdown")) {
       setpodown(false);
     }
+    if (!e.target.closest(".client-dropdown-container")) {
+      setclientopen(false);
+    }
   };
 
-  document.addEventListener("click", handleClickOutside);
-  return () => document.removeEventListener("click", handleClickOutside);
+  document.addEventListener("mousedown", handleClickOutside);
+  return () => document.removeEventListener("mousedown", handleClickOutside);
 }, []);
 
   if (!isOpen || isMinimized) return null;
@@ -211,18 +244,18 @@ const downloadExcel = () =>{
   {/* PO NUMBER */}
 <div className="flex flex-col relative qt-dropdown">
   <label>
-    {type === "qt" || type === "Quotation Format" ? "QUOTATION NO" : type === "dn" ? "DEBIT NOTE NO" : "BILL NO"}
-</label>
+    {type === "qt" || type === "Quotation Format" ? "QUOTATION NO" : "CREDIT NOTE NO"}
+  </label>
     <input
       type="text"
-      placeholder="e.g. AT-QT-001"
+      placeholder={type === "qt" || type === "Quotation Format" ? "e.g. AT-QT-001" : "e.g. CN-2026-001"}
       value={filters.QtNumber}
       onFocus={() => setpodown(true)}
       onChange={(e) => {
       const value = e.target.value;
       setFilters({...filters, QtNumber:value});
       if(value){
-        setViewMode("qt");
+        setViewMode(type === "qt" || type === "Quotation Format" ? "qt" : "cn");
       }
       }}
       className="w-[150px] px-2 py-1 mt-[4px] border text-black  border-gray-300 rounded-sm outline-none focus:border-blue-500 bg-white"
@@ -233,30 +266,33 @@ const downloadExcel = () =>{
       <div className="">
           {
         openpo && (
-         <div className="absolute top-full left-0 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-[200px] overflow-y-auto">            {poList.length > 0 ? (
-              poList.map((po) => (
-                <div
-                  key={po.quotation_no}
-                   onClick={(e) => {
-                   e.stopPropagation();
-                   const selectedQt = po.quotation_no;
-                   setFilters((prev) => ({  ...prev,  QtNumber: selectedQt }));
+         <div className="absolute top-full left-0 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-[200px] overflow-y-auto">
+            {poList.length > 0 ? (
+               poList.map((po) => {
+                 const displayNo = (type === "qt" || type === "Quotation Format") ? po.quotation_no : po.cn_number;
+                 return (
+                   <div
+                     key={displayNo}
+                     onClick={(e) => {
+                       e.stopPropagation();
+                       setFilters((prev) => ({ ...prev, QtNumber: displayNo }));
 
-                 if (onFilterChange) {
-                 onFilterChange({ ...filters, QtNumber: selectedQt });
-                  }
-                setReportData([]);        
-                 setViewMode("qt");        
-                 setpodown(false);
-                }}
-                  className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-black text-sm border-b border-gray-100 last:border-0"
-                >
-                  {po.quotation_no}
-                </div>
-              ))
-            ) : (
-              <div className="px-3 py-2 text-gray-400 text-sm">No PO found</div>
-            )}
+                       if (onFilterChange) {
+                         onFilterChange({ ...filters, QtNumber: displayNo });
+                       }
+                       setReportData([]);        
+                       setViewMode((type === "qt" || type === "Quotation Format") ? "qt" : "cn");        
+                       setpodown(false);
+                     }}
+                     className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-black text-sm border-b border-gray-100 last:border-0"
+                   >
+                     {displayNo}
+                   </div>
+                 );
+               })
+             ) : (
+               <div className="px-3 py-2 text-gray-400 text-sm">No entries found</div>
+             )}
           </div>
         )}
       </div>
@@ -264,11 +300,16 @@ const downloadExcel = () =>{
   </div>
 
   {/* Client Name wise search */}
-    <div className="flex flex-col">
+    <div className="flex flex-col relative client-dropdown-container">
       <label htmlFor="">CLIENT NAME</label>
        <input type="text" 
        value={filters?.clientName|| ""}
-        onFocus={() => setclientopen(true)}
+        onFocus={() => {
+          setclientopen(true);
+          if (clientlist.length === 0) {
+            loadAllClients();
+          }
+        }}
         onChange={(e) => {const value = e.target.value;
           setFilters({...filters, clientName:value});
           searchclient(value);
@@ -328,8 +369,24 @@ const downloadExcel = () =>{
 
         {/* CONTENT */}
         <div className="flex-1 overflow-auto bg-white p-6 custom-scrollbar">
-          <div>
-               <button onClick={downloadExcel} className=" bg-green-400 text-white border border-green-400 px-1 py-1.5 rounded-[3px]">Main Report</button>
+          <div className="flex gap-3">
+               <button onClick={downloadExcel} className=" bg-green-400 text-white border border-green-400 px-3 py-1.5 rounded-[3px] font-semibold text-xs transition">Main Report</button>
+               {(viewMode === "qt" || viewMode === "cn") && (
+                 <>
+                   <button 
+                     onClick={() => window.print()} 
+                     className="bg-blue-500 text-white border border-blue-500 px-3 py-1.5 rounded-[3px] font-semibold text-xs hover:bg-blue-600 transition"
+                   >
+                     PRINT (A4)
+                   </button>
+                   <button 
+                     onClick={() => window.print()} 
+                     className="bg-red-500 text-white border border-red-500 px-3 py-1.5 rounded-[3px] font-semibold text-xs hover:bg-red-600 transition"
+                   >
+                     DOWNLOAD PDF
+                   </button>
+                 </>
+               )}
            </div>
             
           <div className={`w-full h-[100vh] mt-10 mx-auto ${viewMode === "report" ? "border" : ""}`}>
@@ -363,7 +420,7 @@ const downloadExcel = () =>{
 
           <th className="text-left py-2 px-3 w-[60px] border-r ">SNO</th>
           <th className="text-left py-2 px-3 truncate w-[120px] border-r">
-            QUOTATION NO
+            {type === "qt" || type === "Quotation Format" ? "QUOTATION NO" : "CN NUMBER"}
           </th>
           <th className="text-left py-2 px-3 w-[120px] border-r ">DATE</th>
            <th className="text-left py-2 px-3 w-[120px] truncate border-r ">CLIENT NAME</th>
@@ -389,15 +446,15 @@ const downloadExcel = () =>{
               <td className="p-2 text-left truncate border-r border-gray-400 ">{i + 1}</td>
 
               <td className="p-2 text-left truncate  border-r border-gray-400 ">
-                {row.quotation_no || "-"}
+                {((type === "qt" || type === "Quotation Format") ? row.quotation_no : row.cn_number) || "-"}
              </td>
 
               <td className="p-2 text-left truncate border-r border-gray-400 ">
-                {row.quotation_date}
+                {(type === "qt" || type === "Quotation Format") ? row.quotation_date : (row.cn_date ? row.cn_date.split('T')[0] : "-")}
               </td>
 
-             <td className="p-2 text-left truncate border-r border-gray-400 " title={row.client_name}>
-              {row.customer_name}
+             <td className="p-2 text-left truncate border-r border-gray-400 " title={row.customer_name || row.client_name}>
+              {row.customer_name || row.client_name}
               </td>
 
               <td className="p-2 text-center truncate border-r border-gray-400 ">
@@ -455,7 +512,7 @@ const downloadExcel = () =>{
 )}
 
          {/* Po View */}
-        {viewMode === "qt" && (
+        {(viewMode === "qt" || viewMode === "cn") && (
           <div  className=" mx-auto mt-10"
            style={{ width: "210mm", minHeight: "297mm" }} >
             

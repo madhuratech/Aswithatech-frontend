@@ -1,17 +1,19 @@
 import React,{useEffect,useState} from "react";
-import{Plus,
-  Pencil,
-  Trash2} from "lucide-react";
-  import { successToast, errorToast} from "../../ui/nottifications";
-  import toast from "react-hot-toast";
-import AddNewCustomerModal from "../../forms/addnewclient";
-import Addpassword from "../../forms/addeditpassword";  
+import { Plus, Pencil, Eye, Trash2 } from "lucide-react";
+import { successToast, errorToast} from "../../ui/nottifications";
+import toast from "react-hot-toast";
+import AddNewCustomerModal from "../../forms/general/addnewclient";
+import Addpassword from "../../forms/general/addeditpassword";  
+import ViewCustomer from "../../forms/general/ViewCustomer";
 
 const Customer = () =>{
      const [customers, setCustomers] = useState([]);
      const[editingCustomer,setEditingCustomer] = useState(null)
      const[open,setopen] = useState(false)
     const [verifyOpen,setVerifyOpen] = useState(false);
+    const [viewOpen, setViewOpen] = useState(false);
+    const [viewCustomer, setViewCustomer] = useState(null);
+    const [viewCustomerIdString, setViewCustomerIdString] = useState("");
 
 
   // Fetch all data
@@ -30,6 +32,12 @@ useEffect(() => {
 const editCustomer = (customer) => {
   setEditingCustomer(customer); 
   setVerifyOpen(true);              
+};
+
+const handleViewClick = (customer, index) => {
+  setViewCustomer(customer);
+  setViewCustomerIdString(`CUST${String(index + 1).padStart(3, "0")}`);
+  setViewOpen(true);
 };
 
   /* DELETE */
@@ -96,7 +104,6 @@ const editCustomer = (customer) => {
               Add Customer
             </button>
            </div>
-            
             <div>
           {open && (
          <AddNewCustomerModal key={editingCustomer ? editingCustomer.id : "add"}
@@ -111,6 +118,18 @@ const editCustomer = (customer) => {
             onSuccess={() => {
             setVerifyOpen(false);
             setopen(true); }}/>)}
+
+         {viewOpen && viewCustomer && (
+          <ViewCustomer
+            onClose={() => {
+              setViewOpen(false);
+              setViewCustomer(null);
+              setViewCustomerIdString("");
+            }}
+            customer={viewCustomer}
+            customerIdString={viewCustomerIdString}
+          />
+         )}
 
             </div>
           {/* Tables */}
@@ -167,6 +186,11 @@ const editCustomer = (customer) => {
             size={16}
             className="cursor-pointer text-gray-600 hover:text-black"
             onClick={() => editCustomer(c)}
+          />
+          <Eye
+            size={16}
+            className="cursor-pointer text-gray-600 hover:text-black"
+            onClick={() => handleViewClick(c, index)}
           />
           <Trash2
             size={16}

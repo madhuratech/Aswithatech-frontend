@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { errorToast, successToast } from "../ui/nottifications";
+import { errorToast, successToast } from "../../ui/nottifications";
 import { X } from "lucide-react";
 const Addpassword = ({onSuccess,onClose}) => {
     const[password, setpassword]= useState("");
