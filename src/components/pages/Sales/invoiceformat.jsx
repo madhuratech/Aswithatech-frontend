@@ -274,25 +274,15 @@ const InvoiceLayout = ({ InvNumber }) => {
 
                 {/* FILLER ROWS */}
 
-                {Array.from({
-                  length: Math.max(0, 9 - invoice.items.length),
-                }).map((_, i) => (
-                  <tr key={i} className="h-[30px]">
-
-                    <td className="border-r-2 border-b border-black"></td>
-
-                    <td className="border-r-2 border-b border-black"></td>
-
-                    <td className="border-r-2 border-b border-black"></td>
-
-                    <td className="border-r-2 border-b border-black"></td>
-
-                    <td className="border-r-2 border-b border-black"></td>
-
-                    <td className="border-b border-black"></td>
-
-                  </tr>
-                ))}
+                 {Array.from({ length: Math.max(0, 10 - invoice.items.length) }).map((_, i) => (
+                <tr key={`filler-${i}`} className="h-[35px] print:hidden">
+                  <td className="border-r-2 border-black border-t-0 border-b-0"></td>
+                  <td className="border-r-2 border-black border-t-0 border-b-0"></td>
+                  <td className="border-r-2 border-black border-t-0 border-b-0"></td>
+                  <td className="border-r-2 border-black border-t-0 border-b-0"></td>
+                  <td className="border-r-2 border-black border-t-0 border-b-0"></td>
+                </tr>
+              ))}
 
               </tbody>
             </table>

@@ -38,7 +38,7 @@ const PendingForm = () => {
   const loadPending = async () => {
     setLoading(true);
     try {
-      const res  = await fetch(`${API_URL}/list`);
+      const res  = await fetch(`${API_URL}/calculated`);
       const data = await res.json();
       setAllData(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -332,6 +332,8 @@ const PendingForm = () => {
               value={fields.dc_no}
               onChange={(e) => handleFieldChange("dc_no", e.target.value)}
               placeholder="DC Number"
+              readOnly={true}
+              disabled={true}
               className={inputCls}
             />
           </div>
@@ -342,6 +344,7 @@ const PendingForm = () => {
             <input
               type="date"
               value={fields.dc_date}
+              disabled={true}
               onChange={(e) => handleFieldChange("dc_date", e.target.value)}
               className={inputCls}
             />
@@ -353,6 +356,8 @@ const PendingForm = () => {
             <select
               value={fields.item_type}
               onChange={(e) => handleFieldChange("item_type", e.target.value)}
+              readOnly={true}
+              disabled={true}
               className={inputCls}
             >
               <option value="">-- Select Type --</option>
@@ -383,6 +388,7 @@ const PendingForm = () => {
                   onChange={(e) => { handleFieldChange("item_name", e.target.value); setItemDropOpen(true); }}
                   placeholder={`Search ${fields.item_type}...`}
                   autoComplete="off"
+                  disabled={true}
                   className={inputCls}
                 />
                 {itemDropOpen && filteredItemOptions.length > 0 && (
@@ -411,6 +417,7 @@ const PendingForm = () => {
               onChange={(e) => handleFieldChange("order_qty", e.target.value)}
               placeholder="0"
               min="0"
+              disabled={true}
               className={inputCls}
             />
           </div>
@@ -424,6 +431,7 @@ const PendingForm = () => {
               onChange={(e) => handleFieldChange("despatch_qty", e.target.value)}
               placeholder="0"
               min="0"
+              disabled={true}
               className={inputCls}
             />
           </div>
@@ -435,6 +443,7 @@ const PendingForm = () => {
               type="number"
               value={fields.pending_qty}
               readOnly
+              disabled={true}
               placeholder="0"
               className={`${inputCls} bg-red-50 text-red-600 font-bold cursor-not-allowed`}
             />
@@ -528,9 +537,9 @@ const PendingForm = () => {
                             {fmtDate(row.dc_date)}
                           </td>
                           <td className={`p-3 text-[12px] border-r border-gray-100 ${textCls}`}>{row.item_name}</td>
-                          <td className={`p-3 text-[12px] border-r border-gray-100 text-center ${blueCls}`}>{row.order_qty}</td>
-                          <td className={`p-3 text-[12px] border-r border-gray-100 text-center ${grnCls}`}>{row.despatch_qty}</td>
-                          <td className={`p-3 text-[12px] text-center ${redCls}`}>{row.pending_qty}</td>
+                          <td className={`p-3 text-[12px] border-r border-gray-100 text-center ${blueCls}`}>{Number(row.order_qty) || 0}</td>
+                          <td className={`p-3 text-[12px] border-r border-gray-100 text-center ${grnCls}`}>{Number(row.despatch_qty) || 0}</td>
+                          <td className={`p-3 text-[12px] text-center ${redCls}`}>{Number(row.pending_qty) || 0}</td>
                         </tr>
                       );
                     })

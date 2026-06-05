@@ -34,7 +34,7 @@ const QuotationLayout = ({ QtNumber }) => {
 
   return (
     <div className="w-full flex justify-center items-start py-6 overflow-auto print:py-0 print:bg-white">
-      <div className="w-[190mm] min-h-[270mm] border-2 border-black bg-white relative shadow-lg overflow-hidden flex flex-col">
+      <div className="w-[190mm] min-h-[270mm] border-2 border-black bg-white relative shadow-lg print:shadow-none overflow-visible flex flex-col">
         {/* HEADER */}
         <div className="flex border-b-2 border-black h-[120px]">
           {/* Left - Logo */}
@@ -121,7 +121,7 @@ const QuotationLayout = ({ QtNumber }) => {
         </div>
 
         {/* TABLE SECTION */}
-        <div className="flex-grow overflow-hidden">
+        <div className="flex-grow overflow-visible">
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b border-black bg-gray-50">
@@ -134,7 +134,7 @@ const QuotationLayout = ({ QtNumber }) => {
             </thead>
             <tbody>
               {purchase.items.map((item, index) => (
-                <tr key={index} className="border-b border-gray-100 min-h-[35px]">
+                <tr key={index} className="border-b border-gray-100 min-h-[35px] print:border-b-0">
                   <td className=" border-r border-black p-2 text-center text-[12px]">{index + 1}</td>
                   <td className="border-r border-black px-3 py-2 text-[12px] font-medium">{item.item_name}</td>
                   <td className="border-r border-black p-2 text-center text-[12px]">{item.quantity} {item.uom || "Nos"}</td>
@@ -143,12 +143,12 @@ const QuotationLayout = ({ QtNumber }) => {
                 </tr>
               ))}
               {Array.from({ length: Math.max(0, 10 - purchase.items.length) }).map((_, i) => (
-                <tr key={`filler-${i}`} className="h-[35px]">
-                  <td className="border-r border-black"></td>
-                  <td className="border-r border-black"></td>
-                  <td className="border-r border-black"></td>
-                  <td className="border-r border-black"></td>
-                  <td className="border-r border-black"></td>
+                <tr key={`filler-${i}`} className="h-[35px] print:hidden">
+                  <td className="border-r border-black border-t-0 border-b-0"></td>
+                  <td className="border-r border-black border-t-0 border-b-0"></td>
+                  <td className="border-r border-black border-t-0 border-b-0"></td>
+                  <td className="border-r border-black border-t-0 border-b-0"></td>
+                  <td className="border-t-0 border-b-0"></td>
                 </tr>
               ))}
             </tbody>
@@ -188,7 +188,7 @@ const QuotationLayout = ({ QtNumber }) => {
               { label: "IGST@ 0%", value: purchase.igst > 0 ? purchase.igst : "-" },
               { label: "Roundoff", value: purchase.round_off },
             ].map((row, idx) => (
-              <div key={idx} className="flex border-b border-gray-100 py-1.5 px-3 items-center">
+              <div key={idx} className="flex border-b border-gray-100 py-1.5 px-3 items-center print:border-b-0">
                 <div className="flex-1 text-[12px] font-bold text-left uppercase">{row.label}</div>
                 <div className="w-[10px] text-[12px] font-bold">:</div>
                 <div className="w-[80px] text-[12px] font-bold text-right">{typeof row.value === 'number' ? row.value.toFixed(2) : row.value}</div>

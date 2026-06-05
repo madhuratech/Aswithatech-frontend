@@ -18,7 +18,7 @@ const PendingReport = () => {
   const [toDate,   setToDate]   = useState("");
 
   useEffect(() => {
-    fetch(`${API_URL}/list`)
+    fetch(`${API_URL}/calculated`)
       .then((r) => r.json())
       .then((d) => setData(Array.isArray(d) ? d : []))
       .catch(console.error)

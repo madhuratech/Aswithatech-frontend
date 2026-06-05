@@ -128,6 +128,25 @@ const InvoiceFormat = ({ dcNumber }) => {
                   <h2 className="text-[14px] font-extrabold uppercase mb-1">
                     {invoice?.customer_name}
                   </h2>
+
+                  <div className="text-[11px] leading-4 font-bold uppercase">
+                    <p className="max-w-[280px]">
+                      {invoice?.client_address}
+                    </p>
+
+                    <p>
+                      {invoice?.client_state}
+                      {invoice?.client_pincode ? ` - ${invoice.client_pincode}` : ""}
+                    </p>
+
+                    {invoice?.client_phone && (
+                      <p className="mt-1">PH: {invoice.client_phone}</p>
+                    )}
+
+                    {invoice?.client_gst && (
+                      <p className="mt-1">GSTIN : {invoice.client_gst}</p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -140,7 +159,7 @@ const InvoiceFormat = ({ dcNumber }) => {
                 </h2>
               </div>
 
-              <div className="p-3 space-y-2 flex flex-col justify-start">
+              <div className="p-3 space-y-1 flex flex-col justify-start">
 
                 {[
                   {
@@ -161,6 +180,10 @@ const InvoiceFormat = ({ dcNumber }) => {
                   {
                     label: "OR DATE",
                     value: invoice?.order_date ? new Date(invoice.order_date).toLocaleDateString("en-GB") : "",
+                  },
+                  {
+                    label: "CLIENT DC",
+                    value: invoice?.client_dc_no || "",
                   },
                   {
                     label: "DC NO",
@@ -260,25 +283,15 @@ const InvoiceFormat = ({ dcNumber }) => {
 
                 {/* FILLER ROWS */}
 
-                {Array.from({
-                  length: Math.max(0, 9 - invoice.items.length),
-                }).map((_, i) => (
-                  <tr key={i} className="h-[30px]">
-
-                    <td className="border-r-2 border-b border-black"></td>
-
-                    <td className="border-r-2 border-b border-black"></td>
-
-                    <td className="border-r-2 border-b border-black"></td>
-
-                    <td className="border-r-2 border-b border-black"></td>
-
-                    <td className="border-r-2 border-b border-black"></td>
-
-                    <td className="border-b border-black"></td>
-
-                  </tr>
-                ))}
+                  {Array.from({ length: Math.max(0, 10 - invoice.items.length) }).map((_, i) => (
+                <tr key={`filler-${i}`} className="h-[35px] print:hidden">
+                  <td className="border-r border-black border-t-0 border-b-0"></td>
+                  <td className="border-r border-black border-t-0 border-b-0"></td>
+                  <td className="border-r border-black border-t-0 border-b-0"></td>
+                  <td className="border-r border-black border-t-0 border-b-0"></td>
+                  <td className="border-t-0 border-b-0"></td>
+                </tr>
+              ))}
 
               </tbody>
             </table>

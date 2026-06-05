@@ -76,7 +76,7 @@ useEffect(() => {
     } else {
       setPoList([]);
     }
-  }, [type, Api_urls,onFilterChange]);
+  }, [type, Api_urls, isOpen]);
 
 
   // search client
@@ -245,49 +245,32 @@ useEffect(() => {
     <html>
       <head>
         <title>${title || "Report"}</title>
-
         <script src="https://cdn.tailwindcss.com"></script>
-
         <style>
-          body{
-            margin:0;
-            padding:0;
-            background:white;
-          }
-
-          @page{
-            size:A4;
-            margin:10mm 0;
-          }
-
+          *{box-sizing:border-box;}
+          body{margin:0;padding:0;background:white;}
+          @page{size:A4;margin:8mm 10mm;}
           .print-container{
-            width:100%;
+            width:190mm;
+            margin:0 auto;
             background:white;
-            display: flex;
-            justify-content: center;
-            padding: 0;
+            padding:0;
           }
-
-          table{
-            width:100%;
-            border-collapse:collapse;
+          /* Remove outer wrapper padding added by the format component */
+          .print-container > div > div:first-child{
+            padding-top:0 !important;
+            padding-bottom:0 !important;
           }
-
-          th,td{
-            border:1px solid #d1d5db;
-            padding:8px;
-          }
-
-          tr{
-            page-break-inside:avoid;
-          }
-
-          .no-print{
-            display:none !important;
-          }
+          /* Ensure overflow is visible so content isn't clipped */
+          *{overflow:visible !important;}
+          table{width:100%;border-collapse:collapse;}
+          th,td{border:1px solid #d1d5db;padding:6px 8px;word-break:break-word;}
+          tr{page-break-inside:avoid;}
+          .no-print{display:none !important;}
+          /* Hide the outer py-6 wrapper's padding */
+          [class*="py-6"]{padding-top:0 !important;padding-bottom:0 !important;}
         </style>
       </head>
-
       <body>
         <div class="print-container">
           ${printContents.outerHTML}
@@ -487,9 +470,8 @@ useEffect(() => {
                         onClick={(e) => {
                           e.stopPropagation();
                           const selectedQt = type === "Invoice Format" ? po.invoice_no : type === "DC Format" ? po.dc_no : po.quotation_no;
-                          setFilters((prev) => ({ ...prev, QtNumber: "" }));
-                          setTimeout(() => { setFilters((prev) => ({ ...prev, QtNumber: selectedQt })); }, 50);
-                          if (onFilterChange) onFilterChange({ ...filters, QtNumber: selectedQt });
+                          setFilters((prev) => ({ ...prev, QtNumber: selectedQt }));
+                          if (onFilterChange) onFilterChange({ ...filters, fromDate: filters.fromDate, toDate: filters.toDate, clientName: filters.clientName, QtNumber: selectedQt });
                           setReportData([]);
                           setViewMode("qt");
                           setpodown(false);
