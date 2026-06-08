@@ -13,14 +13,14 @@ function debounce(func, delay) {
   };
 }
 
-const Debitnote = () => {
+const Creditnote = () => {
 
   const navigate = useNavigate();
-  const [loadDnnumber , setloadDnnumber] = useState("");
+  const [loadCnnumber , setloadCnnumber] = useState("");
   const [ordertype , setordertype] = useState("");
-  const [dnNumber , setdnNumber] = useState("");
+  const [cnNumber , setcnNumber] = useState("");
   const [tabledata , settabledata] = useState([]);
-  const [Dnlist , setDnlist] = useState([]); 
+  const [Cnlist , setCnlist] = useState([]); 
   const [loadingclients , setloadingclients] = useState(false);
   const [clientname , setclientName] = useState([]);
   const [items , setItems] = useState([]);
@@ -31,21 +31,21 @@ const Debitnote = () => {
   const [showItemDropdown, setShowItemDropdown] = useState(false);
   const [showClientDropdown, setShowClientDropdown] = useState(false);
   const [showunitDropdown, setShowunitDropdown] = useState(false)
-  const [showdnNumber , setshowdnNumber] = useState(false); 
+  const [showcnNumber , setshowcnNumber] = useState(false); 
 
    const clientRef = useRef(null);
     const itemRef = useRef(null);
     const unitRef = useRef(null);
-    const dnRef = useRef(null);
- 
+    const cnRef = useRef(null);
+  
 
-  const Api_urls = "http://localhost:3000/api/debitnotes";
+  const Api_urls = "http://localhost:3000/api/creditnotes";
 
 //  Form state;
 
  const [Formdata , setFormData] = useState({
   client_name:'',
-  dn_date:'',
+  cn_date:'',
   bill_no:'',
   bill_date:'',
   remarks:''
@@ -62,29 +62,29 @@ const [currentrow , setcurrentrow] = useState({
   unit:'',
 });
 
-  
-  //Load Next Dn Number;
+   
+  //Load Next Cn Number;
 
-  const loadDn = async (dnNum) =>{
-    const dnToLoad = dnNum || loadDnnumber;
+  const loadCn = async (cnNum) =>{
+    const cnToLoad = cnNum || loadCnnumber;
     try{
-      if(!dnToLoad.trim()){
-        return alert("Enter DN Number");
+      if(!cnToLoad.trim()){
+        return alert("Enter CN Number");
       }
-      const res = await fetch(`${Api_urls}/${dnToLoad}`);
+      const res = await fetch(`${Api_urls}/${cnToLoad}`);
       const data = await res.json();
       if(!res.ok) throw new Error(data.message);
   
        setFormData({
         client_name: data.client_name || "",
-        dn_date: data.dn_date?.split('T')[0] || "",
+        cn_date: data.cn_date?.split('T')[0] || "",
         bill_no: data.bill_no || "",
         bill_date: data.bill_date,
         remarks: data.remarks || ""
        });
        setordertype(data.order_type || "");
-       setdnNumber(data.dn_number || "");
-       setloadDnnumber(data.dn_number || "");
+       setcnNumber(data.cn_number || "");
+       setloadCnnumber(data.cn_number || "");
        setDeliveryCharge(data.delivery_charge || 0);
 
        settabledata(
@@ -100,39 +100,39 @@ const [currentrow , setcurrentrow] = useState({
         }))
       );
   
-      alert("Loaded SuccessFully");
+       alert("Loaded SuccessFully");
 
     }catch(error){
-      alert("Debit Note Not found");
+      alert("Credit Note Not found");
     }
   }
 
 
-// Dn Search;
+// Cn Search;
 
-const SearchDn = async (value) =>{
+const SearchCn = async (value) =>{
   try{
    let url = "";
 
     if(!value.trim()){
-      url = `${Api_urls}/dn/all`;
+      url = `${Api_urls}/cn/all`;
     } else{
-        url = `${Api_urls}/dn/search?q=${encodeURIComponent(value)}`;
+        url = `${Api_urls}/cn/search?q=${encodeURIComponent(value)}`;
     }
     const res = await fetch(url);
     const data = await res.json();
-    setDnlist(Array.isArray(data) ? data : []);
+    setCnlist(Array.isArray(data) ? data : []);
   } catch(error){
-     console.log("Dn Seacrh failed");
+     console.log("Cn Seacrh failed");
   }
 }
 
-// Auto Gentrate Dn number next
+// Auto Gentrate Cn number next
 useEffect(() =>{
-  fetch(`${Api_urls}/getdnnumber`)
+  fetch(`${Api_urls}/getcnnumber`)
     .then(res => res.json())
     .then(data => {
-      setdnNumber(data.dnNumber)   
+      setcnNumber(data.cnNumber)   
     });
 },[]);
 
@@ -142,7 +142,7 @@ useEffect(() =>{
 useEffect(() =>{
   setloadingclients(true);
   fetch(`${Api_urls}/clients`)
-  .then((res) => {
+  .then((res) =>{
     if(!res.ok) throw new Error("Failed To Load");
     return res.json();
   })
@@ -200,7 +200,7 @@ const typechange = async (type) =>{
   console.log("Error Fetching Items:",error);
   setItems([]);
   }
-};
+}
 
 //item Select;
 
@@ -274,46 +274,47 @@ const clearRow = () => {
 
 // Subtotal and Tax calculation;
 
-  const [deliveryCharge, setDeliveryCharge] = useState(0);
-  const [totals, setTotals] = useState({
-    subtotal: 0,
-    cgst: 0,
-    sgst: 0,
-    igst: 0,
-    roundOff: 0,
-    grandTotal: 0
+const [totals, setTotals] = useState({
+  subtotal: 0,
+  cgst: 0,
+  sgst: 0,
+  igst: 0,
+  roundOff: 0,
+  grandTotal: 0
+});
+
+const [deliveryCharge, setDeliveryCharge] = useState(0);
+
+
+useEffect(() => {
+  const subtotal = tabledata.reduce((sum, item) => sum + item.net_amount, 0);
+
+  const cgst = subtotal * 0.09;
+  const sgst = subtotal * 0.09;
+  const igst = 0;
+ 
+  const total = subtotal + cgst + sgst + Number(deliveryCharge || 0);
+  const rounded = Math.round(total);
+  const roundOff = rounded - total
+
+  setTotals({
+    subtotal,
+    cgst,
+    sgst,
+    igst,
+    roundOff,
+    grandTotal: rounded,
   });
 
-
-  useEffect(() => {
-    const subtotal = tabledata.reduce((sum, item) => sum + item.net_amount, 0);
-
-    const cgst = subtotal * 0.09;
-    const sgst = subtotal * 0.09;
-    const igst = 0;
-   
-    const total = subtotal + cgst + sgst + Number(deliveryCharge || 0);
-    const rounded = Math.round(total);
-    const roundOff = rounded - total
-
-    setTotals({
-      subtotal,
-      cgst,
-      sgst,
-      igst,
-      roundOff,
-      grandTotal: rounded,
-    });
-
-  }, [tabledata, deliveryCharge]);
+}, [tabledata, deliveryCharge]);
 
 
 // Clear reset Form;
 
-  const resetForm = async() =>{
+const resetForm = async() =>{
     setFormData({
       client_name: '',
-      dn_date: new Date().toISOString().split('T')[0],
+      cn_date: new Date().toISOString().split('T')[0],
       bill_no: '',
       bill_date: '',
       remarks: '',
@@ -330,30 +331,30 @@ const clearRow = () => {
       unit: "",
     });
 
-    setordertype("");
-    setloadDnnumber("");
     setDeliveryCharge(0);
+    setordertype("");
+    setloadCnnumber("");
 
-    const res = await fetch(`${Api_urls}/getdnnumber`);
+    const res = await fetch(`${Api_urls}/getcnnumber`);
     const data = await res.json();
-    setdnNumber(data.dnNumber);
-  }
+    setcnNumber(data.cnNumber);
+}
 
 
 
-//  Save Debit Notes;
+//  Save Credit Notes;
 
-const submitdebitNote = async () => {
+const submitcreditNote = async () => {
   if(tabledata.length === 0){
- alert("Please add at least one item to the order.");  
- return;
+   alert("Please add at least one item to the order.");  
+   return;
   }
 
 const payload = {
   client_name: Formdata.client_name,
   order_type: ordertype,
-  dn_date: Formdata.dn_date,
-   bill_no: Formdata.bill_no,     
+  cn_date: Formdata.cn_date,
+   bill_no: Formdata.bill_no,    
   bill_date: Formdata.bill_date,
   items: tabledata.map(items => ({
     item_name: items.item_name,
@@ -370,17 +371,18 @@ const payload = {
   cgst: totals.cgst,
   sgst: totals.sgst,
   igst: totals.igst,
-  grandTotal: totals.grandTotal,
   delivery_charge: Number(deliveryCharge || 0),
+  grandTotal: totals.grandTotal,
   narration: Formdata.remarks || "",
-  dn_number: dnNumber,
+  cn_number: cnNumber,
 };
-      const toastId = toast.loading("Saving purchase order...");
+
+      const toastId = toast.loading("Saving credit note...");
 
   try{
-    const method = loadDnnumber ? "PUT" : "POST"
-    const url = loadDnnumber
-    ? `${Api_urls}/${loadDnnumber}`
+    const method = loadCnnumber ? "PUT" : "POST"
+    const url = loadCnnumber
+    ? `${Api_urls}/${loadCnnumber}`
     : `${Api_urls}/new`;
     const res = await fetch(url,{
       method,
@@ -393,13 +395,13 @@ const payload = {
       throw new Error(data.message || "Failed To Create");
 
     }
-    toast.success(method === "PUT" ? "Debit Note updated successfully!" : "Debit Note created successfully!",{id: toastId});
+    toast.success(method === "PUT" ? "Credit Note updated successfully!" : "Credit Note created successfully!",{id: toastId});
    
     resetForm();
    
   } catch(error){
     toast.error(error.message, { id: toastId })
-    errorToast("Failed To Create Debit Note");
+    errorToast("Failed To Create Credit Note");
   }
 }
 
@@ -457,8 +459,8 @@ const debouncedItemSearch = useRef(debounce(ItemSearch, 300)).current;
     if (unitRef.current && !unitRef.current.contains(event.target)) {
       setShowunitDropdown(false);
     }
-    if(dnRef.current && !dnRef.current.contains(event.target)){
-      setshowdnNumber(false);
+    if(cnRef.current && !cnRef.current.contains(event.target)){
+      setshowcnNumber(false);
     }
   };
 
@@ -470,19 +472,19 @@ const debouncedItemSearch = useRef(debounce(ItemSearch, 300)).current;
 
 useEffect(() =>{
   const today = new Date().toISOString().split('T')[0];
-  setFormData(prev => ({...prev,dn_date:today}));
+  setFormData(prev => ({...prev,cn_date:today}));
 },[]);
 
 
 
-// Delete Dn;
+// Delete Cn;
 
-const deleteDn = async () => {
-  if(!dnNumber) return alert("Select a PO to delete");
-  if(!window.confirm("Are you sure you want to delete this Debit Note?")) return;
+const deleteCn = async () => {
+  if(!cnNumber) return alert("Select a CN to delete");
+  if(!window.confirm("Are you sure you want to delete this Credit Note?")) return;
 
   try{
-    const res = await fetch(`${Api_urls}/${dnNumber}`, {method:"DELETE"});
+    const res = await fetch(`${Api_urls}/${cnNumber}`, {method:"DELETE"});
     if(res.ok){
       alert("Deleted Successfully");
       window.location.reload();
@@ -490,7 +492,7 @@ const deleteDn = async () => {
       alert("Failed to delete");
     }
   }catch(error){
-    console.log("Error Deleting Dn:", error);
+    console.log("Error Deleting Cn:", error);
     alert("Failed to delete");
   }
 }
@@ -538,7 +540,7 @@ const deleteItem = (index) =>{
         {/* Title + Buttons */}
         <div className="flex justify-between items-start mb-8">
           <div>
-            <h2 className="text-xl font-black text-gray-900 tracking-tight">Debit Note</h2>
+            <h2 className="text-xl font-black text-gray-900 tracking-tight">Credit Note</h2>
             <p className="text-[12px] text-gray-400 mt-1">Client → Reference Details → Items → Save</p>
           </div>
           <div className="flex gap-2">
@@ -549,13 +551,13 @@ const deleteItem = (index) =>{
               NEW
             </button>
             <button
-              onClick={submitdebitNote}
+              onClick={submitcreditNote}
               className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-green-600 hover:text-white transition-colors"
             >
               SAVE
             </button>
             <button
-              onClick={deleteDn}
+              onClick={deleteCn}
               className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-red-600 hover:text-white transition-colors"
             >
               DELETE
@@ -569,10 +571,10 @@ const deleteItem = (index) =>{
           </div>
         </div>
 
-        {/* STEP 1 — Client + DN Header */}
+        {/* STEP 1 — Client + CN Header */}
         <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-5 border border-gray-100 mb-5">
           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">
-            Step 1 — Debit Note Header
+            Step 1 — Credit Note Header
           </p>
           <div className="grid grid-cols-3 gap-5">
             {/* Customer Name */}
@@ -620,24 +622,24 @@ const deleteItem = (index) =>{
               )}
             </div>
 
-            {/* DN Number */}
+            {/* CN Number */}
             <div>
-              <label className={labelCls}>DN No</label>
+              <label className={labelCls}>CN No</label>
               <input
                 type="text"
-                value={dnNumber}
+                value={cnNumber}
                 readOnly
                 className={roInputCls}
               />
             </div>
 
-            {/* DN Date */}
+            {/* CN Date */}
             <div>
-              <label className={labelCls}>DN Date</label>
+              <label className={labelCls}>CN Date</label>
               <input
                 type="date"
-                value={Formdata.dn_date}
-                onChange={(e) => setFormData({ ...Formdata, dn_date: e.target.value })}
+                value={Formdata.cn_date}
+                onChange={(e) => setFormData({ ...Formdata, cn_date: e.target.value })}
                 className={inputCls}
               />
             </div>
@@ -680,7 +682,7 @@ const deleteItem = (index) =>{
                 type="text"
                 value={Formdata.remarks}
                 onChange={(e) => setFormData({ ...Formdata, remarks: e.target.value })}
-                placeholder="Enter Fault / Remarks"
+                placeholder="Enter Remarks"
                 className={inputCls}
               />
             </div>
@@ -944,44 +946,44 @@ const deleteItem = (index) =>{
         {/* BOTTOM: Load & Totals */}
         <div className="grid grid-cols-2 gap-10 mt-8">
           
-          {/* Load Existing Debit Note */}
+          {/* Load Existing Credit Note */}
           <div className="pt-6 border-t border-gray-100">
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">
-              Load / Edit Existing Debit Note
+              Load / Edit Existing Credit Note
             </p>
-            <div className="relative w-64 text-black" ref={dnRef}>
-              <label className={labelCls}>Select DN NO</label>
+            <div className="relative w-64 text-black" ref={cnRef}>
+              <label className={labelCls}>Select CN NO</label>
               <input
                 type="text"
-                value={loadDnnumber}
-                onFocus={() => setshowdnNumber(true)}
+                value={loadCnnumber}
+                onFocus={() => setshowcnNumber(true)}
                 onChange={(e) => {
                   const value = e.target.value;
-                  setloadDnnumber(value);
-                  SearchDn(value);
-                  if (value) setshowdnNumber(true);
+                  setloadCnnumber(value);
+                  SearchCn(value);
+                  if (value) setshowcnNumber(true);
                 }}
                 className={`${inputCls} w-64`}
-                placeholder="Enter / Search DN No"
+                placeholder="Enter / Search CN No"
               />
-              {showdnNumber && (
+              {showcnNumber && (
                 <div className={`${dropdownCls} w-64`}>
-                  {Dnlist.length > 0 ? (
-                    Dnlist.map((dn, i) => (
+                  {Cnlist.length > 0 ? (
+                    Cnlist.map((cn, i) => (
                       <div
                         key={i}
                         onClick={() => {
-                          setloadDnnumber(dn.dn_number);
-                          setshowdnNumber(false);
-                          loadDn(dn.dn_number);
+                          setloadCnnumber(cn.cn_number);
+                          setshowcnNumber(false);
+                          loadCn(cn.cn_number);
                         }}
                         className="px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0"
                       >
-                        {dn.dn_number}
+                        {cn.cn_number}
                       </div>
                     ))
                   ) : (
-                    <div className="px-4 py-3 text-[13px] text-gray-400">No DN found</div>
+                    <div className="px-4 py-3 text-[13px] text-gray-400">No CN found</div>
                   )}
                 </div>
               )}
@@ -1012,10 +1014,10 @@ const deleteItem = (index) =>{
                 <input
                   type="number"
                   min="0"
-                  step="any"
+                  step="0.01"
                   value={deliveryCharge}
                   onChange={(e) => setDeliveryCharge(e.target.value)}
-                  className="w-28 p-1.5 border-b border-gray-300 bg-transparent text-right font-bold text-black outline-none focus:border-black text-[13px]"
+                  className="w-28 p-1.5 border border-gray-200 rounded-lg text-[13px] font-bold text-right bg-white focus:outline-none focus:border-blue-400"
                 />
               </div>
               <div className="flex justify-between items-center">
@@ -1036,4 +1038,4 @@ const deleteItem = (index) =>{
   );
 };
 
-export default Debitnote;
+export default Creditnote;

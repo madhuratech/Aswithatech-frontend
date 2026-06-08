@@ -36,31 +36,20 @@ const QuotationLayout = ({ QtNumber }) => {
     <div className="w-full flex justify-center items-start py-6 overflow-auto print:py-0 print:bg-white">
       <div className="w-[190mm] min-h-[270mm] border-2 border-black bg-white relative shadow-lg print:shadow-none overflow-visible flex flex-col">
         {/* HEADER */}
-        <div className="flex border-b-2 border-black h-[120px]">
-          {/* Left - Logo */}
-          <div className="w-[50%] p-3 border-r-2 border-black flex flex-col justify-center">
-            <img src={logo} alt="logo" className="w-[180px] mb-2" />
-            <h2 className="text-[13px] font-bold uppercase">GSTIN : 33GYLPS7134C1Z9</h2>
-          </div>
-
-          {/* Right - Company Details */}
-          <div className="w-[50%] p-3 flex flex-col justify-center">
-            <h1 className="text-red-600 text-[26px] font-extrabold mb-1 leading-tight uppercase">
-              ASWITHA TECH
-            </h1>
-            <div className="text-[12px] font-bold space-y-0.5">
-              <p>231-D, Sri Balaji Nilayam, Venkataswamy Road,</p>
-              <p>New Siddhapudur, Coimbatore-641 044 TamilNadu.</p>
-              <p>Email : aswithatech2020@gmail.com</p>
-              <div className="flex items-center gap-4 mt-1">
-                <div className="flex items-center gap-1">
-                  <span className="text-green-600">📞</span>
-                  <span>80725 37036</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-blue-600">📞</span>
-                  <span>96551 48537</span>
-                </div>
+        <div className="flex flex-col justify-center items-center text-center border-b-2 border-black p-2 h-[120px]">
+          <h1 className="text-red-600 text-[26px] font-extrabold mb-0.5 leading-tight uppercase tracking-tight">
+            ASWITHA TECH
+          </h1>
+          <div className="text-[11px] font-bold space-y-0.5">
+            <p>17, Abirami Nagar, Avarampalayam Road,</p>
+            <p>K.R. Puram, Ganapathi, Coimbatore - 641006</p>
+            <p>Email : aswithatech2020@gmail.com</p>
+            <div className="flex justify-center items-center gap-4 mt-0.5 text-[10px]">
+              <span>GSTIN : 33GYLPS7134C1Z9</span>
+              <span>•</span>
+              <div className="flex items-center gap-1">
+                <span className="text-green-600">📞</span>
+                <span>80725 37036, 96551 48537</span>
               </div>
             </div>
           </div>

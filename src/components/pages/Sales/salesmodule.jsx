@@ -5,6 +5,7 @@ import SaleswindowModel from"../../ui/saleswindowModal";
 import QuotationFormat from "./quotationoverview";
 import InvoiceFormat from "./invoiceformat";
 import SalesDCFormat from "./salesdcformat";
+import CreditNoteView from "./creditnote";
 const SalesCard = ({ title, subtitle, icon: Icon, bgColor, iconColor, onClick }) => {
     return (
         <div
@@ -81,6 +82,16 @@ const openReport = async (type) => {
 
             latestNumber = data[0]?.dc_no || "";
         }
+        if (type === "Credit Note Format") {
+
+            const res = await fetch(
+              "http://localhost:3000/api/creditnotes/cn/search?q="
+            );  
+
+            const data = await res.json();
+
+            latestNumber = data[0]?.cn_number || "";
+        }
 
         setFilters({
             fromDate: "",
@@ -101,7 +112,7 @@ const openReport = async (type) => {
 };
 
 const ShowReport = (item) => {
-    if(item.name === "Quotation Format" || item.name === "Invoice Format" || item.name === "DC Format"){
+    if(item.name === "Quotation Format" || item.name === "Invoice Format" || item.name === "DC Format" || item.name === "Credit Note Format"){
         openReport(item.name);
     }
     else{
@@ -152,7 +163,7 @@ const ShowReport = (item) => {
             icon: FileMinus,
             bgColor: "bg-red-50",
             iconColor: "text-red-600",
-            action: () => console.log("Credit Note Clicked"),
+            action: () => navigate("/sales/credit-note"),
         },
         {
             title: "Receipts & Advance",
@@ -185,7 +196,7 @@ const ShowReport = (item) => {
         { name: "Sales Report", path: "/sales/sales-report" },
         { name: "Customer Ledger", path: "/sales/customer-Ledger" },
         { name: "DC Format", path: "/sales/stock-report" },
-        { name: "Credit Note", path: "/sales/profit-loss" },
+        { name: "Credit Note Format", path: "/sales/credit-note-view" },
         { name: "Invoice Format", path: "/sales/tax-report" },
         { name: "Reciept Format", path: "/sales/Reciept-Format" },
     ];
@@ -256,7 +267,10 @@ const ShowReport = (item) => {
         }        
         {viewtype === "DC Format" &&
         <SalesDCFormat dcNumber={filters.QtNumber} />
-        }        
+        } 
+        {viewtype === "Credit Note Format" &&
+        <CreditNoteView cnNumber={filters.QtNumber} />
+        }
         </SaleswindowModel>
 
          {showModal && isMinimized && (

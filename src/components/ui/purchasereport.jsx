@@ -8,10 +8,10 @@ const API = "http://localhost:3000/api/taxpurchases";
 
 const COMPANY = {
   name: "ASWITHA TECH",
-  addr1: "231-D,Sri Balaji Nilayam,",
-  addr2: "Venkataswamy Road New Siddhapudur,",
-  addr3: "Coimbatore-641 044 TamilNadu.",
-  email: "Email :aswithatech2020@gmail.com",
+  addr1: "17, Abirami Nagar, Avarampalayam Road,",
+  addr2: "K.R. Puram, Ganapathi,",
+  addr3: "Coimbatore - 641006",
+  email: "Email: aswithatech2020@gmail.com",
   ph1: "80725  37036",
   ph2: "96551  48537",
   gstin: "33GYLPS7134C1Z9",
@@ -120,26 +120,17 @@ const PurchaseVoucher = ({ voucher }) => {
       {/* ── TOP HEADER ─────────────────────────────────────────── */}
       <table style={{ width: "100%", borderCollapse: "collapse", borderBottom: "1px solid #000" }}>
         <tbody>
-          {/* Row 1 — Logo (left) + Company Name & Info (right) — same row */}
+          {/* Row 1 — Company Name & Info centered */}
           <tr>
-            <td style={{ width: "50%", padding: "8px 10px", verticalAlign: "middle", borderBottom: "1px solid #000" }}>
-              <img
-                src={Logo}
-                alt="Logo"
-                style={{ width: "200px", maxWidth: "200px", height: "100px", objectFit: "contain", display: "block" }}
-              />
-            </td>
-            <td style={{ width: "80%", padding: "8px 10px", verticalAlign: "middle", borderLeft: "1px solid #000", borderBottom: "1px solid #000" }}>
+            <td style={{ width: "100%", padding: "12px 10px", verticalAlign: "middle", borderBottom: "1px solid #000", textAlign: "center" }}>
               <div style={{ fontSize: "22px", fontWeight: "bold", color: "#cc0000", letterSpacing: "1px" }}>
                 {COMPANY.name}
               </div>
               <div style={{ fontSize: "13px", lineHeight: "1.55", color: "#222", marginTop: "2px" }}>
-                <div>{COMPANY.addr1}</div>
-                <div>{COMPANY.addr2}</div>
-                <div>{COMPANY.addr3}</div>
+                <div>{COMPANY.addr1} {COMPANY.addr2} {COMPANY.addr3}</div>
                 <div>{COMPANY.email}</div>
               </div>
-              <div style={{ fontSize: "10px", marginTop: "3px", display: "flex", gap: "14px", alignItems: "center" }}>
+              <div style={{ fontSize: "10px", marginTop: "4px", display: "flex", gap: "14px", justifyContent: "center", alignItems: "center" }}>
                 <span>
                   <span style={{ color: "#1a5ea8", fontWeight: "bold", marginRight: "3px" }}>&#9990;</span>
                   {COMPANY.ph1}
@@ -148,9 +139,9 @@ const PurchaseVoucher = ({ voucher }) => {
                   <span style={{ color: "#cc0000", fontWeight: "bold", marginRight: "3px" }}>&#9990;</span>
                   {COMPANY.ph2}
                 </span>
-              </div>
-              <div style={{ fontSize: "13px", marginTop: "4px", fontWeight: "bold" }}>
-                GSTIN : {COMPANY.gstin}
+                <span style={{ fontWeight: "bold", marginLeft: "14px" }}>
+                  GSTIN : {COMPANY.gstin}
+                </span>
               </div>
             </td>
           </tr>
@@ -428,7 +419,7 @@ const PurchaseReport = ({ onMinimize, onClose, setIsMinimizedInternal, title = "
 
   return (
     <div className={`fixed inset-0 z-[9999] flex ${isMaximized ? "items-stretch" : "items-center justify-center p-4 bg-black/30"}`}>
-      <div className={`bg-[#f0f0f0] border-2 border-white flex flex-col transition-all duration-200 ${isMaximized ? "w-full h-full border-none" : "w-[98vw] h-[95vh]"}`}>
+      <div className={`bg-[#f0f0f0] border-2 border-white flex flex-col shadow-2xl transition-all duration-200 ${isMaximized ? "w-full h-full border-none" : "w-[98vw] h-[95vh]"}`}>
 
         {/* ── Title Bar ── */}
         <div onDoubleClick={() => setIsMaximized(!isMaximized)}
@@ -519,38 +510,42 @@ const PurchaseReport = ({ onMinimize, onClose, setIsMinimizedInternal, title = "
           </div>
         </div>
 
-        {/* ── Action Strip ── */}
-        <div className="flex gap-1.5 px-3 py-2 bg-[#ececec] border-b border-gray-300 no-print">
-          <button
-            onClick={handlePrint}
-            className="bg-[#1a5ea8] text-white text-[10px] px-3 py-1 font-bold border border-[#154c8a] hover:bg-[#154c8a] flex items-center gap-1"
-          >
-            <Printer size={10} /> PRINT
-          </button>
-          <button
-            onClick={exportPDF}
-            className="bg-[#b22222] text-white text-[10px] px-3 py-1 font-bold border border-[#8b1a1a] hover:bg-[#8b1a1a]"
-          >
-            EXPORT PDF
-          </button>
-        </div>
+        {/* ── Report Area ── */}
+        <div className="flex-1 overflow-auto bg-[#f4f4f4] custom-scrollbar">
 
-        {/* ── Voucher Display Area ── */}
-        <div className="flex-1 overflow-auto bg-white py-6 custom-scrollbar">
-          <div ref={contentRef} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            {loading ? (
-              <div style={{ padding: "40px", fontFamily: "Arial", fontSize: "12px", color: "#555", fontStyle: "italic" }}>
-                Loading vouchers...
-              </div>
-            ) : vouchers.length === 0 ? (
-              <div style={{ padding: "40px", fontFamily: "Arial", fontSize: "12px", color: "#888", fontStyle: "italic" }}>
-                No purchase records found. Use filters above and click GENERATE REPORT.
-              </div>
-            ) : (
-              vouchers.map((voucher, i) => (
-                <PurchaseVoucher key={voucher.bill_no ?? i} voucher={voucher} />
-              ))
-            )}
+          {/* Action Strip */}
+          <div className="flex gap-1.5 px-3 py-2 bg-[#ececec] border-b border-gray-300 no-print">
+            <button
+              onClick={handlePrint}
+              className="bg-[#1a5ea8] text-white text-[10px] px-3 py-1 font-bold border border-[#154c8a] hover:bg-[#154c8a] flex items-center gap-1"
+            >
+              <Printer size={10} /> PRINT
+            </button>
+            <button
+              onClick={exportPDF}
+              className="bg-[#b22222] text-white text-[10px] px-3 py-1 font-bold border border-[#8b1a1a] hover:bg-[#8b1a1a]"
+            >
+              EXPORT PDF
+            </button>
+          </div>
+
+          {/* Voucher Display Area */}
+          <div className="bg-white mx-2 my-2 border border-gray-300 py-4">
+            <div ref={contentRef} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+              {loading ? (
+                <div style={{ padding: "40px", fontFamily: "Arial", fontSize: "12px", color: "#555", fontStyle: "italic" }}>
+                  Loading vouchers...
+                </div>
+              ) : vouchers.length === 0 ? (
+                <div style={{ padding: "40px", fontFamily: "Arial", fontSize: "12px", color: "#888", fontStyle: "italic" }}>
+                  No purchase records found. Use filters above and click GENERATE REPORT.
+                </div>
+              ) : (
+                vouchers.map((voucher, i) => (
+                  <PurchaseVoucher key={voucher.bill_no ?? i} voucher={voucher} />
+                ))
+              )}
+            </div>
           </div>
         </div>
       </div>

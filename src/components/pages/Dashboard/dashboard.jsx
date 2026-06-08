@@ -1,18 +1,22 @@
 import React from "react";
 import Statcard from "../../cards/dashboardcard";
 
+const Home = () => {
+  return (
+    <div className="px-10 py-8 flex flex-col">
+      <div className="flex-1">
+        <div className="mb-8">
+          <h3 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+            Welcome Back.. 👋
+          </h3>
+          <p className="text-sm text-slate-500 mt-1">Ashwitha Tech Management Dashboard</p>
+        </div>
+        <div>
+          <Statcard />
+        </div>
+      </div>
+    </div>
+  );
+};
 
-const Home = () =>{
-
-    return(
-           <div className="min-h-screen p-10">
-             <div>
-                 <h3 className="text-lg font-[Arial] text-[28px] text-[#101828]  font-[700]">Wellcome Back.. 👋</h3>
-             </div>
-              <div>
-               <Statcard/>
-               </div>
-             </div>
-    )
-}
 export default Home;

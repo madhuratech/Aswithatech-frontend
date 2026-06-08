@@ -18,6 +18,7 @@ const General = () =>{
      {title:"Spare", path:"/general/spare",icon:Box},
      {title:"Expense Master", path:"/general/expense",icon:DollarSign},
      {title:"Employee Master", path:"/general/employee",icon:UserCog},
+     {title:"Expense Report", path:"/general/expense-report", icon:UserCog},
      {title:"System Settings", path:"/general/setting", icon:Settings}
 
    ]

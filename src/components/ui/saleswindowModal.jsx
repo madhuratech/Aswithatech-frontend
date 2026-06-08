@@ -35,26 +35,26 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
   });
 
 
- const qtNumber = externalFilters?.QtNumber || "";
+  const qtNumber = externalFilters?.QtNumber || "";
 
-useEffect(() => {
+  useEffect(() => {
 
-  if (!qtNumber) return;
+    if (!qtNumber) return;
 
-  setFilters((prev) => {
+    setFilters((prev) => {
 
-    if (prev.QtNumber === qtNumber) {
-      return prev;
-    }
+      if (prev.QtNumber === qtNumber) {
+        return prev;
+      }
 
-    return {
-      ...prev,
-      QtNumber: qtNumber,
-    };
+      return {
+        ...prev,
+        QtNumber: qtNumber,
+      };
 
-  });
+    });
 
-}, [qtNumber]);
+  }, [qtNumber]);
 
 
 
@@ -63,10 +63,12 @@ useEffect(() => {
     const searchurl = (type === "qt" || type === "Quotation Format")
       ? `${Api_urls}/QT/search?q=`
       : (type === "Invoice Format")
-      ? `http://localhost:3000/api/salesinvoices/INV/search?q=`
-      : (type === "DC Format")
-      ? `http://localhost:3000/api/salesdc/DC/search?q=`
-      : null;
+        ? `http://localhost:3000/api/salesinvoices/INV/search?q=`
+        : (type === "DC Format")
+          ? `http://localhost:3000/api/salesdc/DC/search?q=`
+          : (type === "Credit Note Format")
+            ? `http://localhost:3000/api/creditnotes/cn/search?q=`
+            : null;
 
     if (searchurl) {
       fetch(searchurl)
@@ -112,15 +114,21 @@ useEffect(() => {
         params.append("dcNo", filters.QtNumber);
       }
 
-      if ((type === "qt" || type === "Quotation Format" || type === "Invoice Format" || type === "DC Format") && filters.clientName) {
+      if ((type === "Credit Note Format") && filters.QtNumber) {
+        params.append("cnNumber", filters.QtNumber);
+      }
+
+      if ((type === "qt" || type === "Quotation Format" || type === "Invoice Format" || type === "DC Format" || type === "Credit Note Format") && filters.clientName) {
         params.append("clientName", filters.clientName);
       }
 
       const url = (type === "Invoice Format")
         ? `http://localhost:3000/api/salesinvoices/report/filters?${params.toString()}`
         : (type === "DC Format")
-        ? `http://localhost:3000/api/salesdc/report/filters?${params.toString()}`
-        : `${Api_urls}/report/filters?${params.toString()}`;
+          ? `http://localhost:3000/api/salesdc/report/filters?${params.toString()}`
+          : (type === "Credit Note Format")
+            ? `http://localhost:3000/api/creditnotes/report/filters?${params.toString()}`
+            : `${Api_urls}/report/filters?${params.toString()}`;
       const response = await fetch(url);
 
       const data = await response.json();
@@ -148,16 +156,21 @@ useEffect(() => {
       params.append("quotationNo", filters.QtNumber);
     }
     if ((type === "Invoice Format") && filters.QtNumber) {
-        params.append("invoiceNo", filters.QtNumber);
+      params.append("invoiceNo", filters.QtNumber);
     }
     if ((type === "DC Format") && filters.QtNumber) {
-        params.append("dcNo", filters.QtNumber);
+      params.append("dcNo", filters.QtNumber);
+    }
+    if ((type === "Credit Note Format") && filters.QtNumber) {
+      params.append("cnNumber", filters.QtNumber);
     }
     const url = (type === "Invoice Format")
-        ? `http://localhost:3000/api/salesinvoices/report/excel?${params.toString()}`
-        : (type === "DC Format")
+      ? `http://localhost:3000/api/salesinvoices/report/excel?${params.toString()}`
+      : (type === "DC Format")
         ? `http://localhost:3000/api/salesdc/report/excel?${params.toString()}`
-        : `${Api_urls}/report/excel?${params.toString()}`;
+        : (type === "Credit Note Format")
+          ? `http://localhost:3000/api/creditnotes/report/excel?${params.toString()}`
+          : `${Api_urls}/report/excel?${params.toString()}`;
     window.open(url, "_blank");
 
   }
@@ -264,7 +277,7 @@ useEffect(() => {
           /* Ensure overflow is visible so content isn't clipped */
           *{overflow:visible !important;}
           table{width:100%;border-collapse:collapse;}
-          th,td{border:1px solid #d1d5db;padding:6px 8px;word-break:break-word;}
+          .report-table th, .report-table td{border:1px solid #d1d5db;padding:6px 8px;word-break:break-word;}
           tr{page-break-inside:avoid;}
           .no-print{display:none !important;}
           /* Hide the outer py-6 wrapper's padding */
@@ -435,10 +448,10 @@ useEffect(() => {
                 {type === "qt" || type === "Quotation Format"
                   ? "QUOTATION NO"
                   : type === "Invoice Format"
-                  ? "INVOICE NO"
-                  : type === "dn"
-                  ? "DEBIT NOTE NO"
-                  : "BILL NO"}
+                    ? "INVOICE NO"
+                    : type === "Credit Note Format"
+                      ? " CREDIT NOTE NO"
+                      : "BILL NO"}
               </label>
               <input
                 type="text"
@@ -466,10 +479,10 @@ useEffect(() => {
                   {poList.length > 0 ? (
                     poList.map((po) => (
                       <div
-                        key={po.dc_no || po.invoice_no || po.quotation_no}
+                        key={po.cn_number || po.dc_no || po.invoice_no || po.quotation_no}
                         onClick={(e) => {
                           e.stopPropagation();
-                          const selectedQt = type === "Invoice Format" ? po.invoice_no : type === "DC Format" ? po.dc_no : po.quotation_no;
+                          const selectedQt = type === "Invoice Format" ? po.invoice_no : type === "DC Format" ? po.dc_no : type === "Credit Note Format" ? po.cn_number : po.quotation_no;
                           setFilters((prev) => ({ ...prev, QtNumber: selectedQt }));
                           if (onFilterChange) onFilterChange({ ...filters, fromDate: filters.fromDate, toDate: filters.toDate, clientName: filters.clientName, QtNumber: selectedQt });
                           setReportData([]);
@@ -480,7 +493,7 @@ useEffect(() => {
                         onMouseOver={e => e.currentTarget.style.background = "#e8f0f8"}
                         onMouseOut={e => e.currentTarget.style.background = "white"}
                       >
-                        {po.dc_no || po.invoice_no || po.quotation_no}
+                        {po.cn_number || po.dc_no || po.invoice_no || po.quotation_no}
                       </div>
                     ))
                   ) : (
@@ -646,6 +659,7 @@ useEffect(() => {
                 {/* Table */}
                 <div style={{ overflowX: "auto" }}>
                   <table
+                    className="report-table"
                     style={{
                       width: "100%", borderCollapse: "collapse",
                       fontSize: "12px", tableLayout: "auto",
@@ -654,18 +668,19 @@ useEffect(() => {
                     <thead>
                       <tr style={{ background: "#b8cce4" }}>
                         {[
-                          { label: "SNO",           align: "left"  },
-                          { label: "QUOTATION NO",  align: "left"  },
-                          { label: "DATE",          align: "left"  },
-                          { label: "CLIENT NAME",   align: "left"  },
-                          { label: "PURCHASE ITEM", align: "left"  },
-                          { label: "QUANTITY",      align: "right" },
-                          { label: "PRICE",         align: "right" },
-                          { label: "SUBTOTAL",      align: "right" },
-                          { label: "SGST",          align: "right" },
-                          { label: "CGST",          align: "right" },
-                          { label: "IGST",          align: "right" },
-                          { label: "GRANDTOTAL",    align: "right" },
+                          { label: "SNO", align: "left" },
+                          { label: (type === "qt" || type === "Quotation Format") ? "QUOTATION NO" : (type === "Invoice Format" ? "INVOICE NO" : (type === "DC Format" ? "DC NO" : "CN NUMBER")), align: "left" },
+                          { label: "DATE", align: "left" },
+                          { label: "CLIENT NAME", align: "left" },
+                          { label: "PURCHASE ITEM", align: "left" },
+                          { label: "QUANTITY", align: "right" },
+                          { label: "PRICE", align: "right" },
+                          { label: "SUBTOTAL", align: "right" },
+                          { label: "SGST", align: "right" },
+                          { label: "CGST", align: "right" },
+                          { label: "IGST", align: "right" },
+                          ...(type === "Credit Note Format" ? [{ label: "DELIVERY CHARGE", align: "right" }] : []),
+                          { label: "GRANDTOTAL", align: "right" },
                         ].map(({ label, align }) => (
                           <th
                             key={label}
@@ -690,11 +705,11 @@ useEffect(() => {
                           >
                             <td style={tdStyle("left")}>{i + 1}</td>
                             <td style={{ ...tdStyle("left"), color: "#1a3f7a", fontWeight: "bold" }}>
-                              {row.quotation_no || "-"}
+                              {row.quotation_no || row.invoice_no || row.dc_no || row.cn_number || "-"}
                             </td>
-                            <td style={tdStyle("left")}>{row.quotation_date}</td>
+                            <td style={tdStyle("left")}>{row.quotation_date || row.invoice_date || row.dc_date || row.cn_date}</td>
                             <td style={{ ...tdStyle("left"), color: "#1a3f7a", fontWeight: "bold" }}>
-                              {row.customer_name}
+                              {row.customer_name || row.client_name}
                             </td>
                             <td style={tdStyle("left")}>{row.item_name || "-"}</td>
                             <td style={tdStyle("right")}>{row.quantity ?? 0}</td>
@@ -703,6 +718,9 @@ useEffect(() => {
                             <td style={tdStyle("right")}>{row.sgst ?? 0}</td>
                             <td style={tdStyle("right")}>{row.cgst ?? 0}</td>
                             <td style={tdStyle("right")}>{row.igst || "-"}</td>
+                            {type === "Credit Note Format" && (
+                              <td style={tdStyle("right")}>{row.delivery_charge ?? 0}</td>
+                            )}
                             <td style={{ ...tdStyle("right"), color: "#1a3f7a", fontWeight: "bold" }}>
                               {row.grandTotal ?? 0}
                             </td>
@@ -711,7 +729,7 @@ useEffect(() => {
                       ) : (
                         <tr>
                           <td
-                            colSpan="12"
+                            colSpan={type === "Credit Note Format" ? 13 : 12}
                             style={{ textAlign: "center", padding: "24px", color: "#888", fontSize: "13px" }}
                           >
                             No Data Available
@@ -739,6 +757,11 @@ useEffect(() => {
                             {reportData.reduce((s, r) => s + (Number(r.cgst) || 0), 0).toFixed(2)}
                           </td>
                           <td style={{ border: "1px solid #9baec8", padding: "6px 10px" }}></td>
+                          {type === "Credit Note Format" && (
+                            <td style={{ border: "1px solid #9baec8", padding: "6px 10px", textAlign: "right", fontSize: "12px" }}>
+                              {reportData.reduce((s, r) => s + (Number(r.delivery_charge) || 0), 0).toFixed(2)}
+                            </td>
+                          )}
                           <td style={{ border: "1px solid #9baec8", padding: "6px 10px", textAlign: "right", fontSize: "12px" }}>
                             {reportData.reduce((s, r) => s + (Number(r.grandTotal) || 0), 0).toFixed(2)}
                           </td>

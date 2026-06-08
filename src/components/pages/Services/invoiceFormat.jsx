@@ -74,43 +74,20 @@ const InvoiceFormat = ({ dcNumber }) => {
           </div>
 
           {/* HEADER */}
-          <div className="flex border-2 border-black m-2 h-[120px]">
-
-            {/* LEFT */}
-            <div className="w-[45%] p-3 border-r-2 border-black flex flex-col justify-center items-center">
-              <img src={logo} alt="logo" className="w-[160px] mb-2" />
-
-              <h2 className="text-[12px] font-bold uppercase">
-                GSTIN : 33GYLPS7134C1Z9
-              </h2>
-            </div>
-
-            {/* RIGHT */}
-            <div className="w-[55%] p-3 flex flex-col justify-center text-center">
-
-              <h1 className="text-red-600 text-[28px] font-extrabold mb-1 leading-tight uppercase tracking-tighter">
-                ASWITHA TECH
-              </h1>
-
-              <div className="text-[11px] font-bold space-y-0.5">
-                <p>
-                  231-D, Sri Balaji Nilayam, Venkataswamy Road New Siddhapudur,
-                </p>
-
-                <p>Coimbatore-641 044 TamilNadu.</p>
-
-                <p>Email : aswithatech2020@gmail.com</p>
-
-                <div className="flex justify-center items-center gap-4 mt-1">
-                  <div className="flex items-center gap-1">
-                    <span className="text-green-600">📞</span>
-                    <span>80725 37036</span>
-                  </div>
-
-                  <div className="flex items-center gap-1">
-                    <span className="text-blue-600">📞</span>
-                    <span>96551 48537</span>
-                  </div>
+          <div className="flex flex-col justify-center items-center text-center border-2 border-black m-2 h-[120px]">
+            <h1 className="text-red-600 text-[26px] font-extrabold mb-0.5 leading-tight uppercase tracking-tight">
+              ASWITHA TECH
+            </h1>
+            <div className="text-[11px] font-bold space-y-0.5">
+              <p>17, Abirami Nagar, Avarampalayam Road,</p>
+              <p>K.R. Puram, Ganapathi, Coimbatore - 641006</p>
+              <p>Email : aswithatech2020@gmail.com</p>
+              <div className="flex justify-center items-center gap-4 mt-0.5 text-[10px]">
+                <span>GSTIN : 33GYLPS7134C1Z9</span>
+                <span>•</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-green-600">📞</span>
+                  <span>80725 37036, 96551 48537</span>
                 </div>
               </div>
             </div>

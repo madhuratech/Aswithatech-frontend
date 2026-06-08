@@ -52,24 +52,21 @@ const Billwiseformat = ({ billNo, title }) => {
     <div className="w-full flex justify-center items-start py-6 overflow-auto ">
       <div className="w-[190mm] border-2 border-black bg-white relative shadow-lg overflow-hidden">
         {/* HEADER */}
-        <div className="flex border-b-2 border-black">
-          {/* Left - Logo */}
-          <div className="w-[50%] p-3 border-r-2 border-black">
-            <img src={logo} alt="logo" className="w-[200px] mb-2" />
-            <h2 className="text-[13px] font-bold mt-4">GSTIN : 33GYLPS7134C1Z9</h2>
-          </div>
-
-          {/* Right - Company Details */}
-          <div className="w-[50%] p-3">
-            <h1 className="text-red-600 text-[26px] font-extrabold mb-1 leading-tight">
-              ASWITHA TECH
-            </h1>
-            <div className="text-[12px] font-bold space-y-1">
-              <p>231-D, Sri Balaji Nilayam,</p>
-              <p>Venkataswamy Road New Siddhapudur,</p>
-              <p>Coimbatore-641 044 TamilNadu.</p>
-              <p>Email : aswithatech2020@gmail.com</p>
-              <p>PH : 80725 37036, 96551 48537</p>
+        <div className="flex flex-col justify-center items-center text-center border-b-2 border-black p-2 h-[120px]">
+          <h1 className="text-red-600 text-[26px] font-extrabold mb-0.5 leading-tight uppercase tracking-tight">
+            ASWITHA TECH
+          </h1>
+          <div className="text-[11px] font-bold space-y-0.5">
+            <p>17, Abirami Nagar, Avarampalayam Road,</p>
+            <p>K.R. Puram, Ganapathi, Coimbatore - 641006</p>
+            <p>Email : aswithatech2020@gmail.com</p>
+            <div className="flex justify-center items-center gap-4 mt-0.5 text-[10px]">
+              <span>GSTIN : 33GYLPS7134C1Z9</span>
+              <span>•</span>
+              <div className="flex items-center gap-1">
+                <span className="text-green-600">📞</span>
+                <span>80725 37036, 96551 48537</span>
+              </div>
             </div>
           </div>
         </div>
@@ -129,7 +126,7 @@ const Billwiseformat = ({ billNo, title }) => {
                 <th className="border-r-2 border-black p-2 w-[15%] text-center text-[12px]">Bill Amount</th>
                 <th className="border-r-2 border-black p-2 w-[15%] text-center text-[12px]">Paid Amount</th>
                 <th className="border-r-2 border-black p-2 w-[15%] text-center text-[12px]">Balance</th>
-                <th className="p-2 w-[20%] border-black text-center text-[12px]">Payment Mode</th>
+                <th className="p-2 w-[20%] border-black text-center text-[12px]">Net Paid</th>
               </tr>
             </thead>
             <tbody>
@@ -141,7 +138,7 @@ const Billwiseformat = ({ billNo, title }) => {
                   <td className="border-r-2 border-black p-2 text-right text-[12px] pr-4">{Number(item.bill_amount).toFixed(2)}</td>
                   <td className="border-r-2 border-black p-2 text-right text-[12px] pr-4">{Number(item.paid_amount).toFixed(2)}</td>
                   <td className="border-r-2 border-black p-2 text-right text-[12px] pr-4">{Number(item.balance_amount).toFixed(2)}</td>
-                  <td className="p-2 text-center text-[12px] border-black font-bold">{item.payment_mode}</td>
+                  <td className="p-2 text-center text-[12px] border-black font-bold">{Number(item.bill_amount || 0).toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>
@@ -150,7 +147,12 @@ const Billwiseformat = ({ billNo, title }) => {
 
         {/* SUMMARY SECTION */}
         <div className="border-t-2 border-black flex">
-          <div className="w-[70%] border-r-2 border-black p-4 space-y-2 flex flex-col justify-center">
+          <div className="w-[70%] border-r-2 border-black p-4 space-y-2 flex flex-col justify-center" >
+            <div className="flex text-[13px] font-bold">
+              <div className="w-[120px]">Payment Mode</div>
+              <div className="w-[20px] text-center">:</div>
+              <div className="flex-1 font-medium">{purchase?.payment_mode || purchase?.items?.[0]?.payment_mode || "-"}</div>
+            </div>
             <div className="flex text-[13px] font-bold">
               <div className="w-[120px]">Bank Name</div>
               <div className="w-[20px] text-center">:</div>

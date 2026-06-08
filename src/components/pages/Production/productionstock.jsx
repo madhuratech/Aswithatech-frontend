@@ -57,7 +57,7 @@ const ProductionStock = () => {
             icon: RefreshCw,
             bgColor: "bg-green-50",
             iconColor: "text-green-600",
-            action: () => navigate("/production/standby-stock"),
+            action: () => navigate("/production/standby-pcb"),
         },
         {
             title: "Scrap / Damaged PCBs",
@@ -65,7 +65,7 @@ const ProductionStock = () => {
             icon: Trash2,
             bgColor: "bg-red-50",
             iconColor: "text-red-600",
-            action: () => console.log("Scrap Stock Clicked"),
+            action: () => navigate("/production/scrap-pcb"),
         },
         {
             title: "Spare Usage",
@@ -73,7 +73,7 @@ const ProductionStock = () => {
             icon: Wrench,
             bgColor: "bg-purple-50",
             iconColor: "text-purple-600",
-            action: () => console.log("Spare Usage Clicked"),
+            action: () => navigate("/production/spare-stock"),
         },
     ];
 

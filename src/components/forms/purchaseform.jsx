@@ -29,8 +29,7 @@ const PurchaseForm = ({ onclose, editItem, purchase, refresh }) => {
 
 const savePurchaseItem = async (e) => {
     e.preventDefault();
-    const toastId = loadingToast("Saving item...");
-
+  
     if (!itemname || !hsn) {
       errorToast("Please fill all fields");
       return;
@@ -72,7 +71,6 @@ const savePurchaseItem = async (e) => {
       refresh();
       onclose();
     } catch (err) {
-      toast.dismiss(toastId);
       errorToast(err.message);
     }
   };
@@ -112,7 +110,7 @@ const savePurchaseItem = async (e) => {
 // Search Dropdown;
 
 const purchaseSelect = (selectedPurchase) => {
-  console.log("SELECTED:", selectedPurchase); // 👈 MUST log
+  console.log("SELECTED:", selectedPurchase); // MUST log
 
   setItemName(selectedPurchase.item_name);
   setHsn(selectedPurchase.hsn_number || 853690);

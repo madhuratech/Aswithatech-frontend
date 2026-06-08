@@ -84,7 +84,7 @@ const handleditclick = (spare) => {
        <div className="flex items-center gap-4">
          <div>
            <input type="text" 
-           className=" border border-gray-300 rounded-md px-4 py-2 w-full outline-none focus:border-[#98A2B3]     border border-[#D0D5DD]  transition-all duration-200 bg-[#F2F4F7]" placeholder="Search employees..."
+           className=" border border-gray-300 rounded-md px-4 py-2 w-full outline-none focus:border-[#98A2B3]     border border-[#D0D5DD]  transition-all duration-200 bg-[#F2F4F7]" placeholder="Search services..."
            value={search}
            onChange={(e)=>setSearch(e.target.value)}/>
           </div>

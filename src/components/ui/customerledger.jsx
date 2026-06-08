@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { X, Square, Minus, Printer } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import html2pdf from "html2pdf.js";
 import * as XLSX from "xlsx";
 
@@ -8,13 +8,15 @@ const API = "http://localhost:3000/api/receipts";
 
 const CustomerLedger = ({ onClose, onMinimize, title = "Customer Ledger" }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const contentRef = useRef(null);
 
   const [isMaximized, setIsMaximized] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const [ledgerType, setLedgerType] = useState("ledger"); // "ledger" | "outstanding"
+  const initialLedgerType = location.state?.ledgerType || "ledger";
+  const [ledgerType, setLedgerType] = useState(initialLedgerType); // "ledger" | "outstanding"
   const [filters, setFilters] = useState({ fromDate: "", toDate: "", customer_name: "" });
 
   const [customerList, setCustomerList] = useState([]);
@@ -72,8 +74,8 @@ const CustomerLedger = ({ onClose, onMinimize, title = "Customer Ledger" }) => {
   // Auto-load ALL customers report when window opens
   useEffect(() => {
     fetchCustomers("");
-    loadReport("", "", "", "ledger");
-  }, []);
+    loadReport("", "", "", initialLedgerType);
+  }, [initialLedgerType]);
 
   // Manual GENERATE REPORT button
   const generateReport = useCallback(() => {

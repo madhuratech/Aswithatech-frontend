@@ -8,10 +8,10 @@ const API = "http://localhost:3000/api/receipts";
 
 const COMPANY = {
   name: "ASWITHA TECH",
-  addr1: "231-D,Sri Balaji Nilayam,",
-  addr2: "Venkataswamy Road New Siddhapudur,",
-  addr3: "Coimbatore-641 044 TamilNadu.",
-  email: "Email :aswithatech2020@gmail.com",
+  addr1: "17, Abirami Nagar, Avarampalayam Road,",
+  addr2: "K.R. Puram, Ganapathi,",
+  addr3: "Coimbatore - 641006",
+  email: "Email: aswithatech2020@gmail.com",
   ph1: "80725  37036",
   ph2: "96551  48537",
   gstin: "33GYLPS7134C1Z9",
@@ -30,9 +30,9 @@ function numberToWords(amount) {
   const b1000 = (x) => x < 100 ? b100(x) : ones[Math.floor(x / 100)] + " HUNDRED" + (x % 100 ? " " + b100(x % 100) : "");
   const parts = [];
   if (n >= 10000000) { parts.push(b1000(Math.floor(n / 10000000)) + " CRORE"); n %= 10000000; }
-  if (n >= 100000)   { parts.push(b100(Math.floor(n / 100000)) + " LAKH"); n %= 100000; }
-  if (n >= 1000)     { parts.push(b1000(Math.floor(n / 1000)) + " THOUSAND"); n %= 1000; }
-  if (n > 0)         { parts.push(b1000(n)); }
+  if (n >= 100000) { parts.push(b100(Math.floor(n / 100000)) + " LAKH"); n %= 100000; }
+  if (n >= 1000) { parts.push(b1000(Math.floor(n / 1000)) + " THOUSAND"); n %= 1000; }
+  if (n > 0) { parts.push(b1000(n)); }
   return parts.join(" ") + " ONLY";
 }
 
@@ -42,16 +42,16 @@ const fmtDate = (d) => {
   if (!d) return "";
   const dt = new Date(d);
   if (isNaN(dt)) return d;
-  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   return `${String(dt.getDate()).padStart(2, "0")}-${months[dt.getMonth()]}-${dt.getFullYear()}`;
 };
 
 /* ─── Single Receipt Voucher ─────────────────────────────────────────────── */
 const ReceiptVoucher = ({ receipt }) => {
   const items = receipt.items || [];
-  const netTotal   = Number(receipt.grand_total     || 0);
-  const otherDed   = Number(receipt.other_deductions || 0);
-  const emptyRows  = Math.max(0, 7 - items.length);
+  const netTotal = Number(receipt.grand_total || 0);
+  const otherDed = Number(receipt.other_deductions || 0);
+  const emptyRows = Math.max(0, 7 - items.length);
 
   const paymentType = [receipt.payment_mode, receipt.bank_name, receipt.remarks]
     .filter(Boolean).join(" ");
@@ -64,24 +64,20 @@ const ReceiptVoucher = ({ receipt }) => {
       }}
     >
       {/* HEADER */}
-      <div className="flex border-b-2 border-black">
-        {/* Left - Logo */}
-        <div className="w-[50%] p-3 border-r-2 border-black flex flex-col justify-between">
-          <img src={Logo} alt="Logo" className="w-[200px] mb-2" />
-          <h2 className="text-[13px] font-bold mt-4">GSTIN : {COMPANY.gstin}</h2>
-        </div>
-
-        {/* Right - Company Details */}
-        <div className="w-[50%] p-3">
-          <h1 className="text-red-600 text-[26px] font-extrabold mb-1 leading-tight">
-            {COMPANY.name}
-          </h1>
-          <div className="text-[12px] font-bold space-y-1">
-            <p>{COMPANY.addr1}</p>
-            <p>{COMPANY.addr2}</p>
-            <p>{COMPANY.addr3}</p>
-            <p>{COMPANY.email}</p>
-            <p>PH : {COMPANY.ph1}, {COMPANY.ph2}</p>
+      <div className="flex flex-col justify-center items-center text-center border-b-2 border-black p-2 h-[120px]">
+        <h1 className="text-red-600 text-[26px] font-extrabold mb-0.5 leading-tight uppercase tracking-tight">
+          {COMPANY.name}
+        </h1>
+        <div className="text-[11px] font-bold space-y-0.5">
+          <p>{COMPANY.addr1}</p>
+          <p>{COMPANY.addr2} {COMPANY.addr3}</p>
+          <p>{COMPANY.email}</p>
+          <div className="flex justify-center items-center gap-4 mt-0.5 text-[10px]">
+            <span>GSTIN : {COMPANY.gstin}</span>
+            <span>•</span>
+            <div className="flex items-center gap-1">
+              <span>PH : {COMPANY.ph1}, {COMPANY.ph2}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -126,43 +122,43 @@ const ReceiptVoucher = ({ receipt }) => {
         <table className="w-full border-collapse">
           <thead>
             <tr className="bg-gray-50 border-b border-black">
-              <th className="border-r-2 border-black p-2 w-[5%] text-center text-[12px] font-bold">S.No</th>
-              <th className="border-r-2 border-black p-2 w-[15%] text-center text-[12px] font-bold">Bill No</th>
-              <th className="border-r-2 border-black p-2 w-[15%] text-center text-[12px] font-bold">Date</th>
-              <th className="border-r-2 border-black p-2 w-[15%] text-center text-[12px] font-bold">Bill Amount</th>
-              <th className="border-r-2 border-black p-2 w-[10%] text-center text-[12px] font-bold">Advans</th>
-              <th className="border-r-2 border-black p-2 w-[10%] text-center text-[12px] font-bold">Tds Amt</th>
-              <th className="border-r-2 border-black p-2 w-[15%] text-center text-[12px] font-bold">Paid Amt</th>
+              <th className="border-r border-black p-2 w-[5%] text-center text-[12px] font-bold">S.No</th>
+              <th className="border-r border-black p-2 w-[15%] text-center text-[12px] font-bold">Bill No</th>
+              <th className="border-r border-black p-2 w-[15%] text-center text-[12px] font-bold">Date</th>
+              <th className="border-r border-black p-2 w-[15%] text-center text-[12px] font-bold">Bill Amount</th>
+              <th className="border-r border-black p-2 w-[10%] text-center text-[12px] font-bold">Advans</th>
+              <th className="border-r border-black p-2 w-[10%] text-center text-[12px] font-bold">Tds Amt</th>
+              <th className="border-r border-black p-2 w-[15%] text-center text-[12px] font-bold">Paid Amt</th>
               <th className="p-2 w-[15%] border-black text-center text-[12px] font-bold">Net Paid</th>
             </tr>
           </thead>
           <tbody>
             {items.map((item, index) => {
-              const tdsAmt  = Math.max(0, Number(item.bill_amount || 0) - Number(item.paid_amount || 0));
-              const netPaid = Number(item.bill_amount   || 0);
+              const tdsAmt = Math.max(0, Number(item.bill_amount || 0) - Number(item.paid_amount || 0));
+              const netPaid = Number(item.bill_amount || 0);
               return (
-                <tr key={index} className="border-b-2 border-black min-h-[35px]">
-                  <td className="border-r-2 border-black p-2 text-center text-[12px]">{index + 1}</td>
-                  <td className="border-r-2 border-black px-3 py-2 text-[12px] font-medium">{item.bill_no}</td>
-                  <td className="border-r-2 border-black p-2 text-center text-[12px]">{fmtDate(item.bill_date)}</td>
-                  <td className="border-r-2 border-black p-2 text-right text-[12px] pr-4">{fmt(item.bill_amount)}</td>
-                  <td className="border-r-2 border-black p-2 text-right text-[12px] pr-4">0.00</td>
-                  <td className="border-r-2 border-black p-2 text-right text-[12px] pr-4">{fmt(tdsAmt)}</td>
-                  <td className="border-r-2 border-black p-2 text-right text-[12px] pr-4">{fmt(item.paid_amount)}</td>
+                <tr key={index} className="border-b border-black min-h-[35px]">
+                  <td className="border-r border-black p-2 text-center text-[12px]">{index + 1}</td>
+                  <td className="border-r border-black px-3 py-2 text-[12px] font-medium">{item.bill_no}</td>
+                  <td className="border-r border-black p-2 text-center text-[12px]">{fmtDate(item.bill_date)}</td>
+                  <td className="border-r border-black p-2 text-right text-[12px] pr-4">{fmt(item.bill_amount)}</td>
+                  <td className="border-r border-black p-2 text-right text-[12px] pr-4">0.00</td>
+                  <td className="border-r border-black p-2 text-right text-[12px] pr-4">{fmt(tdsAmt)}</td>
+                  <td className="border-r border-black p-2 text-right text-[12px] pr-4">{fmt(item.paid_amount)}</td>
                   <td className="p-2 text-right text-[12px] border-black font-bold pr-4">{fmt(netPaid)}</td>
                 </tr>
               );
             })}
             {/* Filler rows */}
             {Array.from({ length: emptyRows }).map((_, i) => (
-              <tr key={`filler-${i}`} className="h-[35px]">
-                <td className="border-r-2 border-black">&nbsp;</td>
-                <td className="border-r-2 border-black">&nbsp;</td>
-                <td className="border-r-2 border-black">&nbsp;</td>
-                <td className="border-r-2 border-black">&nbsp;</td>
-                <td className="border-r-2 border-black">&nbsp;</td>
-                <td className="border-r-2 border-black">&nbsp;</td>
-                <td className="border-r-2 border-black">&nbsp;</td>
+              <tr key={`filler-${i}`} className=" border-black h-[35px]">
+                <td className="border-r border-black">&nbsp;</td>
+                <td className="border-r border-black">&nbsp;</td>
+                <td className="border-r  border-black">&nbsp;</td>
+                <td className="border-r border-black">&nbsp;</td>
+                <td className="border-r border-black">&nbsp;</td>
+                <td className="border-r border-black">&nbsp;</td>
+                <td className="border-r border-black">&nbsp;</td>
                 <td className="border-black">&nbsp;</td>
               </tr>
             ))}
@@ -211,20 +207,20 @@ const ReceiptVoucher = ({ receipt }) => {
 
 /* ─── Main Report Window ─────────────────────────────────────────────────── */
 const ReceiptReport = ({ onClose, onMinimize, title = "Receipt Voucher" }) => {
-  const navigate   = useNavigate();
+  const navigate = useNavigate();
   const contentRef = useRef(null);
 
   const [isMaximized, setIsMaximized] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [loading,     setLoading]     = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const [filters,    setFilters]    = useState({ fromDate: "", toDate: "", customerName: "" });
+  const [filters, setFilters] = useState({ fromDate: "", toDate: "", customerName: "" });
   const [clientList, setClientList] = useState([]);
-  const [data,       setData]       = useState([]);
+  const [data, setData] = useState([]);
 
   const fetchClients = async () => {
     try {
-      const res  = await fetch(`${API}/report/customers`);
+      const res = await fetch(`${API}/report/customers`);
       const json = await res.json();
       setClientList(Array.isArray(json) ? json : []);
     } catch { setClientList([]); }
@@ -234,10 +230,10 @@ const ReceiptReport = ({ onClose, onMinimize, title = "Receipt Voucher" }) => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (f.fromDate)     params.set("fromDate",     f.fromDate);
-      if (f.toDate)       params.set("toDate",       f.toDate);
+      if (f.fromDate) params.set("fromDate", f.fromDate);
+      if (f.toDate) params.set("toDate", f.toDate);
       if (f.customerName) params.set("customerName", f.customerName);
-      const res  = await fetch(`${API}/report/vouchers?${params}`);
+      const res = await fetch(`${API}/report/vouchers?${params}`);
       const json = await res.json();
       setData(Array.isArray(json) ? json : []);
     } catch (err) {
@@ -253,7 +249,7 @@ const ReceiptReport = ({ onClose, onMinimize, title = "Receipt Voucher" }) => {
     loadReport({ fromDate: "", toDate: "", customerName: "" });
   }, []);
 
-  const handleClose    = () => { if (onClose)    onClose();    else navigate(-1); };
+  const handleClose = () => { if (onClose) onClose(); else navigate(-1); };
   const handleMinimize = () => { setIsMinimized(true); if (onMinimize) onMinimize(); };
 
   const handlePrint = () => {
@@ -309,13 +305,15 @@ const ReceiptReport = ({ onClose, onMinimize, title = "Receipt Voucher" }) => {
       <div className={`bg-[#f0f0f0] border-2 border-white flex flex-col transition-all duration-200 ${isMaximized ? "w-full h-full border-none" : "w-[98vw] h-[95vh]"}`}>
 
         {/* ── Title Bar ── */}
-        <div onDoubleClick={() => setIsMaximized(!isMaximized)}
-          className="bg-gradient-to-r from-[#0050a0] to-[#0078d7] text-white px-2 py-1 flex justify-between items-center cursor-default select-none">
+        <div
+          onDoubleClick={() => setIsMaximized(!isMaximized)}
+          className="bg-gradient-to-r from-[#0050a0] to-[#0078d7] text-white px-2 py-1 flex justify-between items-center cursor-default select-none"
+        >
           <span className="text-xs font-bold tracking-wide">{title}</span>
           <div className="flex shrink-0">
-            <button onClick={handleMinimize} className="w-7 h-5 hover:bg-white/20 flex justify-center items-center" title="Minimize"><Minus size={12} strokeWidth={3} /></button>
-            <button onClick={() => setIsMaximized(!isMaximized)} className="w-7 h-5 hover:bg-white/20 flex justify-center items-center" title="Maximize"><Square size={10} strokeWidth={3} /></button>
-            <button onClick={handleClose} className="w-8 h-5 hover:bg-red-500 flex justify-center items-center ml-0.5"><X size={14} strokeWidth={3} /></button>
+            <button onClick={handleMinimize} className="w-7 h-5 hover:bg-white/20 flex justify-center items-center"><Minus size={12} strokeWidth={3} /></button>
+            <button onClick={() => setIsMaximized(!isMaximized)} className="w-7 h-5 hover:bg-white/20 flex justify-center items-center"><Square size={10} strokeWidth={3} /></button>
+            <button onClick={handleClose} className="w-8 h-5 hover:bg-red-500  flex justify-center items-center ml-0.5"><X size={14} strokeWidth={3} /></button>
           </div>
         </div>
 

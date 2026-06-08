@@ -183,7 +183,7 @@ const ShowReport = (item) => {
     { name: "Purchase Order Format", path: "/purchase/po-format" },
     { name: "Debit Note Format", path: "/purchase/debitnote-view" },
     { name: "Supplier Ledger", path: "/purchase/supplier-ledger" },
-    { name: "Monthly Report", path: "/purchase/tax-report"},
+    { name: "Monthly Report", path: "/purchase/monthly-statement"},
     { name: "Payment Format", path: "/purchase/bill-format"},
   ];
 
