@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import logo from "../../../asset/Logo.jpeg";
 import { toWords } from "number-to-words";
 
 const InvoiceLayout = ({ InvNumber }) => {
@@ -145,20 +144,20 @@ const InvoiceLayout = ({ InvNumber }) => {
                           .toLocaleDateString("en-GB")
                       : "",
                   },
+                  // {
+                  //   label: "OR NO",
+                  //   value: invoice?.order_no || "",
+                  // },
+                  // {
+                  //   label: "OR DATE",
+                  //   value: invoice?.order_date || "",
+                  // },
                   {
                     label: "OR NO",
-                    value: invoice?.order_no || "",
-                  },
-                  {
-                    label: "OR DATE",
-                    value: invoice?.order_date || "",
-                  },
-                  {
-                    label: "DC NO",
                     value: invoice?.dc_no || "",
                   },
                   {
-                    label: "DC DATE",
+                    label: "OR DATE",
                     value: invoice?.dc_date || "",
                   },
                 ].map((row, i) => (

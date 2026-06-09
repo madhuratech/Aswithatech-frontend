@@ -26,6 +26,8 @@ const ReceiptEntry = () => {
     balance: "",
     remarks: "",
     payment_mode: "",
+    bank_name: "",
+    reference_number: "",
   });
 
   // ── saved rows in table ────────────────────────────────────────
@@ -39,6 +41,8 @@ const ReceiptEntry = () => {
   const [clientOpen, setClientOpen] = useState(false);
   const [billOpen, setBillOpen] = useState(false);
   const [modeOpen, setModeOpen] = useState(false);
+  const [banks, setBanks] = useState([]);
+  const [bankOpen, setBankOpen] = useState(false);
 
   // ── load / edit ───────────────────────────────────────────────
   const [loadReceipt, setLoadReceipt] = useState("");
@@ -56,6 +60,18 @@ const ReceiptEntry = () => {
     fetch(`${Api_url}/next-receipt-no`)
       .then((r) => r.json())
       .then((d) => setHeader((p) => ({ ...p, receipt_no: d.receipt_no || "" })))
+      .catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    fetch("http://localhost:3000/api/billpayment/banks")
+      .then((r) => r.json())
+      .then((data) => {
+        const list = Array.isArray(data) ? data
+          : Array.isArray(data.data)  ? data.data
+          : Array.isArray(data.banks) ? data.banks : [];
+        setBanks(list);
+      })
       .catch(console.error);
   }, []);
 
@@ -117,11 +133,22 @@ const ReceiptEntry = () => {
   const addRow = () => {
     if (!entry.bill_no) { toast.error("Select a bill number"); return; }
     if (!entry.payment_mode) { toast.error("Select payment mode"); return; }
+    
+    // Validation:
+    // If Payment Mode = Cash -> Bank Name and Reference Number optional.
+    // If Payment Mode = Bank / Cheque / UPI / NEFT / RTGS -> Bank Name and Reference Number mandatory.
+    const isBankMode = ["Bank Transfer", "Cheque", "UPI", "NEFT", "RTGS", "DD"].includes(entry.payment_mode);
+    if (isBankMode) {
+      if (!entry.bank_name?.trim()) { toast.error("Bank Name is required for " + entry.payment_mode); return; }
+      if (!entry.reference_number?.trim()) { toast.error("Reference Number is required for " + entry.payment_mode); return; }
+    }
+
     setTabledata((prev) => [...prev, { ...entry }]);
     setEntry({
       bill_no: "", bill_date: "", bill_amount: "", advance_paid: "",
       tds_amt: "", paid_amount: "", other_deduction: "",
       balance: "", remarks: "", payment_mode: "",
+      bank_name: "", reference_number: "",
     });
   };
 
@@ -131,6 +158,7 @@ const ReceiptEntry = () => {
       bill_no: "", bill_date: "", bill_amount: "", advance_paid: "",
       tds_amt: "", paid_amount: "", other_deduction: "",
       balance: "", remarks: "", payment_mode: "",
+      bank_name: "", reference_number: "",
     });
 
   const deleteRow = (index) =>
@@ -152,6 +180,9 @@ const ReceiptEntry = () => {
     const payload = {
       ...header,
       grand_total: totalPaid,
+      payment_mode: tabledata[0]?.payment_mode || "",
+      bank_name: tabledata[0]?.bank_name || "",
+      reference_number: tabledata[0]?.reference_number || "",
       items: tabledata.map((r) => ({
         bill_no:         r.bill_no,
         bill_amount:     r.bill_amount,
@@ -162,6 +193,8 @@ const ReceiptEntry = () => {
         balance:         r.balance,
         remarks:         r.remarks,
         payment_mode:    r.payment_mode,
+        bank_name:       r.bank_name,
+        reference_number: r.reference_number,
       })),
     };
 
@@ -216,6 +249,8 @@ const ReceiptEntry = () => {
         balance:         item.balance          || 0,
         remarks:         item.remarks          || "",
         payment_mode:    item.payment_mode     || "",
+        bank_name:       item.bank_name        || "",
+        reference_number: item.reference_number || "",
       })));
       setLoadedId(h.id);
       setLoadReceipt(receiptNo);
@@ -227,7 +262,7 @@ const ReceiptEntry = () => {
   const resetAll = async () => {
     const today = new Date().toISOString().split("T")[0];
     setHeader({ receipt_no: "", receipt_date: today, customer_name: "" });
-    setEntry({ bill_no: "", bill_amount: "", advance_paid: "", tds_amt: "", paid_amount: "", other_deduction: "", balance: "", remarks: "", payment_mode: "" });
+    setEntry({ bill_no: "", bill_amount: "", advance_paid: "", tds_amt: "", paid_amount: "", other_deduction: "", balance: "", remarks: "", payment_mode: "", bank_name: "", reference_number: "" });
     setTabledata([]);
     setPendingBills([]);
     setLoadedId(null);
@@ -243,7 +278,7 @@ const ReceiptEntry = () => {
   const fmt = (v) => Number(v || 0).toFixed(2);
 
   return (
-    <div className="p-6 min-h-screen bg-gray-50 font-sans" onClick={() => { setClientOpen(false); setBillOpen(false); setModeOpen(false); setLoadOpen(false); }}>
+    <div className="p-6 min-h-screen bg-gray-50 font-sans" onClick={() => { setClientOpen(false); setBillOpen(false); setModeOpen(false); setLoadOpen(false); setBankOpen(false); }}>
       <button
         onClick={() => navigate(-1)}
         className="flex items-center gap-2 px-4 py-2 border rounded-xl bg-white hover:bg-gray-50 text-[15px] font-medium w-fit"
@@ -431,7 +466,7 @@ const ReceiptEntry = () => {
             </div>
 
             {/* Payment Mode */}
-            <div className="flex flex-col gap-1 relative">
+            <div className="flex flex-col gap-1 relative" onClick={(e) => e.stopPropagation()}>
               <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Payment Mode</label>
               <input
                 type="text"
@@ -454,6 +489,48 @@ const ReceiptEntry = () => {
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* Bank Name (Dropdown) */}
+            <div className="flex flex-col gap-1 relative" onClick={(e) => e.stopPropagation()}>
+              <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Bank Name</label>
+              <input
+                type="text"
+                placeholder="Type to search bank..."
+                value={entry.bank_name}
+                onFocus={() => setBankOpen(true)}
+                onChange={(e) => setEntry((p) => ({ ...p, bank_name: e.target.value }))}
+                className="p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black outline-none bg-white shadow-sm"
+              />
+              {bankOpen && (
+                <div className="absolute top-[62px] left-0 w-full bg-white shadow-lg z-50 border border-gray-200 rounded max-h-40 overflow-y-auto">
+                  {banks
+                    .filter((b) =>
+                      (b.name || b.bank_name || "").toLowerCase().includes((entry.bank_name || "").toLowerCase())
+                    )
+                    .map((b, i) => (
+                      <div
+                        key={i}
+                        onClick={() => { setEntry((p) => ({ ...p, bank_name: b.name || b.bank_name })); setBankOpen(false); }}
+                        className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                      >
+                        {b.name || b.bank_name}
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+
+            {/* Reference Number */}
+            <div className="flex flex-col gap-1">
+              <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Reference Number</label>
+              <input
+                type="text"
+                placeholder="UTR No / Cheque No / NEFT No"
+                value={entry.reference_number}
+                onChange={(e) => setEntry((p) => ({ ...p, reference_number: e.target.value }))}
+                className="p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black outline-none bg-white shadow-sm"
+              />
             </div>
 
             {/* Remarks */}
@@ -491,7 +568,7 @@ const ReceiptEntry = () => {
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200 text-left">
-                {["Bill No","Bill Date","Bill Amount","Advance Paid","TDS","Paid Amount","Other Deduction","Balance","Payment Mode","Remarks","Del"].map((h) => (
+                {["Bill No","Bill Date","Bill Amount","Advance Paid","TDS","Paid Amount","Other Deduction","Balance","Payment Mode","Bank Name","Reference No","Remarks","Del"].map((h) => (
                   <th key={h} className="p-3 text-[11px] font-black text-gray-500 border-r border-gray-100 uppercase text-center whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -509,6 +586,8 @@ const ReceiptEntry = () => {
                     <td className="p-3 text-[12px] font-semibold text-gray-700 border-r border-gray-100 text-center">{fmt(row.other_deduction)}</td>
                     <td className="p-3 text-[12px] font-bold text-red-600 border-r border-gray-100 text-center">{fmt(row.balance)}</td>
                     <td className="p-3 text-[12px] font-semibold text-gray-700 border-r border-gray-100 text-center">{row.payment_mode}</td>
+                    <td className="p-3 text-[12px] font-semibold text-gray-700 border-r border-gray-100 text-center">{row.bank_name || ""}</td>
+                    <td className="p-3 text-[12px] font-semibold text-gray-700 border-r border-gray-100 text-center">{row.reference_number || ""}</td>
                     <td className="p-3 text-[12px] text-gray-600 border-r border-gray-100 text-center">{row.remarks}</td>
                     <td className="p-3 text-center">
                       <Trash2
@@ -521,7 +600,7 @@ const ReceiptEntry = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="11" className="p-10 text-center text-gray-400 text-sm">
+                  <td colSpan="13" className="p-10 text-center text-gray-400 text-sm">
                     Select a customer, choose a bill and click <strong>ADD</strong>
                   </td>
                 </tr>
@@ -539,6 +618,8 @@ const ReceiptEntry = () => {
                   <td className="p-3 text-center text-green-700 border-r border-gray-100">{fmt(totalPaid)}</td>
                   <td className="p-3 border-r border-gray-100"></td>
                   <td className="p-3 text-center text-red-600 border-r border-gray-100">{fmt(totalBalance)}</td>
+                  <td className="p-3 border-r border-gray-100"></td>
+                  <td className="p-3 border-r border-gray-100"></td>
                   <td className="p-3 border-r border-gray-100"></td>
                   <td className="p-3 border-r border-gray-100"></td>
                   <td className="p-3"></td>

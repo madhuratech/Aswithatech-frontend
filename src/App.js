@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { KeyboardNavProvider } from "./context/KeyboardNavProvider";
 import Layout from "./components/layout/layout";
 import Home from "./components/pages/Dashboard/dashboard";
 import General from "./components/pages/Genral/general";
@@ -53,6 +54,7 @@ import ReceiptAdvance from "./components/forms/receiptAdvance";
 import PendingForm from "./components/forms/pending";
 import CustomerLedger from "./components/ui/customerledger";
 import SalesReport from "./components/ui/salesreport";
+import PendingBillsReport from "./components/ui/pendingbillsreport";
 import ReceiptReport from "./components/ui/receiptreport";
 import CreditNote from "./components/forms/creditnoteform";
 import creditnoteview from "./components/pages/Sales/creditnote";
@@ -75,6 +77,7 @@ function App() {
   }
   return (
     <BrowserRouter>
+      <KeyboardNavProvider>
       <Toaster position="top-right" reverseOrder={false} />
 
       <Routes>
@@ -133,6 +136,7 @@ function App() {
             <Route path="receipt-advance" element={<ReceiptAdvance />} />
             <Route path="customer-Ledger" element={<CustomerLedger />} />
             <Route path="sales-report" element={<SalesReport />} />
+            <Route path="pending-bills" element={<PendingBillsReport />} />
             <Route path="Reciept-Format" element={<ReceiptReport />} />
             <Route path="credit-note" element={<CreditNote />} />
             <Route path="credit-note-view/:cnNumber" element={<creditnoteview />} />
@@ -157,6 +161,7 @@ function App() {
         </Route>
 
       </Routes>
+      </KeyboardNavProvider>
     </BrowserRouter>
   );
 }

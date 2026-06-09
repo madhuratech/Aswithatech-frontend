@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
+import { useDropdownKeyNav } from "../../hooks/useDropdownKeyNav";
 import { SquarePen, Trash2, Printer } from "lucide-react";
 import toast from "react-hot-toast";
 import html2pdf from "html2pdf.js";
@@ -307,31 +309,15 @@ const StandbyPCB = () => {
     (p.pcb_name || "").toLowerCase().includes(pcbSearch.toLowerCase())
   );
 
-  // Click outside listener
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (custRef.current && !custRef.current.contains(event.target)) {
-        setShowCustDropdown(false);
-      }
-      if (pcbRef.current && !pcbRef.current.contains(event.target)) {
-        setShowPcbDropdown(false);
-      }
-      if (statusRef.current && !statusRef.current.contains(event.target)) {
-        setShowStatusDropdown(false);
-      }
-      if (searchRef.current && !searchRef.current.contains(event.target)) {
-        setShowSearchDropdown(false);
-      }
-      if (repCustRef.current && !repCustRef.current.contains(event.target)) {
-        setShowRepCustDropdown(false);
-      }
-      if (repPcbRef.current && !repPcbRef.current.contains(event.target)) {
-        setShowRepPcbDropdown(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  // Outside-click: close all dropdowns when clicking outside their containers
+  useOutsideClick([
+    { ref: custRef,    onClose: () => setShowCustDropdown(false) },
+    { ref: pcbRef,     onClose: () => setShowPcbDropdown(false) },
+    { ref: statusRef,  onClose: () => setShowStatusDropdown(false) },
+    { ref: searchRef,  onClose: () => setShowSearchDropdown(false) },
+    { ref: repCustRef, onClose: () => setShowRepCustDropdown(false) },
+    { ref: repPcbRef,  onClose: () => setShowRepPcbDropdown(false) },
+  ]);
 
   // ════════════════════════════════════════════════════════════════════
   // Reports Logic
@@ -459,6 +445,29 @@ const StandbyPCB = () => {
 
   const STATUS_LIST = ["Available", "Allocated", "Installed", "Returned", "Damaged"];
 
+  // Keyboard nav hooks
+  const pcbNav = useDropdownKeyNav({
+    items: filteredPcbStock,
+    isOpen: showPcbDropdown,
+    onSelect: handlePcbSelect,
+    onClose: () => setShowPcbDropdown(false),
+    onOpen:  () => setShowPcbDropdown(true),
+  });
+  const custNav = useDropdownKeyNav({
+    items: filteredCustomers,
+    isOpen: showCustDropdown,
+    onSelect: handleCustomerSelect,
+    onClose: () => setShowCustDropdown(false),
+    onOpen:  () => setShowCustDropdown(true),
+  });
+  const statusNav = useDropdownKeyNav({
+    items: STATUS_LIST,
+    isOpen: showStatusDropdown,
+    onSelect: (s) => { setStatus(s); setShowStatusDropdown(false); },
+    onClose: () => setShowStatusDropdown(false),
+    onOpen:  () => setShowStatusDropdown(true),
+  });
+
   return (
     <div className="min-h-screen bg-gray-50/70 p-6 font-sans text-sm">
       {/* Back Button */}
@@ -549,6 +558,7 @@ const StandbyPCB = () => {
                     setShowPcbDropdown(true);
                     setPcbSearch("");
                   }}
+                  onKeyDown={pcbNav.handleKeyDown}
                   onChange={(e) => {
                     setPcbSearch(e.target.value);
                     setShowPcbDropdown(true);
@@ -558,11 +568,11 @@ const StandbyPCB = () => {
                 />
                 {showPcbDropdown && filteredPcbStock.length > 0 && (
                   <div className={dropdownCls}>
-                    {filteredPcbStock.map((p) => (
+                    {filteredPcbStock.map((p, i) => (
                       <div
                         key={p.pcb_code}
                         onClick={() => handlePcbSelect(p)}
-                        className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0"
+                        className={`px-4 py-2.5 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0 ${i === pcbNav.highlightedIndex ? "bg-blue-100" : "hover:bg-blue-50"}`}
                       >
                         <span className="text-blue-800">{p.pcb_code}</span> — {p.pcb_name}
                       </div>
@@ -628,6 +638,7 @@ const StandbyPCB = () => {
                     setShowCustDropdown(true);
                     setCustSearch("");
                   }}
+                  onKeyDown={custNav.handleKeyDown}
                   onChange={(e) => {
                     setCustSearch(e.target.value);
                     setCustomerName(e.target.value);
@@ -638,11 +649,11 @@ const StandbyPCB = () => {
                 />
                 {showCustDropdown && filteredCustomers.length > 0 && (
                   <div className={dropdownCls}>
-                    {filteredCustomers.map((c) => (
+                    {filteredCustomers.map((c, i) => (
                       <div
                         key={c.id}
                         onClick={() => handleCustomerSelect(c)}
-                        className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0"
+                        className={`px-4 py-2.5 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0 ${i === custNav.highlightedIndex ? "bg-blue-100" : "hover:bg-blue-50"}`}
                       >
                         {c.customer_name}
                       </div>
@@ -709,6 +720,8 @@ const StandbyPCB = () => {
                 </label>
                 <div
                   onClick={() => setShowStatusDropdown((p) => !p)}
+                  onKeyDown={statusNav.handleKeyDown}
+                  tabIndex={0}
                   className={`${inputCls} flex justify-between items-center cursor-pointer min-h-[42px]`}
                 >
                   <span className="font-bold text-[#0078d7]">{status}</span>
@@ -718,14 +731,14 @@ const StandbyPCB = () => {
                 </div>
                 {showStatusDropdown && (
                   <div className={dropdownCls}>
-                    {STATUS_LIST.map((s) => (
+                    {STATUS_LIST.map((s, i) => (
                       <div
                         key={s}
                         onClick={() => {
                           setStatus(s);
                           setShowStatusDropdown(false);
                         }}
-                        className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer text-[13px] font-bold border-b border-gray-50 last:border-0 text-gray-700"
+                        className={`px-4 py-2.5 cursor-pointer text-[13px] font-bold border-b border-gray-50 last:border-0 text-gray-700 ${i === statusNav.highlightedIndex ? "bg-blue-100" : "hover:bg-blue-50"}`}
                       >
                         {s}
                       </div>

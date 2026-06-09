@@ -174,7 +174,7 @@ const ServiceWindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinim
           html, body { height:auto !important; overflow:hidden !important; }
           .print-container { width:100%; background:white; display:flex; justify-content:center; padding:0; }
           table { width:100%; border-collapse:collapse; }
-          th,td { border:1px solid #d1d5db; padding:8px; }
+          th,td {padding:0; }
           tr { page-break-inside:avoid; }
           .no-print { display:none !important; }
         </style>
@@ -610,7 +610,7 @@ const ServiceWindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinim
                     body { margin: 0 !important; padding: 0 !important; }
                     .no-print { display: none !important; }
                     .printable-area { width: 100% !important; overflow: visible !important; }
-                    tr { page-break-inside: avoid !important; }
+                    tr,td,th { page-break-inside: avoid !important; }
                 }
             `}</style>
         </div>

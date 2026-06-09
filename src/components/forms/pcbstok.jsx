@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
+import { useDropdownKeyNav } from "../../hooks/useDropdownKeyNav";
 import { useNavigate } from "react-router-dom";
 import { SquarePen, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
@@ -14,6 +16,9 @@ function debounce(func, delay) {
 
 const PCBStock = () => {
   const navigate = useNavigate();
+
+
+  const Api_url = "http://localhost:3000/api/pcb-stock";
 
   // Form states
   const [pcbCode, setPcbCode] = useState("");
@@ -35,13 +40,16 @@ const PCBStock = () => {
   const [loadCodeVal, setLoadCodeVal] = useState("");
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [searchList, setSearchList] = useState([]);
+  const [suppliersearch, setsuppliersearch] = useState("");
+  const [clients, setclients] = useState([]);
+
 
   // Dropdown visibility
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
-
+  const [clientDropdown, setclientDropdown] = useState(false);
   const categoryRef = useRef(null);
   const searchRef = useRef(null);
-
+  const clientRef = useRef(null);
   // Set default date to today
   useEffect(() => {
     const today = new Date().toISOString().split("T")[0];
@@ -77,6 +85,25 @@ const PCBStock = () => {
   } else if (qty <= minStock) {
     derivedStatus = "Low Stock";
   }
+
+  // Client load
+
+  useEffect(() =>{
+    const fetchClients = async () => {
+     try{
+      const url = suppliersearch
+      ? `${Api_url}/clients/search?q=${encodeURIComponent(suppliersearch)}`
+      : `${Api_url}/clients`;
+
+      const res = await fetch(url);
+      const data = await res.json();
+      setclients(data);
+     }catch(err){
+      console.error("Error fetching clients:", err)
+     }
+    }
+    fetchClients();
+  },[suppliersearch]);
 
   // Reset / Clear Form
   const handleResetForm = () => {
@@ -124,14 +151,14 @@ const PCBStock = () => {
       pcb_model: pcbModel,
       pcb_category: pcbCategory,
       supplier_name: supplierName,
-      purchase_invoice_no: purchaseInvoiceNo,
+      supplier_invoice_no: purchaseInvoiceNo,
       purchase_date: purchaseDate,
       quantity_received: parseFloat(quantityReceived),
       available_quantity: parseFloat(availableQuantity),
       minimum_stock_level: parseFloat(minimumStockLevel),
       unit_cost: parseFloat(unitCost),
       stock_value: parseFloat(stockValue),
-      rack_location: rackLocation,
+      rack_number: rackLocation,
       status: derivedStatus,
       remarks: remarks,
     };
@@ -222,7 +249,7 @@ const PCBStock = () => {
       setPcbModel(data.pcb_model);
       setPcbCategory(data.pcb_category);
       setSupplierName(data.supplier_name);
-      setPurchaseInvoiceNo(data.purchase_invoice_no);
+      setPurchaseInvoiceNo(data.supplier_invoice_no);
       setPurchaseDate(data.purchase_date?.split("T")[0] || "");
       setQuantityReceived(data.quantity_received);
       setAvailableQuantity(data.available_quantity);
@@ -240,19 +267,12 @@ const PCBStock = () => {
     }
   };
 
-  // Click outside listener
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (categoryRef.current && !categoryRef.current.contains(event.target)) {
-        setShowCategoryDropdown(false);
-      }
-      if (searchRef.current && !searchRef.current.contains(event.target)) {
-        setShowSearchDropdown(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  // Outside-click: close all dropdowns when clicking outside their containers
+  useOutsideClick([
+    { ref: categoryRef, onClose: () => setShowCategoryDropdown(false) },
+    { ref: searchRef,   onClose: () => setShowSearchDropdown(false) },
+    { ref: clientRef,   onClose: () => setclientDropdown(false) },
+  ]);
 
   // Shared CSS class shortcuts matching sales invoice form
   const labelCls = "block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5 select-none";
@@ -261,6 +281,26 @@ const PCBStock = () => {
   const dropdownCls = "absolute top-full left-0 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 max-h-52 overflow-y-auto";
 
   const CATEGORY_LIST = ["Main Board", "Power Board", "T-Con Board", "Control Board", "Driver Board", "Other"];
+
+  const filteredClients = clients.filter((client) =>
+    (client.customer_name || "").toLowerCase().includes((suppliersearch || "").toLowerCase())
+  ).slice(0, 6);
+
+  // Keyboard nav hooks
+  const categoryNav = useDropdownKeyNav({
+    items: CATEGORY_LIST,
+    isOpen: showCategoryDropdown,
+    onSelect: (opt) => { setPcbCategory(opt); setShowCategoryDropdown(false); },
+    onClose: () => setShowCategoryDropdown(false),
+    onOpen:  () => setShowCategoryDropdown(true),
+  });
+  const clientNav = useDropdownKeyNav({
+    items: filteredClients,
+    isOpen: clientDropdown,
+    onSelect: (c) => { setSupplierName(c.customer_name); setclientDropdown(false); },
+    onClose: () => setclientDropdown(false),
+    onOpen:  () => setclientDropdown(true),
+  });
 
   // Dynamic status text colors
   const statusColorCls =
@@ -380,6 +420,8 @@ const PCBStock = () => {
               </label>
               <div
                 onClick={() => setShowCategoryDropdown((p) => !p)}
+                onKeyDown={categoryNav.handleKeyDown}
+                tabIndex={0}
                 className={`${inputCls} flex justify-between items-center cursor-pointer min-h-[42px]`}
               >
                 <span className={pcbCategory ? "text-black" : "text-gray-400 font-medium text-[13px]"}>
@@ -391,14 +433,14 @@ const PCBStock = () => {
               </div>
               {showCategoryDropdown && (
                 <div className={dropdownCls}>
-                  {CATEGORY_LIST.map((opt) => (
+                  {CATEGORY_LIST.map((opt, i) => (
                     <div
                       key={opt}
                       onClick={() => {
                         setPcbCategory(opt);
                         setShowCategoryDropdown(false);
                       }}
-                      className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0"
+                      className={`px-4 py-2.5 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0 ${i === categoryNav.highlightedIndex ? "bg-blue-100" : "hover:bg-blue-50"}`}
                     >
                       {opt}
                     </div>
@@ -408,17 +450,40 @@ const PCBStock = () => {
             </div>
 
             {/* Supplier Name */}
-            <div>
+            <div className="relative z-10" ref={clientRef}>
               <label className={labelCls}>
                 Supplier Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 value={supplierName}
-                onChange={(e) => setSupplierName(e.target.value)}
+                onChange={(e) => {
+                  setsuppliersearch(e.target.value);
+                  setSupplierName(e.target.value);
+                  setclientDropdown(true);
+                }}
+                onFocus={() => setclientDropdown(true)}
+                onKeyDown={clientNav.handleKeyDown}
                 placeholder="Supplier Company Name"
                 className={inputCls}
               />
+
+              {clientDropdown && filteredClients.length > 0 && (
+  <div className={dropdownCls}>
+    {filteredClients.map((client, i) => (
+        <div
+          key={i}
+          onClick={() => {
+            setSupplierName(client.customer_name);
+            setclientDropdown(false);
+          }}
+          className={`px-4 py-2 cursor-pointer ${i === clientNav.highlightedIndex ? "bg-blue-100" : "hover:bg-blue-50"}`}
+        >
+          {client.customer_name}
+        </div>
+      ))}
+  </div>
+)}
             </div>
 
             {/* Purchase Invoice No */}

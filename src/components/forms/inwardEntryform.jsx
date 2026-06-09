@@ -258,6 +258,8 @@ const InwardEntry = () => {
             if (!res.ok) {
                 throw new Error(data.message || "failed");
             }
+            toast.success(savedInwardNo ? "Inward Entry Updated Successfully" : "Inward Entry Saved Successfully");
+            resetAll();
             fetchAllInward();
         } catch (error) {
             console.error("Save Error:", error);

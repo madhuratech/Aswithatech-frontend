@@ -52,6 +52,7 @@ const SalesDCEntry = () => {
     const [open, setOpen] = useState({
         customer: false, clientDc: false, product: false, uom: false, loadDc: false, despatch: false,
     });
+    const [remarksOpen , setRemarksOpen] = useState(false);
 
     // ── loading flags ────────────────────────────────────────────────────────
     const [busy, setBusy] = useState({
@@ -69,6 +70,24 @@ const SalesDCEntry = () => {
     // ── derived flags ────────────────────────────────────────────────────────
     const customerSelected = !!form.customer_name;
     const clientDcSelected = !!form.client_dc_no;
+
+
+    // Auto update status
+    useEffect(() => {
+    if (item.remarks === "Service") {
+        setItem((p) => ({
+            ...p,
+            service_status: "Service",
+        }));
+    }
+
+    if (item.remarks === "Re Service") {
+        setItem((p) => ({
+            ...p,
+            service_status: "Re Service",
+        }));
+    }
+}, [item.remarks]);
 
     // ── outside-click + initial DC no ────────────────────────────────────────
     useEffect(() => {
@@ -259,6 +278,7 @@ const SalesDCEntry = () => {
             sl_no: r.sl_no || null,
             hsn: r.hsn || null,
             uom: r.uom || "Nos",
+            remarks: r.remarks || null,
         })),
     });
 
@@ -573,7 +593,7 @@ const SalesDCEntry = () => {
                     <div>
                         <label className={labelCls}>Status</label>
                         <div className="flex items-center gap-6 h-[38px]">
-                            {["To Sell", "ReService"].map((s) => (
+                            {["Service", "ReService"].map((s) => (
                                 <label key={s} className="flex items-center gap-2 cursor-pointer">
                                     <input
                                         type="radio"
@@ -746,20 +766,54 @@ const SalesDCEntry = () => {
                         </div>
 
                         {/* Price — auto-filled */}
-                        <div>
-                            <label className={labelCls}>
-                                Price
-                                {item.item_name && <span className="ml-1 text-[10px] text-blue-500 font-black normal-case">Auto</span>}
-                            </label>
-                            <input
-                                type="number"
-                                min="0"
-                                value={item.price}
-                                onChange={(e) => setItem((p) => ({ ...p, price: e.target.value }))}
-                                placeholder="0.00"
-                                className={`${inputCls} bg-gray-50/50`}
-                            />
-                        </div>
+                      <div className="relative">
+                      <label className={labelCls}>
+                       Remarks
+                       {item.item_name && (
+                      <span className="ml-1 text-[10px] text-blue-500 font-black normal-case">
+                      Auto
+                      </span>
+                       )}
+                     </label>
+
+                     <input
+                      type="text"
+                       value={item.remarks || ""}
+                       onChange={(e) =>
+                       setItem((p) => ({
+                         ...p,
+                          remarks: e.target.value,
+                       }))
+                      }
+                   onFocus={() => setRemarksOpen(true)}
+                   placeholder="Select Remarks"
+                   className={`${inputCls} bg-gray-50/50`}
+                   />
+
+                   {remarksOpen && (
+                   <div className={dropdownCls}>
+                   {["Service", "Re Service"].map((remarks) => (
+                   <div
+                     key={remarks}
+                     onClick={() => {
+                        setItem((p) => ({
+                            ...p,
+                            remarks,
+                            service_status:
+                                remarks === "Service"
+                                    ? "Service"
+                                    : "Re Service",
+                        }));
+                        setRemarksOpen(false);
+                    }}
+                    className="px-3 py-2 cursor-pointer hover:bg-blue-100"
+                >
+                    {remarks}
+                </div>
+            ))}
+        </div>
+    )}
+</div>
 
                         {/* Add / Clear */}
                         <div className="flex gap-2">
@@ -837,7 +891,7 @@ const SalesDCEntry = () => {
                                         <td className="px-4 py-3 text-[13px] text-gray-600 text-center">{r.sl_no || "—"}</td>
                                         <td className="px-4 py-3 text-[13px] text-gray-600 text-center uppercase">{r.uom}</td>
                                         <td className="px-4 py-3 text-[13px] text-gray-800 text-center font-medium">
-                                            {r.price ? `₹${r.price}` : "—"}
+                                            {r.remarks}
                                         </td>
                                         <td className="px-4 py-3 text-center">
                                             <button

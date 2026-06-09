@@ -35,7 +35,7 @@ const DeliveryChallan = ({ dcNumber }) => {
 
   return (
     <div className="bg-white w-full py-4">
-      <div className="w-full min-h-[190mm] max-w-[200mm]   mx-auto bg-white border-2 border-black shadow-sm"
+      <div className="w-full min-h-[190mm] max-w-[200mm] mx-auto bg-white border-2 border-black shadow-sm flex flex-col"
         style={{ boxSizing: "border-box", overflow: "hidden" }}
       >
         <div className="flex justify-between items-center px-8 py-3 font-bold text-[18px]">
@@ -134,68 +134,72 @@ const DeliveryChallan = ({ dcNumber }) => {
 
         </div>
 
-        {/* Table */}
-        <table className="w-full border-collapse">
+        {/* Table — flex-1 so it stretches to fill remaining page height */}
+        <div className="border-b-2 border-black" style={{minHeight: "",
+         overflow: "hidden"}}>
+           <table className="w-full border-collapse">
+            <thead style={{ display: "table", width: "100%", tableLayout: "fixed" }}>
+              <tr className="bg-gray-50">
+                <th className="border-r-2 border-b-2 border-black p-2 w-[8%] text-center text-[13px]">
+                  SNO
+                </th>
+                <th className="border-r-2 border-b-2 border-black p-2 w-[47%] text-center text-[13px]">
+                  PARTICULARS
+                </th>
+                <th className="border-r-2 border-b-2 border-black p-2 w-[15%] text-center text-[13px]">
+                  HSN
+                </th>
+                <th className="border-r-2 border-b-2 border-black p-2 w-[10%] text-center text-[13px]">
+                  QTY
+                </th>
+                <th className="border-b-2 border-black p-2 w-[20%] text-center text-[13px]">
+                  REMARKS
+                </th>
+              </tr>
+            </thead>
 
-          <thead>
-            <tr className="bg-gray-50">
-              <th className="border-r-2 border-b-2 border-black p-2 w-[8%] text-center text-[13px]">
-                SNO
-              </th>
-              <th className="border-r-2 border-b-2 border-black p-2 w-[47%] text-center text-[13px]">
-                PARTICULARS
-              </th>
-              <th className="border-r-2 border-b-2 border-black p-2 w-[15%] text-center text-[13px]">
-                HSN
-              </th>
-              <th className="border-r-2 border-b-2 border-black p-2 w-[10%] text-center text-[13px]">
-                QTY
-              </th>
-              <th className="border-b-2 border-black p-2 w-[20%] text-center text-[13px]">
-                REMARKS
-              </th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {data?.items?.length > 0 ? (
-              data.items.map((item, index) => (
-                <tr key={index} className="min-h-[40px]">
-                  <td className="border-r-2 border-b-2 border-black p-2 text-center text-[13px]">
-                    {index + 1}
-                  </td>
-                  <td className="border-r-2 border-b-2 border-black px-3 py-2 text-[13px] font-medium">
-                    {item.item_name}
-                  </td>
-                  <td className="border-r-2 border-b-2 border-black p-2 text-center text-[13px]">
-                    {item.hsn}
-                  </td>
-                  <td className="border-r-2 border-b-2 border-black p-2 text-center text-[13px]">
-                    {item.quantity}
-                  </td>
-                  <td className="border-b-2 border-black px-3 py-2 text-[13px]">
-                    {item.remarks}
+            <tbody style={{ display: "table", width: "100%", tableLayout: "fixed", flex: 1 }}>
+              {data?.items?.length > 0 ? (
+                data.items.map((item, index) => (
+                  <tr key={index} className="h-[44px]">
+                    <td className="border-r-2 border-black text-center text-[13px] align-top w-[8%]">
+                      {index + 1}
+                    </td>
+                    <td className="border-r-2 border-black px-3 py-2 text-[13px] w-[47%]">
+                      {item.item_name}
+                    </td>
+                    <td className="border-r-2 border-black text-center text-[13px] w-[15%]">
+                      {item.hsn}
+                    </td>
+                    <td className="border-r-2 border-black text-center text-[13px] w-[10%]">
+                      {item.quantity}
+                    </td>
+                    <td className="text-[13px] px-3 py-2 w-[20%]">
+                      {item.remarks}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="border-b-2 border-black p-8 text-center">
+                    No items found
                   </td>
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={5} className="border-b-2 border-black p-8 text-center text-gray-400">
-                  No items found
-                </td>
-              </tr>
-            )}
-
-            <tr>
-              <td
-                colSpan={5}
-                className="border-b-2 border-black text-center font-bold text-[18px] py-2"
-              >
-                {data?.items?.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0) || 0}
-              </td>
-            </tr>
-          </tbody>
-        </table>
+              )}
+              {/* Filler row — stretches to fill remaining table space so border-r covers fully */}
+              {Array.from({length: Math.max(0,5  - (data?.items?.length || 0))
+             }).map((_, i) => (
+             <tr key={`fill-${i}`} className="h-[36px]">
+              <td className="border-r-2 border-black"></td>
+              <td className="border-r-2 border-black"></td>
+               <td className="border-r-2 border-black"></td>
+               <td className="border-r-2 border-black"></td>
+                <td></td>
+               </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
         {/* Footer */}
         <div className="relative min-h-[120px] mt-4 px-4 py-2">

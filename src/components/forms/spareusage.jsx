@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { SquarePen, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
+import { useDropdownKeyNav } from "../../hooks/useDropdownKeyNav";
 
 // Debounce helper for search
 function debounce(func, delay) {
@@ -156,7 +158,7 @@ const SpareUsage = () => {
     if (!usageDate) return alert("Usage Date is required");
     if (!pcbModel.trim()) return alert("PCB Model is required");
     if (!jobBatchNo.trim()) return alert("Job / Batch No is required");
-    if (!spareCode.trim()) return alert("Spare Code is required");
+    if (!String(spareCode || "").trim()) return alert("Spare Code is required");
     if (!spareName.trim()) return alert("Spare Name is required");
     if (quantityUsed === "" || isNaN(parseFloat(quantityUsed)) || parseFloat(quantityUsed) <= 0) {
       return alert("Valid Quantity Used is required");
@@ -289,28 +291,14 @@ const SpareUsage = () => {
 
   const debouncedSnoSearch = useRef(debounce(handleSearchSno, 300)).current;
 
-  // Click outside listener for dropdowns
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (pcbRef.current && !pcbRef.current.contains(event.target)) {
-        setShowPcbDropdown(false);
-      }
-      if (empRef.current && !empRef.current.contains(event.target)) {
-        setShowEmpDropdown(false);
-      }
-      if (spareRef.current && !spareRef.current.contains(event.target)) {
-        setShowSpareDropdown(false);
-      }
-      if (typeRef.current && !typeRef.current.contains(event.target)) {
-        setShowTypeDropdown(false);
-      }
-      if (searchRef.current && !searchRef.current.contains(event.target)) {
-        setShowSearchDropdown(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  // Outside-click: close all dropdowns when clicking outside their containers
+  useOutsideClick([
+    { ref: pcbRef,    onClose: () => setShowPcbDropdown(false) },
+    { ref: empRef,    onClose: () => setShowEmpDropdown(false) },
+    { ref: spareRef,  onClose: () => setShowSpareDropdown(false) },
+    { ref: typeRef,   onClose: () => setShowTypeDropdown(false) },
+    { ref: searchRef, onClose: () => setShowSearchDropdown(false) },
+  ]);
 
   // Autocomplete suggestions filtering
   const filteredPcbs = pcbStocks.filter(
@@ -336,7 +324,7 @@ const SpareUsage = () => {
 
   const filteredSpares = sparesMaster.filter(
     (sp) =>
-      (sp.spare_name || "").toLowerCase().includes(spareCode.toLowerCase()) ||
+      (sp.spare_name || "").toLowerCase().includes(String(spareCode || "").toLowerCase()) ||
       (sp.hsn_number && String(sp.hsn_number).includes(spareCode))
   );
 
@@ -353,6 +341,36 @@ const SpareUsage = () => {
   const dropdownCls = "absolute top-full left-0 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 max-h-52 overflow-y-auto";
 
   const USAGE_TYPES = ["Production", "Service", "Repair", "Testing", "Rework"];
+
+  // Keyboard nav hooks (placed after filtered arrays to avoid temporal dead zone)
+  const pcbNav = useDropdownKeyNav({
+    items: filteredPcbs,
+    isOpen: showPcbDropdown,
+    onSelect: selectPcb,
+    onClose: () => setShowPcbDropdown(false),
+    onOpen:  () => setShowPcbDropdown(true),
+  });
+  const empNav = useDropdownKeyNav({
+    items: filteredEmployees,
+    isOpen: showEmpDropdown,
+    onSelect: selectEmployee,
+    onClose: () => setShowEmpDropdown(false),
+    onOpen:  () => setShowEmpDropdown(true),
+  });
+  const spareNav = useDropdownKeyNav({
+    items: filteredSpares,
+    isOpen: showSpareDropdown,
+    onSelect: selectSpare,
+    onClose: () => setShowSpareDropdown(false),
+    onOpen:  () => setShowSpareDropdown(true),
+  });
+  const typeNav = useDropdownKeyNav({
+    items: USAGE_TYPES,
+    isOpen: showTypeDropdown,
+    onSelect: (opt) => { setUsageType(opt); setShowTypeDropdown(false); },
+    onClose: () => setShowTypeDropdown(false),
+    onOpen:  () => setShowTypeDropdown(true),
+  });
 
   return (
     <div className="min-h-screen bg-gray-50/70 p-6 font-sans text-sm">
@@ -433,6 +451,8 @@ const SpareUsage = () => {
               </label>
               <div
                 onClick={() => setShowTypeDropdown((p) => !p)}
+                onKeyDown={typeNav.handleKeyDown}
+                tabIndex={0}
                 className={`${inputCls} flex justify-between items-center cursor-pointer min-h-[42px]`}
               >
                 <span className={usageType ? "text-black" : "text-gray-400 font-medium text-[13px]"}>
@@ -444,14 +464,14 @@ const SpareUsage = () => {
               </div>
               {showTypeDropdown && (
                 <div className={dropdownCls}>
-                  {USAGE_TYPES.map((opt) => (
+                  {USAGE_TYPES.map((opt, i) => (
                     <div
                       key={opt}
                       onClick={() => {
                         setUsageType(opt);
                         setShowTypeDropdown(false);
                       }}
-                      className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0"
+                      className={`px-4 py-2.5 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0 ${i === typeNav.highlightedIndex ? "bg-blue-100" : "hover:bg-blue-50"}`}
                     >
                       {opt}
                     </div>
@@ -486,6 +506,7 @@ const SpareUsage = () => {
                 type="text"
                 value={pcbModel}
                 onFocus={() => setShowPcbDropdown(true)}
+                onKeyDown={pcbNav.handleKeyDown}
                 onChange={(e) => {
                   setPcbModel(e.target.value);
                   setShowPcbDropdown(true);
@@ -496,11 +517,11 @@ const SpareUsage = () => {
               {showPcbDropdown && (
                 <div className={dropdownCls}>
                   {filteredPcbs.length > 0 ? (
-                    filteredPcbs.map((pcb) => (
+                    filteredPcbs.map((pcb, i) => (
                       <div
                         key={pcb.id}
                         onClick={() => selectPcb(pcb)}
-                        className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer border-b border-gray-50 last:border-0"
+                        className={`px-4 py-2.5 cursor-pointer border-b border-gray-50 last:border-0 ${i === pcbNav.highlightedIndex ? "bg-blue-100" : "hover:bg-blue-50"}`}
                       >
                         <div className="text-[13px] font-bold text-gray-800">{pcb.pcb_model}</div>
                         <div className="text-[11px] font-medium text-gray-500">{pcb.pcb_name} ({pcb.pcb_code})</div>
@@ -522,6 +543,7 @@ const SpareUsage = () => {
                 type="text"
                 value={employeeName}
                 onFocus={() => setShowEmpDropdown(true)}
+                onKeyDown={empNav.handleKeyDown}
                 onChange={(e) => {
                   setEmployeeName(e.target.value);
                   setShowEmpDropdown(true);
@@ -532,11 +554,11 @@ const SpareUsage = () => {
               {showEmpDropdown && (
                 <div className={dropdownCls}>
                   {filteredEmployees.length > 0 ? (
-                    filteredEmployees.map((emp) => (
+                    filteredEmployees.map((emp, i) => (
                       <div
                         key={emp.id}
                         onClick={() => selectEmployee(emp)}
-                        className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0"
+                        className={`px-4 py-2.5 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0 ${i === empNav.highlightedIndex ? "bg-blue-100" : "hover:bg-blue-50"}`}
                       >
                         {emp.employee_name} ({emp.designation})
                       </div>
@@ -586,6 +608,7 @@ const SpareUsage = () => {
                 type="text"
                 value={spareCode}
                 onFocus={() => setShowSpareDropdown(true)}
+                onKeyDown={spareNav.handleKeyDown}
                 onChange={(e) => {
                   setSpareCode(e.target.value);
                   setShowSpareDropdown(true);
@@ -596,11 +619,11 @@ const SpareUsage = () => {
               {showSpareDropdown && (
                 <div className={dropdownCls}>
                   {filteredSpares.length > 0 ? (
-                    filteredSpares.map((sp) => (
+                    filteredSpares.map((sp, i) => (
                       <div
                         key={sp.id}
                         onClick={() => selectSpare(sp)}
-                        className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer border-b border-gray-50 last:border-0"
+                        className={`px-4 py-2.5 cursor-pointer border-b border-gray-50 last:border-0 ${i === spareNav.highlightedIndex ? "bg-blue-100" : "hover:bg-blue-50"}`}
                       >
                         <div className="text-[13px] font-bold text-gray-800">{sp.spare_name}</div>
                         <div className="text-[11px] font-medium text-gray-500">HSN: {sp.hsn_number}</div>

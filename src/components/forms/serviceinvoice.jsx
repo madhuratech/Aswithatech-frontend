@@ -201,20 +201,20 @@ const ServiceInvoiceForm = () => {
     };
 
     const handleDcSelect = async (dc) => {
-        const partyDcNo = dc.party_dc_no || dc.inward_dc_no || dc;
-        setDcSearch(partyDcNo);
+        const adminDcNo = dc.inward_dc_no;
+        setDcSearch(adminDcNo);
         setDcOpen(false);
         try {
-            const res = await fetch(`${API}/service-dc/${encodeURIComponent(partyDcNo)}`);
+            const res = await fetch(`${API}/service-dc/by-admin/${encodeURIComponent(adminDcNo)}`);
             const data = await res.json();
             if (!res.ok) { toast.error(data.message); return; }
             setFormData(p => ({
                 ...p,
-                client_dc_no: partyDcNo,
-                dc_no: data.header?.inward_dc_no || "",
+                dc_no: adminDcNo,
+                client_dc_no: data.header?.party_dc_no || "",
                 dc_date: data.header?.dc_date ? data.header.dc_date.split("T")[0] : "",
-                payment_terms: data.header?.payment_terms || p.payment_terms,
                 dispatch_through: data.header?.despatch_through || p.dispatch_through
+                // order_no, order_date, payment_terms remain empty (Req 10)
             }));
             setDcItems(data.items || []);
         } catch {
@@ -348,7 +348,7 @@ const ServiceInvoiceForm = () => {
                 transport: h.transport || 0
             });
             setClientSearch(h.customer_name || "");
-            setDcSearch(h.client_dc_no || h.dc_no || "");
+            setDcSearch(h.dc_no || "");  // dc_no holds the admin DC number
             setCgstPct(h.cgst && h.cgst > 0 ? 9 : 0);
             setSgstPct(h.sgst && h.sgst > 0 ? 9 : 0);
             setIgst(h.igst || 0);
@@ -523,26 +523,10 @@ const ServiceInvoiceForm = () => {
                                 className={inputCls} />
                         </div>
 
-                        {/* Order No */}
-                        <div>
-                            <label className={labelCls}>Order No</label>
-                            <input type="text" value={formData.order_no}
-                                onChange={(e) => setFormData(p => ({ ...p, order_no: e.target.value }))}
-                                placeholder="Enter order no"
-                                className={inputCls} />
-                        </div>
-                    </div>
-                </div>
-
-                {/* ── Step 2 — Service DC Details ── */}
-                <div className="bg-gray-50 rounded-xl p-5 border border-gray-100 mb-5">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Step 2 — Service DC Details</p>
-                    <div className="grid grid-cols-4 gap-5">
-
-                        {/* Client DC No */}
+                         {/* Admin DC No — searchable dropdown (mandatory selection, no manual entry) */}
                         <div className="relative" ref={dcRef}>
                             <label className={labelCls}>
-                                Client DC No <span className="text-red-500">*</span>
+                                Admin DC No <span className="text-red-500">*</span>
                             </label>
                             <input
                                 type="text"
@@ -552,7 +536,8 @@ const ServiceInvoiceForm = () => {
                                     setDcOpen(true);
                                 }}
                                 onFocus={() => { if (formData.customer_name) setDcOpen(true); }}
-                                placeholder={formData.customer_name ? "Select Client DC…" : "Select a customer first"}
+                                onBlur={() => setTimeout(() => setDcSearch(formData.dc_no || ""), 150)}
+                                placeholder={formData.customer_name ? "Select Admin DC…" : "Select a customer first"}
                                 disabled={!formData.customer_name}
                                 className={`${inputCls} ${!formData.customer_name ? "bg-gray-100 cursor-not-allowed text-gray-400" : "cursor-pointer"}`}
                             />
@@ -561,8 +546,8 @@ const ServiceInvoiceForm = () => {
                                     {dcList.map((dc, i) => (
                                         <div key={i} onClick={() => handleDcSelect(dc)}
                                             className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer border-b border-gray-50 last:border-0">
-                                            <div className="text-[13px] font-bold text-gray-900">{dc.party_dc_no}</div>
-                                            {dc.inward_dc_no && <div className="text-[11px] text-gray-400">Admin DC: {dc.inward_dc_no}</div>}
+                                            <div className="text-[13px] font-bold text-gray-900">{dc.inward_dc_no}</div>
+                                            {dc.party_dc_no && <div className="text-[11px] text-gray-400">Client DC: {dc.party_dc_no}</div>}
                                         </div>
                                     ))}
                                 </div>
@@ -573,18 +558,28 @@ const ServiceInvoiceForm = () => {
                                 </div>
                             )}
                         </div>
+                       
+                    </div>
+                </div>
 
-                        {/* Admin DC No (auto-filled) */}
+                {/* ── Step 2 — Service DC Details ── */}
+                <div className="bg-gray-50 rounded-xl p-5 border border-gray-100 mb-5">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Step 2 — Service DC Details</p>
+                    <div className="grid grid-cols-4 gap-8">
+
+                      
+
+                        {/* Client DC No — auto-filled from selected Admin DC (read-only) */}
                         <div>
                             <label className={labelCls}>
-                                Admin DC No
-                                {formData.dc_no && <span className="ml-1 text-[10px] text-blue-500 font-black normal-case">Auto</span>}
+                                Client DC No
+                                {formData.client_dc_no && <span className="ml-1 text-[10px] text-blue-500 font-black normal-case">Auto</span>}
                             </label>
                             <input
                                 type="text"
-                                value={formData.dc_no}
+                                value={formData.client_dc_no}
                                 readOnly
-                                placeholder="Auto-filled from Client DC"
+                                placeholder="Auto-filled from Admin DC"
                                 className={roInputCls}
                             />
                         </div>
@@ -599,26 +594,6 @@ const ServiceInvoiceForm = () => {
                                 onChange={(e) => setFormData(p => ({ ...p, dc_date: e.target.value }))}
                                 className={inputCls} />
                         </div>
-
-                        {/* Payment Terms */}
-                        <div>
-                            <label className={labelCls}>Payment Terms</label>
-                            <input type="text" value={formData.payment_terms}
-                                onChange={(e) => setFormData(p => ({ ...p, payment_terms: e.target.value }))}
-                                placeholder="Enter payment terms"
-                                className={inputCls} />
-                        </div>
-                    </div>
-
-                    {/* Order Date + Despatch Through */}
-                    <div className="grid grid-cols-4 gap-5 mt-4">
-                        <div>
-                            <label className={labelCls}>Order Date</label>
-                            <input type="date" value={formData.order_date}
-                                onChange={(e) => setFormData(p => ({ ...p, order_date: e.target.value }))}
-                                className={inputCls} />
-                        </div>
-
                         {/* Despatch Through */}
                         <div className="relative" ref={despatchRef}>
                             <label className={labelCls}>Despatch Through</label>
@@ -643,6 +618,11 @@ const ServiceInvoiceForm = () => {
                                 </div>
                             )}
                         </div>
+                    </div>
+
+                    {/* Order Date + Despatch Through */}
+                    <div className="grid grid-cols-4 gap-5 mt-4">
+                        
                     </div>
 
                     {/* DC Items chip list */}
@@ -720,28 +700,6 @@ const ServiceInvoiceForm = () => {
                                 onChange={(e) => setCurrentrow(p => ({ ...p, price: e.target.value }))}
                                 className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black outline-none bg-gray-50/50" />
                         </div>
-
-                        {/* GST % */}
-                        <div className="relative">
-                            <select
-                                value={currentrow.gst_percent}
-                                onChange={(e) => setCurrentrow(p => ({ ...p, gst_percent: Number(e.target.value) }))}
-                                className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black outline-none bg-gray-50/50 appearance-none"
-                            >
-                                {GST_OPTIONS.map(g => (
-                                    <option key={g} value={g}>{g}% GST</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        {/* Discount */}
-                        <div>
-                            <input type="number" placeholder="Disc"
-                                value={currentrow.discount}
-                                onChange={(e) => setCurrentrow(p => ({ ...p, discount: e.target.value }))}
-                                className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black outline-none bg-gray-50/50" />
-                        </div>
-
                         {/* UOM */}
                         <div className="relative" ref={uomRef}>
                             <input type="text" placeholder="UOM"
@@ -860,13 +818,6 @@ const ServiceInvoiceForm = () => {
                                 <div className="flex justify-between items-center">
                                     <label className={labelCls}>Subtotal :</label>
                                     <input type="text" value={subtotal.toFixed(2)} readOnly
-                                        className="w-32 p-1.5 border-b border-gray-300 bg-transparent text-right font-black text-black outline-none" />
-                                </div>
-
-                                <div className="flex justify-between items-center">
-                                    <label className={labelCls}>Discount (-):</label>
-                                    <input type="number" value={formData.discount}
-                                        onChange={(e) => setFormData(p => ({ ...p, discount: e.target.value }))}
                                         className="w-32 p-1.5 border-b border-gray-300 bg-transparent text-right font-black text-black outline-none" />
                                 </div>
 

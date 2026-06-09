@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import logo from "../../../asset/Logo.jpeg";
 import { toWords } from "number-to-words";
 
 const InvoiceFormat = ({ dcNumber }) => {
@@ -151,23 +150,23 @@ const InvoiceFormat = ({ dcNumber }) => {
                       : "",
                   },
                   {
-                    label: "OR NO",
-                    value: invoice?.order_no || "",
-                  },
-                  {
-                    label: "OR DATE",
-                    value: invoice?.order_date ? new Date(invoice.order_date).toLocaleDateString("en-GB") : "",
-                  },
-                  {
-                    label: "CLIENT DC",
-                    value: invoice?.client_dc_no || "",
-                  },
-                  {
                     label: "DC NO",
                     value: invoice?.dc_no || "",
                   },
+                  // {
+                  //   label: "OR NO",
+                  //   value: invoice?.order_no || "",
+                  // },
+                  // {
+                  //   label: "OR DATE",
+                  //   value: invoice?.order_date ? new Date(invoice.order_date).toLocaleDateString("en-GB") : "",
+                  // },
                   {
-                    label: "DC DATE",
+                    label: "OR NO",
+                    value: invoice?.client_dc_no || "",
+                  },
+                  {
+                    label: "OR DATE",
                     value: invoice?.dc_date ? new Date(invoice.dc_date).toLocaleDateString("en-GB") : "",
                   },
                 ].map((row, i) => (
@@ -199,19 +198,19 @@ const InvoiceFormat = ({ dcNumber }) => {
               <thead>
                 <tr className="border-b-2 border-black">
 
-                  <th className="border-r-2 border-black p-2 w-[8%] text-left text-[12px] font-extrabold uppercase">
+                  <th className="border-r border-black p-2 w-[8%] text-left text-[12px] font-extrabold uppercase">
                     S.No
                   </th>
 
-                  <th className="border-r-2 border-black p-2 w-[48%] text-left text-[12px] font-extrabold uppercase">
+                  <th className="border-r border-black p-2 w-[48%] text-left text-[12px] font-extrabold uppercase">
                     Description
                   </th>
 
-                  <th className="border-r-2 border-black p-2 w-[12%] text-center text-[12px] font-extrabold uppercase">
+                  <th className="border-r border-black p-2 w-[12%] text-center text-[12px] font-extrabold uppercase">
                     HSN
                   </th>
 
-                  <th className="border-r-2 border-black p-2 w-[10%] text-center text-[12px] font-extrabold uppercase">
+                  <th className="border-r border-black p-2 w-[10%] text-center text-[12px] font-extrabold uppercase">
                     Qty
                   </th>
 
@@ -231,27 +230,27 @@ const InvoiceFormat = ({ dcNumber }) => {
                 {invoice.items.map((item, index) => (
                   <tr key={index} className="h-[30px]">
 
-                    <td className="border-r-2 border-b border-black text-center text-[11px] font-bold">
+                    <td className="border-r border-black text-center text-[11px] font-bold">
                       {index + 1}
                     </td>
 
-                    <td className="border-r-2 border-b border-black px-3 text-[11px] font-bold uppercase">
+                    <td className="border-r  border-black px-3 text-[11px] font-bold uppercase">
                       {item.item_name}
                     </td>
 
-                    <td className="border-r-2 border-b border-black text-center text-[11px] font-bold">
+                    <td className="border-r  border-black text-center text-[11px] font-bold">
                       {item.hsn_number || "998719"}
                     </td>
 
-                    <td className="border-r-2 border-b border-black text-center text-[11px] font-bold">
+                    <td className="border-r  border-black text-center text-[11px] font-bold">
                       {item.quantity}
                     </td>
 
-                    <td className="border-r-2 border-b border-black text-right text-[11px] font-bold pr-3">
+                    <td className=" border-r border-black text-right text-[11px] font-bold pr-3">
                       {Number(item.price).toFixed(2)}
                     </td>
 
-                    <td className="border-b border-black text-right text-[11px] font-bold pr-3">
+                    <td className="boder-r  border-black text-right text-[11px] font-bold pr-3">
                       {Number(item.amount).toFixed(2)}
                     </td>
 
@@ -261,13 +260,13 @@ const InvoiceFormat = ({ dcNumber }) => {
                 {/* FILLER ROWS */}
 
                   {Array.from({ length: Math.max(0, 10 - invoice.items.length) }).map((_, i) => (
-                <tr key={`filler-${i}`} className="h-[35px] print:hidden">
-                  <td className="border-r border-black border-t-0 border-b-0"></td>
-                  <td className="border-r border-black border-t-0 border-b-0"></td>
-                  <td className="border-r border-black border-t-0 border-b-0"></td>
-                  <td className="border-r border-black border-t-0 border-b-0"></td>
-                  <td className="border-t-0 border-b-0"></td>
-                </tr>
+                <tr key={`filler-${i}`} className="h-[35px]">
+                  <td className="border-r border-black border-t-0"></td>
+                  <td className="border-r border-black border-t-0 "></td>
+                  <td className="border-r border-black border-t-0 "></td>
+                  <td className="border-r border-black border-t-0"></td>
+                  <td className="border-t-0 border-r border-black  "></td>
+                </tr> 
               ))}
 
               </tbody>
@@ -278,7 +277,7 @@ const InvoiceFormat = ({ dcNumber }) => {
           <div className="mx-2 border-2 border-black border-t-0 flex">
 
             {/* LEFT */}
-            <div className="w-[55%] border-r-2 border-black p-3">
+            <div className="w-[55%] border-r  p-3">
 
               <h3 className="underline mb-2 text-[11px] font-bold">
                 OUR BANK DETAILS :

@@ -90,9 +90,9 @@ const ReceiptVoucher = ({ receipt }) => {
           <h2 className="text-[14px] font-bold uppercase mb-1">
             {receipt?.customer_name}
           </h2>
-          <div className="text-[12px] leading-5 font-medium max-w-[350px]">
+          <div className="text-[12px] leading-5 font-medium max-w-[350px] space-y-1">
             {receipt?.address && <p>{receipt?.address}</p>}
-            {receipt?.phone && <p className="mt-2 font-bold">Ph: {receipt?.phone}</p>}
+            {receipt?.phone && <p className="font-bold">Ph: {receipt?.phone}</p>}
             {receipt?.gst_number && <p className="font-bold">GSTIN : {receipt?.gst_number}</p>}
           </div>
         </div>
@@ -137,13 +137,13 @@ const ReceiptVoucher = ({ receipt }) => {
               const tdsAmt = Math.max(0, Number(item.bill_amount || 0) - Number(item.paid_amount || 0));
               const netPaid = Number(item.bill_amount || 0);
               return (
-                <tr key={index} className="border-b border-black min-h-[35px]">
+                <tr key={index} className=" border-black min-h-[35px]">
                   <td className="border-r border-black p-2 text-center text-[12px]">{index + 1}</td>
                   <td className="border-r border-black px-3 py-2 text-[12px] font-medium">{item.bill_no}</td>
                   <td className="border-r border-black p-2 text-center text-[12px]">{fmtDate(item.bill_date)}</td>
                   <td className="border-r border-black p-2 text-right text-[12px] pr-4">{fmt(item.bill_amount)}</td>
                   <td className="border-r border-black p-2 text-right text-[12px] pr-4">0.00</td>
-                  <td className="border-r border-black p-2 text-right text-[12px] pr-4">{fmt(tdsAmt)}</td>
+                  <td className="border-r border-black p-2 text-right text-[12px] pr-4">0.00</td>
                   <td className="border-r border-black p-2 text-right text-[12px] pr-4">{fmt(item.paid_amount)}</td>
                   <td className="p-2 text-right text-[12px] border-black font-bold pr-4">{fmt(netPaid)}</td>
                 </tr>
@@ -168,13 +168,14 @@ const ReceiptVoucher = ({ receipt }) => {
 
       {/* SUMMARY SECTION - Fixed alignment with columns */}
       <div className="border-t border-black flex">
-        <div className="w-[70%] border-r-2 border-black flex items-center px-4 py-2">
-          <span className="text-[12px] font-bold mr-2">PAYMENT TYPE :</span>
-          <span className="text-[12px] font-medium">{paymentType}</span>
+        <div className="w-[70%] border-r border-black ml-[10px]  items-center px-4 py-2 text-[13px]">
+              <p><strong>Payment Mode :</strong> {receipt?.payment_mode || "—"}</p>
+              <p><strong>Bank Name :</strong> {receipt?.bank_name || "—"}</p>
+              <p><strong>Reference Number :</strong> {receipt?.reference_number || "—"}</p>
         </div>
         <div className="w-[30%] border-black">
           <div className="flex border-b border-black">
-            <div className="w-[50%] p-2 text-[12px] font-bold border-r border-black">Other Ded </div>
+            <div className="w-[50%] p-2 text-[12px] font-bold border-r h-[38px] border-black">Other Ded </div>
             <div className="w-[50%] p-2 text-[12px] font-bold text-right pr-4">{fmt(otherDed)}</div>
           </div>
           <div className="flex bg-gray-50">

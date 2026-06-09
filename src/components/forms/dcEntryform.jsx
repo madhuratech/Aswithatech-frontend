@@ -87,6 +87,17 @@ const DcEntryForm = () => {
     const roInputCls = "w-full p-2.5 border border-blue-100 rounded-lg text-[13px] font-semibold text-blue-800 bg-blue-50 cursor-not-allowed focus:outline-none";
     const dropdownCls = "absolute top-full left-0 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-52 overflow-y-auto";
 
+    // Auto-set status to "Service" whenever a table item has remarks = "Services"/"Service"
+    useEffect(() => {
+        const hasService = tabledata.some(item => {
+            const r = (item.remarks || "").trim().toLowerCase();
+            return r === "service" || r === "services";
+        });
+        if (hasService) {
+            setFormData(p => p.status === "Service" ? p : { ...p, status: "Service" });
+        }
+    }, [tabledata]);
+
     useEffect(() => {
         fetchNextDcNo();
         fetchAllDc();
@@ -566,18 +577,6 @@ const DcEntryForm = () => {
                             />
                         </div>
 
-                        {/* Payment Terms */}
-                        <div>
-                            <label className={labelCls}>Payment Terms</label>
-                            <input
-                                type="text"
-                                value={formData.payment_terms}
-                                onChange={(e) => setFormData(p => ({ ...p, payment_terms: e.target.value }))}
-                                placeholder="Enter payment terms"
-                                className={inputCls}
-                            />
-                        </div>
-
                         {/* Inward Date (read-only, auto-filled) */}
                         {inwardDate && (
                             <div>
@@ -588,19 +587,23 @@ const DcEntryForm = () => {
                             </div>
                         )}
 
-                        {/* Status */}
+                        {/* Status — auto-set from item remarks; not manually selectable */}
                         <div>
-                            <label className={labelCls}>Status <span className="text-red-500">*</span></label>
+                            <label className={labelCls}>
+                                Status <span className="text-red-500">*</span>
+                                <span className="ml-1 text-[10px] text-blue-500 font-black normal-case">Auto</span>
+                            </label>
                             <div className="flex items-center gap-6 h-[43px]">
                                 {["Service", "Re Service"].map((s) => (
-                                    <label key={s} className="flex items-center gap-2 cursor-pointer">
+                                    <label key={s} className="flex items-center gap-2">
                                         <input
                                             type="radio"
                                             name="status"
                                             value={s}
                                             checked={formData.status === s}
-                                            onChange={() => setFormData(p => ({ ...p, status: s }))}
-                                            className="w-4 h-4 accent-black"
+                                            onChange={() => {}}
+                                            onClick={(e) => e.preventDefault()}
+                                            className="w-4 h-4 accent-black pointer-events-none"
                                         />
                                         <span className="text-[12px] font-bold text-gray-700">{s}</span>
                                     </label>
@@ -742,8 +745,15 @@ const DcEntryForm = () => {
                             className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black outline-none bg-gray-50/50" />
                         {remarksOpen && (
                             <div className="absolute top-full left-0 w-full mt-1 rounded-lg bg-white shadow-lg z-50 max-h-40 overflow-y-auto border border-gray-200">
-                                {["Damaged", "Services", "Sell", "Under Warranty"].map((r) => (
-                                    <div key={r} onClick={(e) => { e.stopPropagation(); setCurrentrow(p => ({ ...p, remarks: r })); setRemarksOpen(false); }}
+                                {["Damaged", "Services", "Re Service", "Under Warranty"].map((r) => (
+                                    <div key={r} onClick={(e) => {
+                                        e.stopPropagation();
+                                        setCurrentrow(p => ({ ...p, remarks: r }));
+                                        setRemarksOpen(false);
+                                        if (r === "Services" || r === "Service") {
+                                            setFormData(p => ({ ...p, status: "Service" }));
+                                        }
+                                    }}
                                         className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm">{r}</div>
                                 ))}
                             </div>

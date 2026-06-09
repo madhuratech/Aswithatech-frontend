@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Box, RefreshCw, Trash2, Wrench } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -42,6 +42,20 @@ const StatSmallCard = ({ title, value, valueColor = "text-gray-900" }) => {
 
 const ProductionStock = () => {
     const navigate = useNavigate();
+    const [summary, setSummary] = useState({
+        total_pcb_stock: "-",
+        standby_available: "-",
+        standby_issued: "-",
+        under_repair: "-",
+    });
+
+    useEffect(() => {
+        fetch("http://localhost:3000/api/pcb-stock/summary")
+            .then((r) => r.json())
+            .then((data) => setSummary(data))
+            .catch(console.error);
+    }, []);
+
     const modules = [
         {
             title: "PCB Stock",
@@ -78,10 +92,10 @@ const ProductionStock = () => {
     ];
 
     const stats = [
-        { title: "Total PCB Stock", value: "24", color: "text-gray-900" },
-        { title: "Standby Available", value: "3", color: "text-green-600" },
-        { title: "Standby Issued", value: "2", color: "text-orange-500" },
-        { title: "Under Repair", value: "1", color: "text-blue-600" },
+        { title: "Total PCB Stock", value: summary.total_pcb_stock, color: "text-gray-900" },
+        { title: "Standby Available", value: summary.standby_available, color: "text-green-600" },
+        { title: "Standby Issued", value: summary.standby_issued, color: "text-orange-500" },
+        { title: "Under Repair", value: summary.under_repair, color: "text-blue-600" },
     ];
 
     return (

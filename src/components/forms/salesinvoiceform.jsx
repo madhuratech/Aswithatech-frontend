@@ -608,17 +608,17 @@ const SalesInvoiceForm = () => {
                     </div>
                     <div className="grid grid-cols-5 gap-5">
 
-                        {/* Client DC No */}
+                        {/* Admin DC No — searchable dropdown */}
                         <div className="relative" ref={dcRef}>
                             <label className={labelCls}>
-                                Client DC No <span className="text-red-500">*</span>
+                                Admin DC No <span className="text-red-500">*</span>
                             </label>
                             <div
                                 onClick={() => customerSelected && openDrop("dc")}
                                 className={`${inputCls} flex justify-between items-center cursor-pointer min-h-[43px]`}
                             >
-                                <span className={form.client_dc_no ? "text-black" : "text-gray-400 font-medium"}>
-                                    {form.client_dc_no || (busy.dcs ? "Loading…" : "Select Client DC…")}
+                                <span className={form.dc_no ? "text-black" : "text-gray-400 font-medium"}>
+                                    {form.dc_no || (busy.dcs ? "Loading…" : "Select Admin DC…")}
                                 </span>
                                 <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -627,12 +627,15 @@ const SalesInvoiceForm = () => {
                             {open.dc && (
                                 <div className={dropdownCls}>
                                     {dcList.length === 0 ? (
-                                        <div className="px-4 py-3 text-[13px] text-gray-400">No DCs found for this customer.</div>
+                                        <div className="px-4 py-3 text-[13px] text-gray-400">No eligible DCs found for this customer.</div>
                                     ) : (
                                         dcList.map((dc, i) => (
                                             <div key={i} onClick={() => handleDcSelect(dc)}
                                                 className="px-4 py-3 hover:bg-blue-50 cursor-pointer border-b border-gray-50 last:border-0">
-                                                <div className="text-[14px] font-bold text-gray-900">{dc.client_dc_no || dc.dc_no}</div>
+                                                <div className="text-[14px] font-bold text-gray-900">{dc.dc_no}</div>
+                                                {dc.client_dc_no && (
+                                                    <div className="text-[11px] text-gray-400 mt-0.5">Client DC: {dc.client_dc_no}</div>
+                                                )}
                                             </div>
                                         ))
                                     )}
@@ -640,13 +643,16 @@ const SalesInvoiceForm = () => {
                             )}
                         </div>
 
-                        {/* Admin DC No (read-only) */}
+                        {/* Client DC No — read-only, auto-filled from selected Admin DC */}
                         <div>
-                            <label className={labelCls}>Admin DC No</label>
-                            <input type="text" value={form.dc_no}
+                            <label className={labelCls}>
+                                Client DC No
+                                {dcSelected && <span className="ml-1.5 text-[10px] text-blue-500 font-black normal-case">Auto-filled</span>}
+                            </label>
+                            <input type="text" value={form.client_dc_no}
                                 readOnly
                                 className={roInputCls}
-                                placeholder="Admin DC No" />
+                                placeholder="Auto-filled" />
                         </div>
 
                         {/* Client DC Date — auto-filled from DC.Client_dc_date, editable */}

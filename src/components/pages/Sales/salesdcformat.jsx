@@ -93,54 +93,59 @@ const SalesDCFormat = ({ dcNumber }) => {
           </div>
         </div>
 
-        {/* Table */}
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-gray-50">
-              <th className="border-r-2 border-b-2 border-black p-2 w-[8%] text-center text-[13px] font-bold uppercase">SNO</th>
-              <th className="border-r-2 border-b-2 border-black p-2 w-[47%] text-center text-[13px] font-bold uppercase">PARTICULARS</th>
-              <th className="border-r-2 border-b-2 border-black p-2 w-[15%] text-center text-[13px] font-bold uppercase">HSN</th>
-              <th className="border-r-2 border-b-2 border-black p-2 w-[10%] text-center text-[13px] font-bold uppercase">QTY</th>
-              <th className="border-b-2 border-black p-2 w-[20%] text-center text-[13px] font-bold uppercase">REMARKS</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data?.items?.map((item, index) => (
-              <tr key={index} className="min-h-[40px]">
-                <td className="border-r-2 border-b-2 border-black p-2 text-center text-[13px] font-medium">
-                  {index + 1}
-                </td>
-                <td className="border-r-2 border-b-2 border-black px-3 py-2 text-[13px] font-bold uppercase">
-                  {item.item_name}
-                </td>
-                <td className="border-r-2 border-b-2 border-black p-2 text-center text-[13px]">
-                  {item.hsn}
-                </td>
-                <td className="border-r-2 border-b-2 border-black p-2 text-center text-[13px]">
-                  {item.quantity}
-                </td>
-                <td className="border-b-2 border-black px-3 py-2 text-[13px] uppercase">
-                   {item.remarks || data.status}
-                </td>
+        {/* Table — flex-1 so it stretches to fill remaining page height */}
+        <div className="flex-1 flex flex-col">
+          <table className="w-full border-collapse flex-1" style={{ display: "flex", flexDirection: "column" }}>
+            <thead style={{ display: "table", width: "100%", tableLayout: "fixed" }}>
+              <tr className="bg-gray-50">
+                <th className="border-r-2 border-b-2 border-black p-2 w-[8%] text-center text-[13px] font-bold uppercase">SNO</th>
+                <th className="border-r-2 border-b-2 border-black p-2 w-[47%] text-center text-[13px] font-bold uppercase">PARTICULARS</th>
+                <th className="border-r-2 border-b-2 border-black p-2 w-[15%] text-center text-[13px] font-bold uppercase">HSN</th>
+                <th className="border-r-2 border-b-2 border-black p-2 w-[10%] text-center text-[13px] font-bold uppercase">QTY</th>
+                <th className="border-b-2 border-black p-2 w-[20%] text-center text-[13px] font-bold uppercase">REMARKS</th>
               </tr>
-            ))}
-            {/* Filler rows to maintain height */}
-            {/* {Array.from({ length: Math.max(0, 10 - (data?.items?.length || 0)) }).map((_, i) => (
-              <tr key={`filler-${i}`} className="h-[35px]">
-                <td className="border-r-2 border-b-2 border-black"></td>
-                <td className="border-r-2 border-b-2 border-black"></td>
-                <td className="border-r-2 border-b-2 border-black"></td>
-                <td className="border-r-2 border-b-2 border-black"></td>
-                <td className="border-b-2 border-black"></td>
+            </thead>
+            <tbody style={{ display: "table", width: "100%", tableLayout: "fixed", flex: 1 }}>
+              {data?.items?.map((item, index) => (
+                <tr key={index} className="min-h-[40px]">
+                  <td className="border-r-2 border-black p-2 text-center text-[13px] font-medium w-[8%]">
+                    {index + 1}
+                  </td>
+                  <td className="border-r-2 border-black px-3 py-2 text-[13px] font-bold uppercase w-[47%]">
+                    {item.item_name}
+                  </td>
+                  <td className="border-r-2 border-black p-2 text-center text-[13px] w-[15%]">
+                    {item.hsn}
+                  </td>
+                  <td className="border-r-2 border-black p-2 text-center text-[13px] w-[10%]">
+                    {item.quantity}
+                  </td>
+                  <td className="border-black px-3 py-2 text-[13px] uppercase w-[20%]">
+                     {item.remarks || data.status}
+                  </td>
+                </tr>
+              ))}
+              {/* Filler row — stretches to fill remaining table space so border-r covers fully */}
+              <tr style={{ height: "100%" }}>
+                <td className="border-r-2 border-black w-[8%]"></td>
+                <td className="border-r-2 border-black w-[47%]"></td>
+                <td className="border-r-2 border-black w-[15%]"></td>
+                <td className="border-r-2 border-black w-[10%]"></td>
+                <td className="w-[20%]"></td>
               </tr>
-            ))} */}
-            <tr>
-              <td colSpan={5} className="border-b-2 border-black text-center font-bold text-[18px] py-2">
-                {data?.items?.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0) || 0}
-              </td>
-            </tr>
-          </tbody>
-        </table>
+              {/* Total row */}
+              <tr>
+                <td className="border-r-2 border-t-2 border-b-2 border-black w-[8%]"></td>
+                <td className="border-r-2 border-t-2 border-b-2 border-black text-center font-bold text-[18px] w-[47%]"></td>
+                <td className="border-r-2 border-t-2 border-b-2 border-black text-center font-bold text-[18px] w-[15%]">
+                  {data?.items?.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0) || 0}
+                </td>
+                <td className="border-r-2 border-t-2 border-b-2 border-black w-[10%]"></td>
+                <td className="border-t-2 border-b-2 border-black w-[20%]"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
         {/* Footer */}
         <div className="relative min-h-[150px] mt-4 px-4 py-2">

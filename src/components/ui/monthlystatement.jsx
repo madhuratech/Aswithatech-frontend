@@ -468,6 +468,7 @@ const PurchaseReport = ({ onMinimize, onClose, setIsMinimizedInternal, title }) 
                       <th className="p-2 text-left">ENTRY DATE</th>
                       <th className="p-2 text-left">SUPPLIER NAME</th>
                       <th className="p-2 text-left">PAYMENT MODE</th>
+                      <th className="p-2 text-left">BANK NAME</th>
                       <th className="p-2 text-right">BILL AMOUNT</th>
                       <th className="p-2 text-right">PAID AMOUNT</th>
                       <th className="p-2 text-right">BALANCE</th>
@@ -480,7 +481,7 @@ const PurchaseReport = ({ onMinimize, onClose, setIsMinimizedInternal, title }) 
                     {groupedData.length > 0 ? groupedData.map((group) => (
                       <React.Fragment key={group.month}>
                         <tr className="bg-blue-700">
-                          <td colSpan={12} className="p-1.5 text-white font-bold text-[12px] pl-3">
+                          <td colSpan={13} className="p-1.5 text-white font-bold text-[12px] pl-3">
                             {new Date(group.month + "-01").toLocaleString("default", { month: "long", year: "numeric" })}
                           </td>
                         </tr>
@@ -492,16 +493,17 @@ const PurchaseReport = ({ onMinimize, onClose, setIsMinimizedInternal, title }) 
                             <td className="p-1.5">{row.entry_date}</td>
                             <td className="p-1.5 truncate max-w-[160px]">{row.supplier_name}</td>
                             <td className="p-1.5">{row.payment_mode}</td>
+                            <td className="p-1.5">{row.bank_name || "—"}</td>
                             <td className="p-1.5 text-right">{fmt(row.bill_amount)}</td>
                             <td className="p-1.5 text-right">{fmt(row.paid_amount)}</td>
                             <td className="p-1.5 text-right">{fmt(row.balance_amount)}</td>
                             <td className="p-1.5 text-right font-semibold text-blue-700">{fmt(row.grand_total)}</td>
-                            <td className="p-1.5">{row.reference_no}</td>
+                            <td className="p-1.5">{row.reference_no || row.reference_number || "—"}</td>
                             <td className="p-1.5">{row.remarks}</td>
                           </tr>
                         ))}
                         <tr className="bg-yellow-50 border-t-2 border-gray-400 font-bold text-[12px]">
-                          <td colSpan={7} className="p-1.5 text-right text-red-700 pr-3">
+                          <td colSpan={8} className="p-1.5 text-right text-red-700 pr-3">
                             {new Date(group.month + "-01").toLocaleString("default", { month: "long" })} Total :
                           </td>
                           <td className="p-1.5 text-right">{fmt(group.transactions.reduce((s, r) => s + Number(r.bill_amount || 0), 0))}</td>
@@ -512,11 +514,11 @@ const PurchaseReport = ({ onMinimize, onClose, setIsMinimizedInternal, title }) 
                         </tr>
                       </React.Fragment>
                     )) : (
-                      <tr><td colSpan={12} className="text-center p-6 text-gray-400">No data found</td></tr>
+                      <tr><td colSpan={13} className="text-center p-6 text-gray-400">No data found</td></tr>
                     )}
 
                     <tr className="bg-blue-50 border-t-2 border-blue-700 font-bold text-[13px]">
-                      <td colSpan={7} className="p-2 text-right text-red-700 pr-3">GRAND TOTAL :</td>
+                      <td colSpan={8} className="p-2 text-right text-red-700 pr-3">GRAND TOTAL :</td>
                       <td className="p-2 text-right">{fmt(overall.bill_amount)}</td>
                       <td className="p-2 text-right">{fmt(overall.paid_amount)}</td>
                       <td className="p-2 text-right">{fmt(overall.balance_amount)}</td>
