@@ -149,37 +149,10 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
     }
   };
 
+ 
   const handlePrint = () => {
-    const printContents = contentRef.current;
-    const printWindow = window.open("", "_blank");
-    printWindow.document.write(`
-    <html>
-      <head>
-        <title>${title || "Report"}</title>
-        <style>
-          body { margin: 0; padding: 0; background: white; }
-          @page { size: A4; margin: 0; }
-          .print-container { width: 210mm; min-height: 297mm; margin: 0 auto; background: white; padding: 0 !important; }
-          table { width: 100%; border-collapse: collapse; }
-          th, td { border: 1px solid #d1d5db; padding: 8px; }
-          tr { page-break-inside: avoid; }
-          .no-print { display: none !important; }
-        </style>
-      </head>
-      <body>
-        <div class="print-container">
-          ${printContents.outerHTML}
-        </div>
-      </body>
-    </html>
-  `);
-    printWindow.document.close();
-    setTimeout(() => {
-      printWindow.focus();
-      printWindow.print();
-    }, 1000);
-  };
-
+  window.print();
+};
   if (!isOpen || isMinimized) return null;
 
   // Compute totals for report view
@@ -374,7 +347,9 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
           </div>
 
           {/* Report Canvas */}
-          <div className="bg-white mx-2 my-2 border border-gray-300" ref={contentRef}>
+          <div className="print-area bg-white mx-2 my-2 border border-gray-300"
+  ref={contentRef}
+>
 
             {/* Report View — tabular data */}
             {viewMode === "report" && type !== "billwise" && (
@@ -511,16 +486,46 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
       </div>
 
       <style>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 14px; height: 14px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #c0c0c0; box-shadow: inset 1px 1px 2px rgba(0,0,0,0.4); }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e0e0e0; border: 2px solid #808080; box-shadow: inset 1px 1px 0px white; }
-        @media print {
-          body { margin: 0 !important; padding: 0 !important; }
-          .no-print { display: none !important; }
-          table { width: 100% !important; }
-          tr { page-break-inside: avoid !important; }
-        }
-      `}</style>
+  @media print {
+
+  .bg-black,
+  .no-print,
+  button,
+  .custom-scrollbar + div,
+  .status-bar {
+    display: none !important;
+  }
+
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  .print-area {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  table {
+    border-collapse: collapse !important;
+  }
+
+  tr,
+  td,
+  th {
+    page-break-inside: avoid !important;
+  }
+
+  .custom-scrollbar {
+    overflow: visible !important;
+  }
+}
+`}</style>
     </div>
   );
 };

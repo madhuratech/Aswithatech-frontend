@@ -10,41 +10,42 @@ const TODAY = new Date().toISOString().split("T")[0];
 const PAYMENT_MODES = ["Cash", "Bank Transfer", "Cheque", "Online", "By Hand"];
 
 const INIT_ROW = {
-  bill_no:          "",
-  bill_date:        "",
-  bill_amount:      "",
-  previous_paid:    "",
-  paid_amount:      "",
-  tds_amount:       "",
-  delivery_charge:  "",
-  balance_amount:   "",
-  payment_mode:     "",
+  bill_no: "",
+  bill_date: "",
+  bill_amount: "",
+  previous_paid: "",
+  paid_amount: "",
+  tds_amount: "",
+  delivery_charge: "",
+  balance_amount: "",
+  payment_mode: "",
 };
 
 const INIT_FORM = {
-  entry_date:   TODAY,
+  entry_date: TODAY,
   supplier_name: "",
-  bank_name:    "",
+  bank_name: "",
   reference_no: "",
-  remarks:      "",
-  bank_date:    TODAY,
-  grand_total:  "",
+  remarks: "",
+  bank_date: TODAY,
+  grand_total: "",
+  receipt_no: "",
 };
 
 const BillwisePayment = () => {
   const navigate = useNavigate();
 
   // ── core state ────────────────────────────────────────────────────────
-  const [form, setForm]           = useState(INIT_FORM);
+  const [form, setForm] = useState(INIT_FORM);
   const [currentRow, setCurrentRow] = useState(INIT_ROW);
   const [tabledata, setTabledata] = useState([]);
-  const [loadedId, setLoadedId]   = useState("");
+  const [loadedId, setLoadedId] = useState("");
 
   // ── dropdown data ─────────────────────────────────────────────────────
-  const [suppliers, setSuppliers]       = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
   const [supplierBills, setSupplierBills] = useState([]);
-  const [banks, setBanks]               = useState([]);
-  const [allPayments, setAllPayments]   = useState([]);
+  const [banks, setBanks] = useState([]);
+  const [allPayments, setAllPayments] = useState([]);
 
   // ── open flags ────────────────────────────────────────────────────────
   const [open, setOpen] = useState({
@@ -52,37 +53,50 @@ const BillwisePayment = () => {
   });
 
   // ── success modal ─────────────────────────────────────────────────────
-  const [savedBillNo, setSavedBillNo]   = useState(null);
-  const [showWindow, setShowWindow]     = useState(false);
-  const [isMinimized, setIsMinimized]   = useState(false);
+  const [savedBillNo, setSavedBillNo] = useState(null);
+  const [showWindow, setShowWindow] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
 
   const [busy, setBusy] = useState({ save: false });
 
   // ── refs ──────────────────────────────────────────────────────────────
   const supplierRef = useRef(null);
-  const billRef     = useRef(null);
-  const modeRef     = useRef(null);
-  const bankRef     = useRef(null);
-  const loadRef     = useRef(null);
+  const billRef = useRef(null);
+  const modeRef = useRef(null);
+  const bankRef = useRef(null);
+  const loadRef = useRef(null);
 
   // ── shared CSS (matches Sales Invoice) ───────────────────────────────
-  const labelCls    = "block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5";
-  const inputCls    = "w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black focus:outline-none focus:border-blue-400 bg-white shadow-sm";
-  const roInputCls  = "w-full p-2.5 border border-blue-100 rounded-lg text-[13px] font-semibold text-blue-800 bg-blue-50 cursor-not-allowed focus:outline-none";
+  const labelCls = "block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5";
+  const inputCls = "w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black focus:outline-none focus:border-blue-400 bg-white shadow-sm";
+  const roInputCls = "w-full p-2.5 border border-blue-100 rounded-lg text-[13px] font-semibold text-blue-800 bg-blue-50 cursor-not-allowed focus:outline-none";
   const dropdownCls = "absolute top-full left-0 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 max-h-52 overflow-y-auto";
 
   // ════════════════════════════════════════════════════════════════════
   // Lifecycle
   // ════════════════════════════════════════════════════════════════════
+  const fetchNextReceiptNo = async () => {
+    try {
+      const res = await fetch(`${API}/next-receipt-no`);
+      const data = await res.json();
+      if (data.receipt_no) {
+        setForm((p) => ({ ...p, receipt_no: data.receipt_no }));
+      }
+    } catch (err) {
+      console.error("Failed to fetch next receipt number:", err);
+    }
+  };
+
   useEffect(() => {
     fetchSuppliersWithBills();
     fetchBanks();
+    fetchNextReceiptNo();
     const handler = (e) => {
       if (supplierRef.current && !supplierRef.current.contains(e.target)) closeAll("supplier");
-      if (billRef.current     && !billRef.current.contains(e.target))     closeAll("bill");
-      if (modeRef.current     && !modeRef.current.contains(e.target))     closeAll("mode");
-      if (bankRef.current     && !bankRef.current.contains(e.target))     closeAll("bank");
-      if (loadRef.current     && !loadRef.current.contains(e.target))     closeAll("loadPay");
+      if (billRef.current && !billRef.current.contains(e.target)) closeAll("bill");
+      if (modeRef.current && !modeRef.current.contains(e.target)) closeAll("mode");
+      if (bankRef.current && !bankRef.current.contains(e.target)) closeAll("bank");
+      if (loadRef.current && !loadRef.current.contains(e.target)) closeAll("loadPay");
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -96,7 +110,7 @@ const BillwisePayment = () => {
   // ════════════════════════════════════════════════════════════════════
   const fetchSuppliersWithBills = async () => {
     try {
-      const res  = await fetch(`${API}/suppliers-with-bills`);
+      const res = await fetch(`${API}/suppliers-with-bills`);
       const data = await res.json();
       setSuppliers(Array.isArray(data) ? data : []);
     } catch { setSuppliers([]); }
@@ -104,7 +118,7 @@ const BillwisePayment = () => {
 
   const fetchBillsForSupplier = async (name) => {
     try {
-      const res  = await fetch(`${API}/bills-by-supplier/${encodeURIComponent(name)}`);
+      const res = await fetch(`${API}/bills-by-supplier/${encodeURIComponent(name)}`);
       const data = await res.json();
       setSupplierBills(Array.isArray(data) ? data : []);
     } catch { setSupplierBills([]); }
@@ -112,7 +126,7 @@ const BillwisePayment = () => {
 
   const fetchPreviousPaid = async (billNo) => {
     try {
-      const res  = await fetch(`${API}/previous-paid/${encodeURIComponent(billNo)}`);
+      const res = await fetch(`${API}/previous-paid/${encodeURIComponent(billNo)}`);
       const data = await res.json();
       return Number(data.total_paid || 0);
     } catch { return 0; }
@@ -120,18 +134,18 @@ const BillwisePayment = () => {
 
   const fetchBanks = async () => {
     try {
-      const res  = await fetch("https://findmebank.com/api/v1/banks");
+      const res = await fetch("https://findmebank.com/api/v1/banks");
       const data = await res.json();
       const list = Array.isArray(data) ? data
-        : Array.isArray(data.data)  ? data.data
-        : Array.isArray(data.banks) ? data.banks : [];
+        : Array.isArray(data.data) ? data.data
+          : Array.isArray(data.banks) ? data.banks : [];
       setBanks(list);
     } catch { setBanks([]); }
   };
 
   const searchAllPayments = async (q = "") => {
     try {
-      const res  = await fetch(`${API}/allbills`);
+      const res = await fetch(`${API}/allbills`);
       const data = await res.json();
       setAllPayments(Array.isArray(data) ? data : []);
     } catch { setAllPayments([]); }
@@ -139,31 +153,32 @@ const BillwisePayment = () => {
 
   const loadPayment = async (billNo) => {
     try {
-      const res  = await fetch(`${API}/getbillno/${encodeURIComponent(billNo)}`);
+      const res = await fetch(`${API}/getbillno/${encodeURIComponent(billNo)}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Not found");
 
       setLoadedId(data.id);
       setForm({
-        entry_date:    data.entry_date  || TODAY,
+        entry_date: data.entry_date || TODAY,
         supplier_name: data.supplier_name || "",
-        bank_name:     data.bank_name   || "",
-        reference_no:  data.reference_no || "",
-        remarks:       data.remarks     || "",
-        bank_date:     data.bank_date   || TODAY,
-        grand_total:   data.grand_total || "",
+        bank_name: data.bank_name || "",
+        reference_no: data.reference_no || "",
+        remarks: data.remarks || "",
+        bank_date: data.bank_date || TODAY,
+        grand_total: data.grand_total || "",
+        receipt_no: data.receipt_no || "",
       });
       setTabledata(
         (data.items || []).map((it) => ({
-          bill_no:         it.bill_no,
-          bill_date:       it.bill_date,
-          bill_amount:     it.bill_amount,
-          previous_paid:   "",
-          paid_amount:     it.paid_amount,
-          tds_amount:      it.tds_amount      || "",
+          bill_no: it.bill_no,
+          bill_date: it.bill_date,
+          bill_amount: it.bill_amount,
+          previous_paid: "",
+          paid_amount: it.paid_amount,
+          tds_amount: it.tds_amount || "",
           delivery_charge: it.delivery_charge || "",
-          balance_amount:  it.balance_amount,
-          payment_mode:    it.payment_mode,
+          balance_amount: it.balance_amount,
+          payment_mode: it.payment_mode,
         }))
       );
       closeAll("loadPay");
@@ -186,26 +201,26 @@ const BillwisePayment = () => {
 
   const handleBillSelect = async (bill) => {
     const prevPaid = await fetchPreviousPaid(bill.bill_no);
-    const balance  = Number(bill.bill_amount) - prevPaid;
+    const balance = Number(bill.bill_amount) - prevPaid;
     setCurrentRow({
-      bill_no:         bill.bill_no,
-      bill_date:       bill.bill_date || "",
-      bill_amount:     String(bill.bill_amount),
-      previous_paid:   String(prevPaid),
-      paid_amount:     "",
-      tds_amount:      "",
+      bill_no: bill.bill_no,
+      bill_date: bill.bill_date || "",
+      bill_amount: String(bill.bill_amount),
+      previous_paid: String(prevPaid),
+      paid_amount: "",
+      tds_amount: "",
       delivery_charge: "",
-      balance_amount:  String(Math.max(0, balance).toFixed(2)),
-      payment_mode:    "",
+      balance_amount: String(Math.max(0, balance).toFixed(2)),
+      payment_mode: "",
     });
     closeAll("bill");
   };
 
   // ── Recalculate balance whenever payment fields change ──────────────
   const recalcBalance = (row) => {
-    const bill     = Number(row.bill_amount     || 0);
-    const paid     = Number(row.paid_amount     || 0);
-    const tds      = Number(row.tds_amount      || 0);
+    const bill = Number(row.bill_amount || 0);
+    const paid = Number(row.paid_amount || 0);
+    const tds = Number(row.tds_amount || 0);
     const delivery = Number(row.delivery_charge || 0);
     return Math.max(0, bill - paid - tds + delivery).toFixed(2);
   };
@@ -222,7 +237,7 @@ const BillwisePayment = () => {
   // Table operations
   // ════════════════════════════════════════════════════════════════════
   const addRow = () => {
-    if (!currentRow.bill_no)        { toast.error("Select a Bill Number."); return; }
+    if (!currentRow.bill_no) { toast.error("Select a Bill Number."); return; }
     if (!currentRow.paid_amount || parseFloat(currentRow.paid_amount) < 0) {
       toast.error("Enter a valid Paid Amount."); return;
     }
@@ -248,7 +263,7 @@ const BillwisePayment = () => {
   // ════════════════════════════════════════════════════════════════════
   const savePayment = async () => {
     if (!form.supplier_name?.trim()) { toast.error("Supplier Name is required."); return; }
-    if (!tabledata.length)           { toast.error("Add at least one bill payment."); return; }
+    if (!tabledata.length) { toast.error("Add at least one bill payment."); return; }
 
     setBusy((p) => ({ ...p, save: true }));
     try {
@@ -256,23 +271,23 @@ const BillwisePayment = () => {
         ...form,
         grand_total: derivedGrandTotal,
         items: tabledata.map((r) => ({
-          bill_no:         r.bill_no,
-          bill_date:       r.bill_date,
-          bill_amount:     r.bill_amount,
-          paid_amount:     r.paid_amount,
-          balance_amount:  r.balance_amount,
-          payment_mode:    r.payment_mode,
-          tds_amount:      r.tds_amount      || 0,
+          bill_no: r.bill_no,
+          bill_date: r.bill_date,
+          bill_amount: r.bill_amount,
+          paid_amount: r.paid_amount,
+          balance_amount: r.balance_amount,
+          payment_mode: r.payment_mode,
+          tds_amount: r.tds_amount || 0,
           delivery_charge: r.delivery_charge || 0,
         })),
       };
 
       const method = loadedId ? "PUT" : "POST";
-      const url    = loadedId ? `${API}/update/${loadedId}` : `${API}/new`;
-      const res    = await fetch(url, {
+      const url = loadedId ? `${API}/update/${loadedId}` : `${API}/new`;
+      const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify(payload),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Save failed");
@@ -297,11 +312,16 @@ const BillwisePayment = () => {
   };
 
   const resetAll = () => {
-    setForm(INIT_FORM);
+    setForm({
+      ...INIT_FORM,
+      entry_date: TODAY,
+      bank_date: TODAY,
+    });
     setCurrentRow(INIT_ROW);
     setTabledata([]);
     setLoadedId("");
     setSupplierBills([]);
+    fetchNextReceiptNo();
   };
 
   // ── Filtered banks ────────────────────────────────────────────────────
@@ -327,9 +347,16 @@ const BillwisePayment = () => {
             <h2 className="text-[22px] font-black text-gray-900 mb-1">
               Payment Saved Successfully
             </h2>
-            <p className="text-[13px] text-gray-400 mb-6">
-              Bill No: <span className="font-bold text-gray-700">{savedBillNo}</span>
-            </p>
+            <div className="text-[13px] text-gray-400 mb-6 flex flex-col gap-1">
+              {form.receipt_no && (
+                <div>
+                  Receipt No: <span className="font-bold text-gray-700">{form.receipt_no}</span>
+                </div>
+              )}
+              <div>
+                Bill No: <span className="font-bold text-gray-700">{savedBillNo}</span>
+              </div>
+            </div>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowWindow(true)}
@@ -387,8 +414,7 @@ const BillwisePayment = () => {
           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">
             Step 1 — Payment Header
           </p>
-          <div className="grid grid-cols-4 gap-5">
-
+          <div className="grid grid-cols-5 gap-4">
             {/* Supplier Name — loads from purchase_entry only */}
             <div className="relative" ref={supplierRef}>
               <label className={labelCls}>
@@ -421,12 +447,24 @@ const BillwisePayment = () => {
                   {suppliers.filter((s) =>
                     (s.supplier_name || "").toLowerCase().includes(form.supplier_name.toLowerCase())
                   ).length === 0 && (
-                    <div className="px-4 py-3 text-[13px] text-gray-400">
-                      No suppliers with bills found.
-                    </div>
-                  )}
+                      <div className="px-4 py-3 text-[13px] text-gray-400">
+                        No suppliers with bills found.
+                      </div>
+                    )}
                 </div>
               )}
+            </div>
+
+            {/* Receipt No */}
+            <div>
+              <label className={labelCls}>Receipt No</label>
+              <input
+                type="text"
+                value={form.receipt_no}
+                readOnly
+                className={roInputCls}
+                placeholder="Auto-generated"
+              />
             </div>
 
             {/* Entry Date */}
@@ -683,9 +721,8 @@ const BillwisePayment = () => {
               <tr className="bg-gray-50 border-b border-gray-200">
                 {["#", "Bill No", "Bill Date", "Bill Amt", "Prev Paid", "Paid Amt", "TDS", "Delivery", "Balance", "Mode", "Actions"].map((h, i) => (
                   <th key={i}
-                    className={`px-3 py-3 text-[10px] font-black text-gray-400 uppercase tracking-wide ${
-                      i === 0 ? "w-8 text-center" : i === 1 ? "text-left" : "text-center"
-                    }`}>
+                    className={`px-3 py-3 text-[10px] font-black text-gray-400 uppercase tracking-wide ${i === 0 ? "w-8 text-center" : i === 1 ? "text-left" : "text-center"
+                      }`}>
                     {h}
                   </th>
                 ))}

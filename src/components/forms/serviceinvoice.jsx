@@ -36,7 +36,6 @@ const INIT_ROW = {
 
 const UOM_LIST = ["NOS", "KG", "MTR", "NO", "SET", "PKT"];
 const DESPATCH_OPTIONS = ["By Hand", "By Courier", "FedEx", "DHL", "BlueDart", "Delhivery"];
-const GST_OPTIONS = [0, 5, 12, 18, 28];
 
 const ServiceInvoiceForm = () => {
     const navigate = useNavigate();
@@ -213,7 +212,7 @@ const ServiceInvoiceForm = () => {
                 dc_no: adminDcNo,
                 client_dc_no: data.header?.party_dc_no || "",
                 dc_date: data.header?.dc_date ? data.header.dc_date.split("T")[0] : "",
-                dispatch_through: data.header?.despatch_through || p.dispatch_through
+                dispatch_through: p.despatch_through || "",
                 // order_no, order_date, payment_terms remain empty (Req 10)
             }));
             setDcItems(data.items || []);
@@ -229,13 +228,13 @@ const ServiceInvoiceForm = () => {
     );
 
     const handleItemSelect = (item) => {
-        const qty = Number(item.received_qty || item.quantity || 0);
+        const qty = Number(item.quantity || 0);
         const price = Number(currentrow.price) || 0;
         const disc = Number(currentrow.discount) || 0;
         setCurrentrow(p => ({
             ...p,
             item_name: item.item_name || "",
-            quantity: qty || p.quantity,
+            quantity:  item.quantity || "",
             hsn_number: item.hsn_number || item.hsn || p.hsn_number,
             uom: item.uom || p.uom,
             amount: qty && price ? (qty * price) - disc : p.amount
@@ -289,7 +288,7 @@ const ServiceInvoiceForm = () => {
             grand_total: grandTotal,
             items: tabledata.map(r => ({
                 item_name: r.item_name,
-                quantity: r.quantity,
+                quantity: Number(r.quantity),
                 price: r.price,
                 discount: r.discount,
                 amount: r.amount,
@@ -343,7 +342,7 @@ const ServiceInvoiceForm = () => {
                 order_no: h.order_no || "",
                 order_date: h.order_date ? h.order_date.split("T")[0] : "",
                 payment_terms: h.payment_terms || "",
-                dispatch_through: h.dispatch_through || "",
+                dispatch_through: "",
                 discount: h.discount || 0,
                 transport: h.transport || 0
             });
@@ -572,7 +571,7 @@ const ServiceInvoiceForm = () => {
                         {/* Client DC No — auto-filled from selected Admin DC (read-only) */}
                         <div>
                             <label className={labelCls}>
-                                Client DC No
+                                Order No
                                 {formData.client_dc_no && <span className="ml-1 text-[10px] text-blue-500 font-black normal-case">Auto</span>}
                             </label>
                             <input
@@ -587,7 +586,7 @@ const ServiceInvoiceForm = () => {
                         {/* DC Date (auto-filled) */}
                         <div>
                             <label className={labelCls}>
-                                DC Date
+                                Order Date
                                 {formData.dc_date && <span className="ml-1 text-[10px] text-blue-500 font-black normal-case">Auto</span>}
                             </label>
                             <input type="date" value={formData.dc_date}
@@ -635,11 +634,11 @@ const ServiceInvoiceForm = () => {
                                 {dcItems.map((item, i) => (
                                     <button key={i} type="button"
                                         onClick={() => {
-                                            const qty = Number(item.received_qty || item.quantity || 0);
+                                            const qty = Number(item.quantity || 0);
                                             setCurrentrow(p => ({
                                                 ...p,
                                                 item_name: item.item_name || "",
-                                                quantity: qty || p.quantity,
+                                                quantity: item.quantity || "",
                                                 hsn_number: item.hsn_number || item.hsn || p.hsn_number,
                                                 uom: item.uom || p.uom
                                             }));
@@ -658,10 +657,11 @@ const ServiceInvoiceForm = () => {
                 {/* ── Step 3 — Add Items ── */}
                 <div className="mb-4">
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Step 3 — Add Items</p>
-                    <div className="grid grid-cols-9 gap-2">
+                    <div className="grid grid-cols-9 gap-3">
 
                         {/* Item Name */}
                         <div className="col-span-2 relative" ref={itemRef}>
+                            <label className={labelCls}>Product <span className="text-red-500">*</span></label>
                             <input type="text"
                                 value={currentrow.item_name}
                                 onFocus={() => { if (dcItems.length > 0) setItemOpen(true); }}
@@ -678,7 +678,7 @@ const ServiceInvoiceForm = () => {
                                         <div key={i} onClick={(e) => { e.stopPropagation(); handleItemSelect(item); }}
                                             className="px-3 py-2.5 hover:bg-blue-50 cursor-pointer border-b border-gray-50 last:border-0">
                                             <div className="text-[13px] font-semibold text-gray-900">{item.item_name}</div>
-                                            {item.uom && <div className="text-[11px] text-gray-400 mt-0.5">{item.uom} · Qty: {item.received_qty || item.quantity}</div>}
+                                            {item.uom && <div className="text-[11px] text-gray-400 mt-0.5">{item.uom} · Qty: {Number(item.quantity)}</div>}
                                         </div>
                                     ))}
                                 </div>
@@ -687,14 +687,17 @@ const ServiceInvoiceForm = () => {
 
                         {/* Quantity */}
                         <div>
+                            <label className={labelCls}> Qty </label>
                             <input type="number" placeholder="Qty"
-                                value={currentrow.quantity}
+                                value={Number(currentrow.quantity)}
                                 onChange={(e) => setCurrentrow(p => ({ ...p, quantity: e.target.value }))}
                                 className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black outline-none bg-gray-50/50" />
                         </div>
 
                         {/* Rate */}
                         <div>
+                            <label className={labelCls}>
+                                Price <span className="text-red-500">*</span> </label>
                             <input type="number" placeholder="Rate"
                                 value={currentrow.price}
                                 onChange={(e) => setCurrentrow(p => ({ ...p, price: e.target.value }))}
@@ -702,6 +705,7 @@ const ServiceInvoiceForm = () => {
                         </div>
                         {/* UOM */}
                         <div className="relative" ref={uomRef}>
+                            <label className={labelCls}>UOM</label>
                             <input type="text" placeholder="UOM"
                                 value={currentrow.uom}
                                 onFocus={() => setUomOpen(true)}
@@ -719,6 +723,7 @@ const ServiceInvoiceForm = () => {
 
                         {/* HSN */}
                         <div>
+                            <label className={labelCls}>HSN</label>
                             <input type="text" placeholder="HSN"
                                 value={currentrow.hsn_number}
                                 onChange={(e) => setCurrentrow(p => ({ ...p, hsn_number: e.target.value }))}
@@ -726,7 +731,7 @@ const ServiceInvoiceForm = () => {
                         </div>
 
                         {/* ADD / CLR */}
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 mt-6">
                             <button onClick={addRow} className="flex-1 bg-green-500 text-white py-2 px-3 rounded-lg hover:bg-green-600 text-[13px] font-bold">
                                 {editIndex >= 0 ? "UPD" : "ADD"}
                             </button>

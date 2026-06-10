@@ -210,7 +210,7 @@ const Creditnoteview = ({ cnNumber }) => {
             </thead>
             <tbody>
               {items.map((item, index) => (
-                <tr key={index} className="border-b-2 border-black min-h-[35px]" style={{ pageBreakInside: "avoid", breakInside: "avoid" }}>
+                <tr key={index} className=" border-black min-h-[35px]" style={{ pageBreakInside: "avoid", breakInside: "avoid" }}>
                   <td className="border-r-2 border-black p-2 text-center text-[12px]">{index + 1}</td>
                   <td className="border-r-2 border-black px-3 py-2 text-[12px] font-semibold uppercase">{item.item_name}</td>
                   <td className="border-r-2 border-black p-2 text-center text-[12px]">{item.hsn_code || "-"}</td>

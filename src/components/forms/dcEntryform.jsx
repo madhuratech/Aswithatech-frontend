@@ -87,16 +87,53 @@ const DcEntryForm = () => {
     const roInputCls = "w-full p-2.5 border border-blue-100 rounded-lg text-[13px] font-semibold text-blue-800 bg-blue-50 cursor-not-allowed focus:outline-none";
     const dropdownCls = "absolute top-full left-0 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-52 overflow-y-auto";
 
-    // Auto-set status to "Service" whenever a table item has remarks = "Services"/"Service"
+    // Immediately update status when remarks dropdown changes
     useEffect(() => {
+        const r = (currentrow.remarks || "").trim().toLowerCase();
+        if (r === "re service") {
+            setFormData(p => ({ ...p, status: "Re Service" }));
+        } else if (r === "service" || r === "services") {
+            setFormData(p => ({ ...p, status: "Service" }));
+        }
+    }, [currentrow.remarks]);
+
+    // Auto-set status from table items (covers edit/load scenarios)
+    useEffect(() => {
+        const hasReService = tabledata.some(item => {
+            const r = (item.remarks || "").trim().toLowerCase();
+            return r === "re service";
+        });
         const hasService = tabledata.some(item => {
             const r = (item.remarks || "").trim().toLowerCase();
             return r === "service" || r === "services";
         });
-        if (hasService) {
-            setFormData(p => p.status === "Service" ? p : { ...p, status: "Service" });
+        if (hasReService) {
+            setFormData(p => ({ ...p, status: "Re Service" }));
+        } else if (hasService) {
+            setFormData(p => ({ ...p, status: "Service" }));
         }
     }, [tabledata]);
+
+    const handleKeyDown = (e) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            if (clientOpen && clients.length > 0) {
+                handleClientSelect(clients[0]);
+            } else if (clientDcOpen && clientDcList.length > 0) {
+                handleClientDcSelect(clientDcList[0]);
+            } else if (itemOpen && filteredInwardItems.length > 0) {
+                handleItemSelect(filteredInwardItems[0]);
+            } else if (uomOpen) {
+                setUomOpen(false);
+            } else if (remarksOpen) {
+                setRemarksOpen(false);
+            } else if (despatchOpen) {
+                setDespatchOpen(false);
+            } else if (editOpen && editSuggestions.length > 0) {
+                loadDcForEdit(editSuggestions[0].inward_dc_no);
+            }
+        }
+    };
 
     useEffect(() => {
         fetchNextDcNo();
@@ -653,6 +690,7 @@ const DcEntryForm = () => {
 
                         {/* Item Name with dropdown from inward DC items */}
                         <div className="col-span-2 relative" ref={itemRef}>
+                            <label className={labelCls}>Product <span className="text-red-500">*</span></label>
                             <input
                                 type="text"
                                 value={currentrow.item_name}
@@ -686,6 +724,7 @@ const DcEntryForm = () => {
                         </div>
 
                         <div>
+                             <label className={labelCls} >Qty</label>
                             <input type="text" placeholder="Quantity"
                                 value={currentrow.quantity}
                                 onChange={(e) => setCurrentrow(p => ({ ...p, quantity: e.target.value }))}
@@ -693,21 +732,16 @@ const DcEntryForm = () => {
                         </div>
 
                         <div>
+                            <label className={labelCls} >Serial No</label>
                             <input type="text" placeholder="Serial No"
                                 value={currentrow.serial_no}
                                 onChange={(e) => setCurrentrow(p => ({ ...p, serial_no: e.target.value }))}
                                 className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black outline-none bg-gray-50/50" />
                         </div>
 
-                        <div>
-                            <input type="text" placeholder="Received Qty"
-                                value={currentrow.received_qty}
-                                onChange={(e) => setCurrentrow(p => ({ ...p, received_qty: e.target.value }))}
-                                className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black outline-none bg-gray-50/50" />
-                        </div>
-
                         {/* UOM */}
                         <div className="relative" ref={uomRef}>
+                            <label className={labelCls}>UOM</label>
                             <input type="text" placeholder="UOM"
                                 value={currentrow.uom}
                                 onFocus={() => setUomOpen(true)}
@@ -724,20 +758,16 @@ const DcEntryForm = () => {
                         </div>
 
                         <div>
+                            <label className={labelCls} >HSN</label>
                             <input type="text" placeholder="HSN"
                                 value={currentrow.hsn}
                                 onChange={(e) => setCurrentrow(p => ({ ...p, hsn: e.target.value }))}
                                 className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black outline-none bg-gray-50/50" />
                         </div>
 
-                        <div className="flex items-center gap-2">
-                            <button onClick={addRow} className="flex-1 bg-green-500 text-white py-2 px-3 rounded-lg hover:bg-green-600 text-[13px] font-bold">ADD</button>
-                            <button onClick={() => setCurrentrow(INIT_ROW)} className="flex-1 bg-gray-100 text-gray-700 py-2 px-3 rounded-lg hover:bg-gray-200 text-[13px] font-bold">CLR</button>
-                        </div>
-                    </div>
-
-                    {/* Remarks */}
-                    <div className="mt-2 relative w-64" ref={remarksRef}>
+                        {/* Remarks */}
+                    <div className="mt- relative w-30" ref={remarksRef}>
+                        <label className={labelCls}>Remarks</label>
                         <input type="text" placeholder="Remarks"
                             value={currentrow.remarks}
                             onFocus={() => setRemarksOpen(true)}
@@ -745,13 +775,15 @@ const DcEntryForm = () => {
                             className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black outline-none bg-gray-50/50" />
                         {remarksOpen && (
                             <div className="absolute top-full left-0 w-full mt-1 rounded-lg bg-white shadow-lg z-50 max-h-40 overflow-y-auto border border-gray-200">
-                                {["Damaged", "Services", "Re Service", "Under Warranty"].map((r) => (
+                                {["Damaged", "Service", "Re Service", "Under Warranty"].map((r) => (
                                     <div key={r} onClick={(e) => {
                                         e.stopPropagation();
                                         setCurrentrow(p => ({ ...p, remarks: r }));
                                         setRemarksOpen(false);
-                                        if (r === "Services" || r === "Service") {
+                                        if (r === "Service") {
                                             setFormData(p => ({ ...p, status: "Service" }));
+                                        } else if (r === "Re Service") {
+                                            setFormData(p => ({ ...p, status: "Re Service" }));
                                         }
                                     }}
                                         className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm">{r}</div>
@@ -759,6 +791,13 @@ const DcEntryForm = () => {
                             </div>
                         )}
                     </div>
+
+                        <div className=" mt-5 flex items-center gap-2">
+                            <button onClick={addRow} className="flex-1 bg-green-500 text-white py-2 px-3 rounded-lg hover:bg-green-600 text-[13px] font-bold">ADD</button>
+                            <button onClick={() => setCurrentrow(INIT_ROW)} className="flex-1 bg-gray-100 text-gray-700 py-2 px-3 rounded-lg hover:bg-gray-200 text-[13px] font-bold">CLR</button>
+                        </div>
+                    </div>
+
                 </div>
 
                 {/* Items Table */}

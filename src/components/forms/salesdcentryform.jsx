@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { SquarePen, Trash2, Eye ,CheckCircle} from "lucide-react";
 import toast from "react-hot-toast";
+import SaleswindowModel from "../ui/saleswindowModal";
+import DeliveryChallan from "../pages/Sales/salesdcformat";
 
 const API = "http://localhost:3000/api/salesdc";
 const TODAY = new Date().toISOString().split("T")[0];
@@ -38,6 +41,12 @@ const SalesDCEntry = () => {
     const [rows, setRows] = useState([]);
     const [item, setItem] = useState(INIT_ITEM);
 
+    //Success Model state
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [savedDcNo , setSavedDcNo] = useState("");
+    const [showDcFormat, setShowDcFormat] = useState(false);
+    const [dcModalMinimized, setDcModalMinimized] = useState(false);
+    const [viewDcNo, setViewDcNo] = useState("");
     // ── dropdown data ────────────────────────────────────────────────────────
     const [customers, setCustomers] = useState([]);
     const [products, setProducts] = useState([]);
@@ -73,21 +82,32 @@ const SalesDCEntry = () => {
 
 
     // Auto update status
-    useEffect(() => {
-    if (item.remarks === "Service") {
-        setItem((p) => ({
-            ...p,
-            service_status: "Service",
-        }));
-    }
+   useEffect(() => {
+          const r = (item.remarks || "").trim().toLowerCase();
+          if (r === "re service") {
+              setForm(p => ({ ...p, status: "Re Service" }));
+          } else if (r === "service" || r === "services") {
+              setForm(p => ({ ...p, status: "Service" }));
+          }
+      }, [item.remarks]);
 
-    if (item.remarks === "Re Service") {
-        setItem((p) => ({
-            ...p,
-            service_status: "Re Service",
-        }));
-    }
-}, [item.remarks]);
+
+       useEffect(() => {
+              const hasReService = rows.some(item => {
+                  const r = (item.remarks || "").trim().toLowerCase();
+                  return r === "re service";
+              });
+              const hasService = rows.some(item => {
+                  const r = (item.remarks || "").trim().toLowerCase();
+                  return r === "service" || r === "services";
+              });
+              if (hasReService) {
+                  setForm(p => ({ ...p, status: "Re Service" }));
+              } else if (hasService) {
+                  setForm(p => ({ ...p, status: "Service" }));
+              }
+          }, [rows]);
+  
 
     // ── outside-click + initial DC no ────────────────────────────────────────
     useEffect(() => {
@@ -233,28 +253,36 @@ const SalesDCEntry = () => {
     };
 
     const handleAddItem = () => {
-        if (!item.item_name) {
-            toast.error("Select a product first.");
-            return;
+    if (!item.item_name) {
+        toast.error("Select a product first.");
+        return;
+    }
+
+    let status = form.status;
+
+    if (item.remarks === "Service") {
+        status = "Service";
+    } else if (item.remarks === "Re Service") {
+        status = "Re Service";
+    }
+
+    setForm(prev => ({
+        ...prev,
+        status
+    }));
+
+    setRows(prev => [
+        ...prev,
+        {
+            ...item,
+            remarks: item.remarks,
+            service_status: status
         }
-        const qty = parseFloat(item.quantity);
-        if (!item.quantity || isNaN(qty) || qty <= 0) {
-            toast.error("Quantity must be greater than 0.");
-            return;
-        }
-        const pending = parseFloat(item.pending_qty);
-        if (!isNaN(pending) && qty > pending) {
-            toast.error(`Quantity (${qty}) exceeds pending quantity (${pending}).`);
-            return;
-        }
-        if (rows.some((r) => r.item_name === item.item_name)) {
-            toast.error("Duplicate product — already in the list.");
-            return;
-        }
-        setRows((p) => [...p, { ...item }]);
-        setItem(INIT_ITEM);
-        setProdSearch("");
-    };
+    ]);
+
+    setItem(INIT_ITEM);
+    setProdSearch("");
+};
 
     const handleRemoveRow = (idx) => setRows((p) => p.filter((_, i) => i !== idx));
 
@@ -377,10 +405,82 @@ const SalesDCEntry = () => {
     const disInputCls = "w-full p-2.5 border border-gray-100 rounded-lg text-[13px] font-semibold text-gray-400 bg-gray-50 cursor-not-allowed focus:outline-none";
     const dropdownCls = "absolute top-full left-0 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 max-h-52 overflow-y-auto";
 
-    // Render
+ // Close Successmodel
+  const handleCloseSuccessModal = () => {
+    setShowSuccessModal(false);
+    setShowDcFormat(false);
+    resetForm();
+  };
+
+  // HandleView Dc
+  const handleViewDc = () =>{
+    setViewDcNo(savedDcNo);
+    setShowSuccessModal(false);
+    setDcModalMinimized(false);
+    setShowDcFormat(true);
+  } 
+
     return (
         <div className="min-h-screen bg-gray-50/70 p-6 font-sans">
-            {/* Back */}
+           {/* ── Success Modal ── */}
+            {showSuccessModal && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl p-8 shadow-2xl w-full max-w-sm text-center">
+                        <div className="flex justify-center mb-4">
+                            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+                                <CheckCircle className="w-9 h-9 text-green-500" />
+                            </div>
+                        </div>
+                        <h2 className="text-xl font-black text-gray-800 mb-1">Service DC Saved Successfully!</h2>
+                        <p className="text-sm text-gray-500 mb-1">Service DC has been created.</p>
+                        <p className="text-sm font-black text-blue-600 mb-6">{savedDcNo}</p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={handleViewDc}
+                                className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white py-2.5 rounded-xl font-bold hover:bg-blue-700 transition-colors"
+                            >
+                                <Eye className="w-4 h-4" /> View DC
+                            </button>
+                            <button
+                                onClick={handleCloseSuccessModal}
+                                className="flex-1 border border-gray-300 py-2.5 rounded-xl font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Saleswindow model */}
+
+            <SaleswindowModel
+              title="DC Format"
+                isOpen={showDcFormat}
+                type="DC Format"
+                isMinimized={dcModalMinimized}
+                onMinimize={() => setDcModalMinimized(true)}
+                onClose={() => { setShowDcFormat(false); setDcModalMinimized(false); resetForm(); }}
+                filters={{ dcNumber: viewDcNo }}
+                onFilterChange={(f) => setViewDcNo(f.dcNumber || viewDcNo)}
+              >
+              <DeliveryChallan key={viewDcNo} dcNumber={viewDcNo} />
+            </SaleswindowModel>
+          
+{/* Minimized bar */}
+            {showDcFormat && dcModalMinimized && (
+                <div className="fixed bottom-0 left-0 right-0 h-10 bg-[#e0e0e0] border-t border-gray-400 flex items-center px-4 z-[99999] shadow-[0_-2px_10px_rgba(0,0,0,0.1)]">
+                    <button
+                        onClick={() => setDcModalMinimized(false)}
+                        className="flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-blue-700 to-blue-500 text-white text-xs font-bold rounded-sm border border-gray-600 shadow-[inset_1px_1px_0px_rgba(255,255,255,0.3)] hover:from-blue-600 hover:to-blue-400 transition-all"
+                    >
+                        <div className="w-3 h-3 border border-white/50"></div>
+                        DC Format
+                    </button>
+                </div>
+            )}
+
+              {/* Back */}
             <button
                 onClick={() => navigate(-1)}
                 className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl bg-white hover:bg-gray-50 text-[14px] font-semibold w-fit mb-6 shadow-sm"
@@ -435,7 +535,7 @@ const SalesDCEntry = () => {
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">
                         Step 1 — Customer Details
                     </p>
-                    <div className="grid grid-cols-4 gap-5">
+                    <div className="grid grid-cols-4 gap-7">
 
                         {/* Customer Name */}
                         <div className="relative" ref={custRef}>
@@ -495,7 +595,41 @@ const SalesDCEntry = () => {
                             />
                         </div>
 
-                        {/* Despatch Through — custom dropdown */}
+                       
+                    </div>
+                </div>
+
+                {/* 
+                    STEP 2 — Client DC Selection + Auto-fill
+                 */}
+                <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-5 border border-gray-100 mb-5">
+                    <div className="grid grid-cols-4 gap-8">
+                        <div className="relative" ref={clientDcRef}>
+                            <label className={labelCls}>Client DC Number <span className="text-red-500">*</span></label>
+                            <input
+                                type="text"
+                                value={form.client_dc_no}
+                                onChange={(e) => setForm((p) => ({ ...p, client_dc_no: e.target.value }))}
+                                className={`${inputCls} flex justify-between items-center cursor-pointer select-none min-h-[43px]`}
+                                placeholder="Enter client DC number"
+                            />
+                        </div>
+
+                        {/* Client DC Date — auto-filled to today (editable) */}
+                        <div>
+                            <label className={labelCls}>
+                                Client DC Date
+                                <span className="ml-1 text-[10px] text-blue-500 font-black normal-case">Auto</span>
+                            </label>
+                            <input
+                                type="date"
+                                value={form.client_dc_date || TODAY}
+                                onChange={(e) => setForm((p) => ({ ...p, client_dc_date: e.target.value }))}
+                                className={inputCls}
+                            />
+                        </div>
+
+                         {/* Despatch Through — custom dropdown */}
                         <div className="relative" ref={despatchRef}>
                             <label className={labelCls}>Despatch Through</label>
                             <div
@@ -528,41 +662,9 @@ const SalesDCEntry = () => {
                                 </div>
                             )}
                         </div>
-                    </div>
-                </div>
-
-                {/* 
-                    STEP 2 — Client DC Selection + Auto-fill
-                 */}
-                <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-5 border border-gray-100 mb-5">
-                    <div className="grid grid-cols-4 gap-5">
-                        <div className="relative" ref={clientDcRef}>
-                            <label className={labelCls}>Client DC Number <span className="text-red-500">*</span></label>
-                            <input
-                                type="text"
-                                value={form.client_dc_no}
-                                onChange={(e) => setForm((p) => ({ ...p, client_dc_no: e.target.value }))}
-                                className={`${inputCls} flex justify-between items-center cursor-pointer select-none min-h-[43px]`}
-                                placeholder="Enter client DC number"
-                            />
-                        </div>
-
-                        {/* Client DC Date — auto-filled to today (editable) */}
-                        <div>
-                            <label className={labelCls}>
-                                Client DC Date
-                                <span className="ml-1 text-[10px] text-blue-500 font-black normal-case">Auto</span>
-                            </label>
-                            <input
-                                type="date"
-                                value={form.client_dc_date || TODAY}
-                                onChange={(e) => setForm((p) => ({ ...p, client_dc_date: e.target.value }))}
-                                className={inputCls}
-                            />
-                        </div>
 
                         {/* Order No — manual entry */}
-                        <div>
+                        {/* <div>
                             <label className={labelCls}>Order No</label>
                             <input
                                 type="text"
@@ -571,10 +673,10 @@ const SalesDCEntry = () => {
                                 className={inputCls}
                                 placeholder="Enter order number"
                             />
-                        </div>
+                        </div> */}
 
                         {/* Order Date — manual entry */}
-                        <div>
+                        {/* <div>
                             <label className={labelCls}>Order Date</label>
                             <input
                                 type="date"
@@ -582,7 +684,7 @@ const SalesDCEntry = () => {
                                 onChange={(e) => setForm((p) => ({ ...p, order_date: e.target.value }))}
                                 className={inputCls}
                             />
-                        </div>
+                        </div> */}
                     </div>
                 </div>
 
@@ -593,7 +695,7 @@ const SalesDCEntry = () => {
                     <div>
                         <label className={labelCls}>Status</label>
                         <div className="flex items-center gap-6 h-[38px]">
-                            {["Service", "ReService"].map((s) => (
+                            {["Service", "Re Service"].map((s) => (
                                 <label key={s} className="flex items-center gap-2 cursor-pointer">
                                     <input
                                         type="radio"

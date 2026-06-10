@@ -159,7 +159,7 @@ const SalesInvoiceForm = () => {
                 client_dc_date:  clientDcDate,
                 order_no:        header.order_no  || "",
                 order_date:      header.order_date ? new Date(header.order_date).toISOString().split("T")[0] : "",
-                dispatch_through: header.despatch_through || "",
+                dispatch_through:  "",
             }));
 
             setDcProducts(Array.isArray(items) ? items : []);
@@ -646,7 +646,7 @@ const SalesInvoiceForm = () => {
                         {/* Client DC No — read-only, auto-filled from selected Admin DC */}
                         <div>
                             <label className={labelCls}>
-                                Client DC No
+                                Order No
                                 {dcSelected && <span className="ml-1.5 text-[10px] text-blue-500 font-black normal-case">Auto-filled</span>}
                             </label>
                             <input type="text" value={form.client_dc_no}
@@ -658,7 +658,7 @@ const SalesInvoiceForm = () => {
                         {/* Client DC Date — auto-filled from DC.Client_dc_date, editable */}
                         <div>
                             <label className={labelCls}>
-                                Client DC Date
+                                Order Date
                                 {dcSelected && <span className="ml-1.5 text-[10px] text-blue-500 font-black normal-case">Auto-filled</span>}
                             </label>
                             <input type="date" value={form.client_dc_date}
@@ -667,7 +667,7 @@ const SalesInvoiceForm = () => {
                         </div>
 
                         {/* Order No — auto-filled */}
-                        <div>
+                        {/* <div>
                             <label className={labelCls}>
                                 Order No
                                 {dcSelected && <span className="ml-1.5 text-[10px] text-blue-500 font-black normal-case">Auto-filled</span>}
@@ -676,10 +676,10 @@ const SalesInvoiceForm = () => {
                                 onChange={(e) => setForm((p) => ({ ...p, order_no: e.target.value }))}
                                 className={inputCls}
                                 placeholder="Order number" />
-                        </div>
+                        </div> */}
 
                         {/* Order Date — auto-filled */}
-                        <div>
+                        {/* <div>
                             <label className={labelCls}>
                                 Order Date
                                 {dcSelected && <span className="ml-1.5 text-[10px] text-blue-500 font-black normal-case">Auto-filled</span>}
@@ -687,7 +687,7 @@ const SalesInvoiceForm = () => {
                             <input type="date" value={form.order_date || TODAY}
                                 onChange={(e) => setForm((p) => ({ ...p, order_date: e.target.value }))}
                                 className={inputCls} />
-                        </div>
+                        </div> */}
                     </div>
 
                     {/* DC Date row */}
@@ -771,7 +771,7 @@ const SalesInvoiceForm = () => {
                         {/* Price — MANUAL */}
                         <div>
                             <label className={labelCls}>
-                                Rate <span className="text-red-500">*</span>
+                                Price <span className="text-red-500">*</span>
                                 <span className="ml-1.5 text-[10px] text-gray-400 font-black normal-case">Manual</span>
                             </label>
                             <input type="number" min="0" value={currentItem.price}
