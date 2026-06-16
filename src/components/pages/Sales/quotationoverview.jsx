@@ -34,14 +34,15 @@ const QuotationLayout = ({ QtNumber }) => {
 
   const renderQuotationPage = (copyLabel) => {
     return (
-      <div className="print-copy-wrapper py-4 print:py-0 flex flex-col items-center animate-in fade-in duration-200">
+      <div className="quotation-copy-wrapper py-4 print:py-0 flex flex-col items-center animate-in fade-in duration-200">
         {/* TOP BAR / LABEL */}
-        <div className="w-[190mm] text-right px-4 pt-1 flex-shrink-0">
-          <span className="text-[13px] font-bold uppercase tracking-wider">
+        <div className="quotation-label w-[190mm] text-right px-4 pt-1 flex-shrink-0">
+          <span className="text-[13px] mb-2 font-bold uppercase tracking-wider">
             {copyLabel}
           </span>
         </div>
-        <div className="print-container w-[190mm] min-h-[270mm] border-2 border-black bg-white relative shadow-lg print:shadow-none overflow-visible flex flex-col">
+        <div className="quotation-page-inner w-[190mm] h-[270mm] border-2 border-black bg-white relative shadow-lg print:shadow-none overflow-hidden flex flex-col"
+          style={{ boxSizing: "border-box" }}>
           {/* HEADER */}
           <div className="flex flex-col justify-center items-center text-center border-b-2 border-black p-2 h-[120px]">
             <h1 className="text-red-600 text-[26px] font-extrabold mb-0.5 leading-tight uppercase tracking-tight">
@@ -188,13 +189,13 @@ const QuotationLayout = ({ QtNumber }) => {
                 const sgstPct = taxable > 0 ? Math.round((sgstAmt / taxable) * 100) : 0;
                 const igstPct = taxable > 0 ? Math.round((igstAmt / taxable) * 100) : 0;
                 const rows = [
-                  { label: "Subtotal",            value: sub },
-                  { label: "Discount (−)",         value: disc > 0 ? disc : null },
-                  { label: "TAXABLE",              value: taxable },
-                  { label: `CGST @${cgstPct}%`,    value: cgstAmt > 0 ? cgstAmt : null },
-                  { label: `SGST @${sgstPct}%`,    value: sgstAmt > 0 ? sgstAmt : null },
-                  { label: `IGST @${igstPct}%`,    value: igstAmt > 0 ? igstAmt : null },
-                  { label: "Roundoff",             value: Number(purchase.round_off || 0) !== 0 ? purchase.round_off : null },
+                  { label: "Subtotal", value: sub },
+                  { label: "Discount (−)", value: disc > 0 ? disc : null },
+                  { label: "TAXABLE", value: taxable },
+                  { label: `CGST @${cgstPct}%`, value: cgstAmt > 0 ? cgstAmt : null },
+                  { label: `SGST @${sgstPct}%`, value: sgstAmt > 0 ? sgstAmt : null },
+                  { label: `IGST @${igstPct}%`, value: igstAmt > 0 ? igstAmt : null },
+                  { label: "Roundoff", value: Number(purchase.round_off || 0) !== 0 ? purchase.round_off : null },
                 ];
                 return rows.filter(r => r.value != null).map((row, idx) => (
                   <div key={idx} className="flex  border-gray-100 py-1.5 px-3 items-center print:border-b-0">
@@ -233,13 +234,16 @@ const QuotationLayout = ({ QtNumber }) => {
   return (
     <>
       <style>{`
+        .quotation-page-inner {
+          box-sizing: border-box;
+        }
         @page { size: A4; margin: 5mm; }
         @media print {
           html, body { margin: 0 !important; padding: 0 !important; background: white !important; }
           table { border-collapse: collapse !important; }
           tr, td, th { page-break-inside: avoid !important; }
-          .print-wrapper { padding: 0 !important; display: block !important; overflow: visible !important; }
-          .print-copy-wrapper {
+          .quotation-print-root { padding: 0 !important; display: block !important; overflow: visible !important; }
+          .quotation-copy-wrapper {
             display: block !important;
             width: 210mm !important;
             height: auto !important;
@@ -249,15 +253,26 @@ const QuotationLayout = ({ QtNumber }) => {
             page-break-after: always !important;
             break-after: page !important;
           }
-          .print-copy-wrapper:last-child {
+          .quotation-copy-wrapper:last-child {
             page-break-after: auto !important;
             break-after: auto !important;
           }
-          .print-container { width: 190mm !important; min-height: 270mm !important; max-height: 270mm !important; overflow: hidden !important; box-shadow: none !important; }
+          .quotation-label {
+            width: 190mm !important;
+            margin: 0 auto !important;
+            padding-top: 5mm !important;
+          }
+          .quotation-page-inner {
+            width: 190mm !important;
+            height: 270mm !important;
+            margin: 13mm auto 0 auto !important;
+            overflow: hidden !important;
+            box-shadow: none !important;
+          }
         }
       `}</style>
-      <div className="print-wrapper w-full flex flex-col items-center py-6 overflow-auto">
-        {renderQuotationPage("[ORIGINAL COPY]")}
+      <div className="quotation-print-root w-full flex flex-col items-center py-4 overflow-auto">
+        {renderQuotationPage("[ORIGINAL FOR RECIPIENT]")}
         {renderQuotationPage("[DUPLICATE COPY]")}
       </div>
     </>

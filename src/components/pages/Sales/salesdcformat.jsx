@@ -49,10 +49,10 @@ const SalesDCFormat = ({ dcNumber }) => {
       {/* Challan box */}
       <div
         className="w-[200mm] border-2 border-black bg-white relative flex flex-col"
-        style={{ boxSizing: "border-box", overflow: "hidden" }}
+        style={{ boxSizing: "border-box" }}
       >
         {/* Company Section */}
-        <div className="flex flex-col justify-center items-center text-center border-b-2 border-black px-2 py-1 h-[100px]">
+        <div className="flex flex-col justify-center items-center text-center border-b-2 border-black px-2 py-1 min-h-[100px]">
           <h1 className="text-red-600 text-[21px] font-extrabold leading-tight uppercase tracking-tight">
             ASWITHA TECH
           </h1>
@@ -181,12 +181,14 @@ const SalesDCFormat = ({ dcNumber }) => {
 
       <style>{`
         @page { size: A4 portrait; margin: 5mm; }
+        table td, table th {
+          background-clip: padding-box !important;
+        }
         @media print {
           html, body {
             margin: 0 !important;
             padding: 0 !important;
             background: white !important;
-            overflow: hidden !important;
           }
           .bg-white { background-color: white !important; }
         }

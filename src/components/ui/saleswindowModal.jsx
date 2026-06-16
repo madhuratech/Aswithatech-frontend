@@ -182,36 +182,42 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
 
       if (!contentRef.current) return;
 
-      const element = contentRef.current.cloneNode(true);
-      element.style.width = "210mm";
-      element.style.background = "#fff";
+      const element = contentRef.current;
 
       const opt = {
-  margin: 0,
-  filename: `${title || "Report"}.pdf`,
-  image: {
-    type: "jpeg",
-    quality: 1,
-  },
-  html2canvas: {
-    scale: 1,
-    useCORS: true,
-    logging: false,
-  },
-  jsPDF: {
-    unit: "mm",
-    format: "a4",
-    orientation: "portrait",
-  },
-  pagebreak: {
-    mode: ["css"],
-  },
-};
+
+        margin: [0, 0, 0, 0],
+
+        filename: `${title || "Report"}.pdf`,
+
+        image: {
+          type: "jpeg",
+          quality: 1,
+        },
+
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          scrollY: 0,
+          scrollX: 0,
+          windowWidth: 794,
+          windowHeight: 1123,
+        },
+
+        jsPDF: {
+          unit: "mm",
+          format: "a4",
+          orientation: "portrait",
+        },
+
+        pagebreak: {
+          mode: ["avoid-all", "css", "legacy"],
+        },
+      };
 
       const worker = html2pdf()
-      .set(opt)
-     .from(element);
-
+        .set(opt)
+        .from(element);
 
       const pdfBlob = await worker.outputPdf("blob");
 

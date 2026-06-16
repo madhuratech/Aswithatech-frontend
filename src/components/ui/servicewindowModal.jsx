@@ -160,9 +160,9 @@ const ServiceWindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinim
                 margin: [0, 0, 0, 0],
                 filename: `${title || "Report"}.pdf`,
                 image: { type: "jpeg", quality: 1 },
-                html2canvas: { scale: 2, useCORS: true, scrollY: 0, scrollX: 0, windowWidth: 794, windowHeight: 1123 },
+                html2canvas: { scale: 2, useCORS: true, scrollY: 0, scrollX: 0 },
                 jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-                pagebreak: { mode: ["avoid-all", "css", "legacy"] },
+                pagebreak: { mode: ["avoid-all", "legacy"] },
             };
             const worker = html2pdf().set(opt).from(element);
             const pdfBlob = await worker.outputPdf("blob");

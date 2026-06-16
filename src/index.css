@@ -16,14 +16,12 @@ body,
   margin: 0 auto;
   background: white;
   box-sizing: border-box;
-  overflow: hidden !important;
 }
 
 .print-container {
   width: 190mm !important;
   margin: 0 auto;
   background: white;
-  overflow: hidden !important;
   box-sizing: border-box;
   page-break-inside: avoid !important;
   break-inside: avoid !important;
