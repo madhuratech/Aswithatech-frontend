@@ -4,6 +4,8 @@ import { SquarePen, Trash2, CheckCircle, Eye } from "lucide-react";
 import toast from "react-hot-toast";
 import DeliveryChallan from "../pages/Services/dcFormat";
 import ServiceWindowModal from "../ui/servicewindowModal";
+import Addpassword from "./addeditpassword";
+import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 
 const TODAY = new Date().toISOString().split("T")[0];
 const Api_url = "http://localhost:3000/api/servicedcentry";
@@ -15,29 +17,31 @@ const INIT_FORM = {
     party_dc_no: "",
     party_dc_date: "",
     payment_terms: "",
-    despatch_through: "",
-    status: ""
+    despatch_through: ""
 };
 
 const INIT_ROW = {
     item_name: "",
     quantity: "",
     serial_no: "",
-    received_qty: "",
     uom: "",
     hsn: "",
-    remarks: ""
+    remarks: "",
+    party_dc_no: "",
+    party_dc_date: ""
 };
 
-const UOM_LIST = ["NOS", "KG", "MTR", "NO", "SET", "PKT"];
-const DESPATCH_OPTIONS = ["By Hand", "By Courier", "FedEx", "DHL", "BlueDart", "Delhivery"];
+const DESPATCH_OPTIONS = ["Courier", "Transport", "By Hand"];
+const REMARKS_OPTIONS = ["Serviced", "Re Serviced", "For Sale", "Beyond", "For Testing Purpose"];
 
 const DcEntryForm = () => {
     const navigate = useNavigate();
+    const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
 
     const [formData, setFormData] = useState(INIT_FORM);
     const [tabledata, settabledata] = useState([]);
     const [currentrow, setCurrentrow] = useState(INIT_ROW);
+    const [editIndex, setEditIndex] = useState(-1);
     const [loadDcnumber, setLoadDcnumber] = useState("");
     const [allDcData, setAllDcData] = useState([]);
 
@@ -69,7 +73,6 @@ const DcEntryForm = () => {
     const itemRef = useRef(null);
 
     // Other dropdowns
-    const [uomOpen, setUomOpen] = useState(false);
     const [remarksOpen, setRemarksOpen] = useState(false);
     const [despatchOpen, setDespatchOpen] = useState(false);
     const uomRef = useRef(null);
@@ -87,53 +90,6 @@ const DcEntryForm = () => {
     const roInputCls = "w-full p-2.5 border border-blue-100 rounded-lg text-[13px] font-semibold text-blue-800 bg-blue-50 cursor-not-allowed focus:outline-none";
     const dropdownCls = "absolute top-full left-0 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-52 overflow-y-auto";
 
-    // Immediately update status when remarks dropdown changes
-    useEffect(() => {
-        const r = (currentrow.remarks || "").trim().toLowerCase();
-        if (r === "re service") {
-            setFormData(p => ({ ...p, status: "Re Service" }));
-        } else if (r === "service" || r === "services") {
-            setFormData(p => ({ ...p, status: "Service" }));
-        }
-    }, [currentrow.remarks]);
-
-    // Auto-set status from table items (covers edit/load scenarios)
-    useEffect(() => {
-        const hasReService = tabledata.some(item => {
-            const r = (item.remarks || "").trim().toLowerCase();
-            return r === "re service";
-        });
-        const hasService = tabledata.some(item => {
-            const r = (item.remarks || "").trim().toLowerCase();
-            return r === "service" || r === "services";
-        });
-        if (hasReService) {
-            setFormData(p => ({ ...p, status: "Re Service" }));
-        } else if (hasService) {
-            setFormData(p => ({ ...p, status: "Service" }));
-        }
-    }, [tabledata]);
-
-    const handleKeyDown = (e) => {
-        if (e.key === "Enter") {
-            e.preventDefault();
-            if (clientOpen && clients.length > 0) {
-                handleClientSelect(clients[0]);
-            } else if (clientDcOpen && clientDcList.length > 0) {
-                handleClientDcSelect(clientDcList[0]);
-            } else if (itemOpen && filteredInwardItems.length > 0) {
-                handleItemSelect(filteredInwardItems[0]);
-            } else if (uomOpen) {
-                setUomOpen(false);
-            } else if (remarksOpen) {
-                setRemarksOpen(false);
-            } else if (despatchOpen) {
-                setDespatchOpen(false);
-            } else if (editOpen && editSuggestions.length > 0) {
-                loadDcForEdit(editSuggestions[0].inward_dc_no);
-            }
-        }
-    };
 
     useEffect(() => {
         fetchNextDcNo();
@@ -142,7 +98,6 @@ const DcEntryForm = () => {
             if (clientRef.current && !clientRef.current.contains(e.target)) setClientOpen(false);
             if (clientDcRef.current && !clientDcRef.current.contains(e.target)) setClientDcOpen(false);
             if (itemRef.current && !itemRef.current.contains(e.target)) setItemOpen(false);
-            if (uomRef.current && !uomRef.current.contains(e.target)) setUomOpen(false);
             if (remarksRef.current && !remarksRef.current.contains(e.target)) setRemarksOpen(false);
             if (despatchRef.current && !despatchRef.current.contains(e.target)) setDespatchOpen(false);
             if (editRef.current && !editRef.current.contains(e.target)) setEditOpen(false);
@@ -235,21 +190,19 @@ const DcEntryForm = () => {
         }
     };
 
-    // Items filtered from inward DC for dropdown
-    const filteredInwardItems = inwardDcItems.filter(item =>
-        !currentrow.item_name ||
-        item.item_name.toLowerCase().includes(currentrow.item_name.toLowerCase())
-    );
+    // Product input is select-only, so always show every inward DC item in the dropdown
+    const filteredInwardItems = inwardDcItems;
 
     const handleItemSelect = (item) => {
         setCurrentrow(p => ({
             ...p,
             item_name: item.item_name || "",
             hsn: item.hsn || "",
-            uom: item.unit || p.uom,
+            uom: item.unit || item.uom || "",
             quantity: item.quantity || p.quantity,
-            serial_no: item.pcb_sl_no || p.serial_no,
-            remarks: item.problems || item.remarks || p.remarks
+            serial_no: item.pcb_sl_no || item.serial_no || "",
+            party_dc_no: formData.party_dc_no || "",
+            party_dc_date: formData.party_dc_date || ""
         }));
         setItemOpen(false);
     };
@@ -259,22 +212,42 @@ const DcEntryForm = () => {
             toast.error("Item Name and Quantity are required");
             return;
         }
-        settabledata(p => [...p, currentrow]);
+        if (!currentrow.remarks) {
+            toast.error("Please select a Remarks value");
+            return;
+        }
+        if (editIndex >= 0) {
+            settabledata(p => {
+                const updated = [...p];
+                updated[editIndex] = { ...currentrow };
+                return updated;
+            });
+            setEditIndex(-1);
+        } else {
+            settabledata(p => [...p, currentrow]);
+        }
         setCurrentrow(INIT_ROW);
     };
 
     const editItem = (index) => {
         setCurrentrow({ ...tabledata[index] });
-        settabledata(p => p.filter((_, i) => i !== index));
+        setEditIndex(index);
     };
 
     const deleteItem = (index) => settabledata(p => p.filter((_, i) => i !== index));
+
+    const handleSaveDc = () => {
+        SaveDc();
+    };
+
+    const handleDeleteDc = () => {
+        deleteDc();
+    };
 
     const SaveDc = async () => {
         if (!formData.supplier_name.trim()) { toast.error("Client Name is required"); return; }
         if (!formData.inward_dc_no.trim()) { toast.error("DC Number is required"); return; }
         if (!formData.dc_date) { toast.error("DC Date is required"); return; }
-        if (!formData.status) { toast.error("Please select a Status (Service / Re Service)"); return; }
         if (!tabledata.length) { toast.error("Please add at least one item"); return; }
 
         const payload = {
@@ -283,10 +256,11 @@ const DcEntryForm = () => {
                 item_name: item.item_name,
                 quantity: item.quantity,
                 serial_no: item.serial_no,
-                received_qty: item.received_qty,
                 uom: item.uom,
                 hsn: item.hsn,
-                remarks: item.remarks
+                remarks: item.remarks,
+                party_dc_no: item.party_dc_no || "",
+                party_dc_date: item.party_dc_date || ""
             }))
         };
 
@@ -303,7 +277,10 @@ const DcEntryForm = () => {
             const data = await res.json();
             if (!res.ok) throw new Error(data.message || "failed");
 
-            setSavedDcNo(formData.inward_dc_no);
+            // Backend generates the final DC number at save time — show that one
+            const finalDcNo = data.dc_no || formData.inward_dc_no;
+            setSavedDcNo(finalDcNo);
+            setFormData(p => ({ ...p, inward_dc_no: finalDcNo }));
             setShowSuccessModal(true);
             fetchAllDc();
         } catch {
@@ -348,8 +325,7 @@ const DcEntryForm = () => {
                 party_dc_no: h.party_dc_no || "",
                 party_dc_date: h.party_dc_date ? h.party_dc_date.split("T")[0] : "",
                 payment_terms: h.payment_terms || "",
-                despatch_through: h.despatch_through || "",
-                status: h.status || ""
+                despatch_through: h.despatch_through || ""
             });
             setClientSearch(h.supplier_name || "");
             setClientDcSearch(h.party_dc_no || "");
@@ -459,9 +435,9 @@ const DcEntryForm = () => {
                     </div>
                     <div className="flex gap-1.5">
                         <button onClick={resetAll} className="border px-3 py-1.5 rounded-lg text-[13px] font-bold hover:bg-gray-800 hover:text-white transition-colors">NEW</button>
-                        <button onClick={SaveDc} className="border px-3 py-1.5 rounded-lg text-[13px] font-bold hover:bg-green-600 hover:text-white transition-colors">SAVE</button>
-                        <button onClick={SaveDc} className="border px-3 py-1.5 rounded-lg text-[13px] font-bold hover:bg-blue-600 hover:text-white transition-colors">UPDATE</button>
-                        <button onClick={deleteDc} className="border px-3 py-1.5 rounded-lg text-[13px] font-bold hover:bg-red-600 hover:text-white transition-colors">DELETE</button>
+                        <button onClick={handleSaveDc} className="border px-3 py-1.5 rounded-lg text-[13px] font-bold hover:bg-green-600 hover:text-white transition-colors">SAVE</button>
+                        <button onClick={handleSaveDc} className="border px-3 py-1.5 rounded-lg text-[13px] font-bold hover:bg-blue-600 hover:text-white transition-colors">UPDATE</button>
+                        <button onClick={handleDeleteDc} className="border px-3 py-1.5 rounded-lg text-[13px] font-bold hover:bg-red-600 hover:text-white transition-colors">DELETE</button>
                     </div>
                 </div>
 
@@ -558,7 +534,7 @@ const DcEntryForm = () => {
                         {/* Client DC Number dropdown from inward_entry */}
                         <div className="relative" ref={clientDcRef}>
                             <label className={labelCls}>
-                                Client DC Number <span className="text-red-500">*</span>
+                                Order Number <span className="text-red-500">*</span>
                             </label>
                             <input
                                 type="text"
@@ -601,16 +577,17 @@ const DcEntryForm = () => {
                         {/* Client DC Date */}
                         <div>
                             <label className={labelCls}>
-                                Client DC Date
+                                Order Date
                                 {formData.party_dc_date && (
                                     <span className="ml-1 text-[10px] text-blue-500 font-black normal-case">Auto</span>
                                 )}
                             </label>
                             <input
                                 type="date"
+                                readOnly
                                 value={formData.party_dc_date}
                                 onChange={(e) => setFormData(p => ({ ...p, party_dc_date: e.target.value }))}
-                                className={inputCls}
+                                className={roInputCls} 
                             />
                         </div>
 
@@ -624,29 +601,6 @@ const DcEntryForm = () => {
                             </div>
                         )}
 
-                        {/* Status — auto-set from item remarks; not manually selectable */}
-                        <div>
-                            <label className={labelCls}>
-                                Status <span className="text-red-500">*</span>
-                                <span className="ml-1 text-[10px] text-blue-500 font-black normal-case">Auto</span>
-                            </label>
-                            <div className="flex items-center gap-6 h-[43px]">
-                                {["Service", "Re Service"].map((s) => (
-                                    <label key={s} className="flex items-center gap-2">
-                                        <input
-                                            type="radio"
-                                            name="status"
-                                            value={s}
-                                            checked={formData.status === s}
-                                            onChange={() => {}}
-                                            onClick={(e) => e.preventDefault()}
-                                            className="w-4 h-4 accent-black pointer-events-none"
-                                        />
-                                        <span className="text-[12px] font-bold text-gray-700">{s}</span>
-                                    </label>
-                                ))}
-                            </div>
-                        </div>
                     </div>
 
                     {/* Inward DC items chip list */}
@@ -660,17 +614,7 @@ const DcEntryForm = () => {
                                     <button
                                         key={i}
                                         type="button"
-                                        onClick={() => {
-                                            setCurrentrow(p => ({
-                                                ...p,
-                                                item_name: item.item_name || "",
-                                                hsn: item.hsn || "",
-                                                uom: item.unit || p.uom,
-                                                quantity: item.quantity || p.quantity,
-                                                serial_no: item.pcb_sl_no || p.serial_no,
-                                                remarks: item.problems || item.remarks || p.remarks
-                                            }));
-                                        }}
+                                        onClick={() => handleItemSelect(item)}
                                         className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-blue-200 rounded-lg text-[12px] font-semibold text-blue-700 hover:bg-blue-100 transition-colors shadow-sm"
                                     >
                                         <span>{item.item_name}</span>
@@ -686,7 +630,7 @@ const DcEntryForm = () => {
                 {/* Step 3 — Add Items */}
                 <div className="mb-4">
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Step 3 — Add Items</p>
-                    <div className="grid grid-cols-8 gap-2">
+                    <div className="grid grid-cols-9 gap-2">
 
                         {/* Item Name with dropdown from inward DC items */}
                         <div className="col-span-2 relative" ref={itemRef}>
@@ -694,6 +638,7 @@ const DcEntryForm = () => {
                             <input
                                 type="text"
                                 value={currentrow.item_name}
+                                readOnly
                                 onFocus={() => { if (inwardDcItems.length > 0) setItemOpen(true); }}
                                 onChange={(e) => {
                                     setCurrentrow(p => ({ ...p, item_name: e.target.value }));
@@ -722,7 +667,6 @@ const DcEntryForm = () => {
                                 </div>
                             )}
                         </div>
-
                         <div>
                              <label className={labelCls} >Qty</label>
                             <input type="text" placeholder="Quantity"
@@ -734,78 +678,72 @@ const DcEntryForm = () => {
                         <div>
                             <label className={labelCls} >Serial No</label>
                             <input type="text" placeholder="Serial No"
+                                 readOnly
                                 value={currentrow.serial_no}
                                 onChange={(e) => setCurrentrow(p => ({ ...p, serial_no: e.target.value }))}
-                                className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black outline-none bg-gray-50/50" />
+                                className='w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black outline-none bg-gray-50/50'/>
                         </div>
 
-                        {/* UOM */}
+                        {/* UOM — auto-fetched, read-only */}
                         <div className="relative" ref={uomRef}>
                             <label className={labelCls}>UOM</label>
-                            <input type="text" placeholder="UOM"
+                            <input type="text" placeholder="Auto"
+                                readOnly
                                 value={currentrow.uom}
-                                onFocus={() => setUomOpen(true)}
-                                onChange={(e) => setCurrentrow(p => ({ ...p, uom: e.target.value }))}
-                                className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black outline-none bg-gray-50/50" />
-                            {uomOpen && (
-                                <div className="absolute top-full left-0 w-full mt-1 rounded-lg bg-white shadow-lg z-50 max-h-40 overflow-y-auto border border-gray-200">
-                                    {UOM_LIST.map((uom) => (
-                                        <div key={uom} onClick={() => { setCurrentrow(p => ({ ...p, uom })); setUomOpen(false); }}
-                                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm">{uom}</div>
-                                    ))}
-                                </div>
-                            )}
+                                className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black outline-none bg-gray-50/50 cursor-not-allowed" />
                         </div>
 
                         <div>
                             <label className={labelCls} >HSN</label>
-                            <input type="text" placeholder="HSN"
+                            <input type="text" placeholder="HSN" readOnly
                                 value={currentrow.hsn}
                                 onChange={(e) => setCurrentrow(p => ({ ...p, hsn: e.target.value }))}
                                 className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black outline-none bg-gray-50/50" />
                         </div>
 
-                        {/* Remarks */}
-                    <div className="mt- relative w-30" ref={remarksRef}>
-                        <label className={labelCls}>Remarks</label>
-                        <input type="text" placeholder="Remarks"
-                            value={currentrow.remarks}
-                            onFocus={() => setRemarksOpen(true)}
-                            onChange={(e) => setCurrentrow(p => ({ ...p, remarks: e.target.value }))}
-                            className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black outline-none bg-gray-50/50" />
-                        {remarksOpen && (
-                            <div className="absolute top-full left-0 w-full mt-1 rounded-lg bg-white shadow-lg z-50 max-h-40 overflow-y-auto border border-gray-200">
-                                {["Damaged", "Service", "Re Service", "Under Warranty"].map((r) => (
-                                    <div key={r} onClick={(e) => {
-                                        e.stopPropagation();
-                                        setCurrentrow(p => ({ ...p, remarks: r }));
-                                        setRemarksOpen(false);
-                                        if (r === "Service") {
-                                            setFormData(p => ({ ...p, status: "Service" }));
-                                        } else if (r === "Re Service") {
-                                            setFormData(p => ({ ...p, status: "Re Service" }));
-                                        }
-                                    }}
-                                        className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm">{r}</div>
-                                ))}
+                        {/* Remarks — dropdown */}
+                        <div className="col-span-2 relative" ref={remarksRef}>
+                            <label className={labelCls}>Remarks <span className="text-red-500">*</span></label>
+                            <div
+                                onClick={() => setRemarksOpen(p => !p)}
+                                className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium outline-none bg-gray-50/50 flex justify-between items-center cursor-pointer select-none min-h-[43px]"
+                            >
+                                <span className={currentrow.remarks ? "text-black" : "text-gray-400"}>
+                                    {currentrow.remarks || "Select Remarks"}
+                                </span>
+                                <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
                             </div>
-                        )}
-                    </div>
+                            {remarksOpen && (
+                                <div className={dropdownCls}>
+                                    {REMARKS_OPTIONS.map((r) => (
+                                        <div key={r} onClick={(e) => {
+                                            e.stopPropagation();
+                                            setCurrentrow(p => ({ ...p, remarks: r }));
+                                            setRemarksOpen(false);
+                                        }}
+                                            className={`px-4 py-2.5 hover:bg-blue-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0 ${currentrow.remarks === r ? "bg-blue-50 text-blue-700" : ""}`}>{r}</div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
 
-                        <div className=" mt-5 flex items-center gap-2">
-                            <button onClick={addRow} className="flex-1 bg-green-500 text-white py-2 px-3 rounded-lg hover:bg-green-600 text-[13px] font-bold">ADD</button>
-                            <button onClick={() => setCurrentrow(INIT_ROW)} className="flex-1 bg-gray-100 text-gray-700 py-2 px-3 rounded-lg hover:bg-gray-200 text-[13px] font-bold">CLR</button>
+                        <div className="col-span-1 flex items-end gap-1.5 min-h-[43px] mb-0.5">
+                            <button onClick={addRow} className={`flex-1 text-white py-2 px-3 rounded-lg text-[13px] font-bold ${editIndex >= 0 ? "bg-blue-500 hover:bg-blue-600" : "bg-green-500 hover:bg-green-600"}`}>{editIndex >= 0 ? "UPD" : "ADD"}</button>
+                            <button onClick={() => { setCurrentrow(INIT_ROW); setEditIndex(-1); }} className="flex-1 bg-gray-100 text-gray-700 py-2 px-3 rounded-lg hover:bg-gray-200 text-[13px] font-bold">CLR</button>
                         </div>
                     </div>
 
                 </div>
 
                 {/* Items Table */}
-                <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm mt-4 min-h-[200px]">
+                <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm mt-4">
+                    <div className="h-[250px] overflow-y-auto">
                     <table className="w-full border-collapse">
-                        <thead>
+                        <thead className="sticky top-0 z-10 bg-gray-50">
                             <tr className="bg-gray-50 border-b border-gray-200">
-                                {["#", "Item Name", "Qty", "Unit", "Rec. Qty", "HSN", "Serial No", "Remarks", "Actions"].map((h, i) => (
+                                {["#", "Item Name", "Qty", "Unit", "HSN","Remarks", "Actions"].map((h, i) => (
                                     <th key={i} className="p-3 text-[11px] font-black text-gray-500 uppercase text-left border-r border-gray-100 last:border-0">{h}</th>
                                 ))}
                             </tr>
@@ -813,7 +751,7 @@ const DcEntryForm = () => {
                         <tbody>
                             {tabledata.length === 0 ? (
                                 <tr>
-                                    <td colSpan={9} className="py-14 text-center">
+                                    <td colSpan={7} className="py-14 text-center">
                                         <div className="text-gray-300 text-4xl mb-3">📦</div>
                                         <p className="text-[13px] text-gray-400 font-medium">No products added yet.</p>
                                         <p className="text-[12px] text-gray-300 mt-1">Select a customer and client DC to begin.</p>
@@ -821,14 +759,12 @@ const DcEntryForm = () => {
                                 </tr>
                             ) : (
                                 tabledata.map((item, idx) => (
-                                    <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50">
+                                    <tr key={idx} className={`border-b border-gray-100 ${editIndex === idx ? "bg-blue-50" : "hover:bg-gray-50"}`}>
                                         <td className="p-3 text-[12px] text-gray-500 border-r">{idx + 1}</td>
-                                        <td className="p-3 text-[12px] font-semibold border-r">{item.item_name}</td>
+                                        <td className="p-3 text-[12px] font-semibold border-r">{item.item_name} {item.serial_no}</td>
                                         <td className="p-3 text-[12px] border-r">{item.quantity}</td>
                                         <td className="p-3 text-[12px] border-r">{item.uom}</td>
-                                        <td className="p-3 text-[12px] border-r">{item.received_qty}</td>
                                         <td className="p-3 text-[12px] border-r">{item.hsn}</td>
-                                        <td className="p-3 text-[12px] border-r">{item.serial_no}</td>
                                         <td className="p-3 text-[12px] border-r">{item.remarks}</td>
                                         <td className="p-3">
                                             <div className="flex gap-3">
@@ -840,7 +776,19 @@ const DcEntryForm = () => {
                                 ))
                             )}
                         </tbody>
+                        <tfoot className="sticky bottom-0 z-10 ">
+                            <tr>
+                                <td colSpan={7} className="px-4 py-3">
+                                    <div className="flex items-center ml-[27%] gap-2">
+                                        <span className="text-[13px] font-black text-gray-600 uppercase tracking-wide">TOTAL QTY</span>
+                                        <span className="text-[13px] font-black text-gray-500">:</span>
+                                        <span className="text-[18px] font-black text-blue-700">{tabledata.reduce((s, r) => s + Number(r.quantity || 0), 0)}</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tfoot>
                     </table>
+                    </div>
                 </div>
 
                 {/* Load / Edit existing DC */}
@@ -854,14 +802,14 @@ const DcEntryForm = () => {
                             value={editSearch}
                             onFocus={() => setEditOpen(true)}
                             onChange={(e) => { setEditSearch(e.target.value); setEditOpen(true); }}
-                            placeholder="AT/SVC-001"
+                            placeholder="AT-DC-001"
                             className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black outline-none bg-white"
                         />
                         {editOpen && editSuggestions.length > 0 && (
                             <div className="absolute top-full left-0 w-full mt-1 rounded-lg bg-white shadow-lg z-50 max-h-40 overflow-y-auto border border-gray-200">
                                 {editSuggestions.map((dc, i) => (
                                     <div key={i}
-                                        onClick={() => { loadDcForEdit(dc.dc_number); setEditSearch(dc.dc_number); setEditOpen(false); }}
+                                        onClick={() => { setEditSearch(dc.dc_number); setEditOpen(false); requirePassword(() => loadDcForEdit(dc.dc_number)); }}
                                         className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm font-semibold">
                                         {dc.dc_number}
                                     </div>
@@ -901,14 +849,13 @@ const DcEntryForm = () => {
                                     <th className="p-3 text-[11px] font-black text-gray-500 uppercase text-left border-b border-r">Client</th>
                                     <th className="p-3 text-[11px] font-black text-gray-500 uppercase text-left border-b border-r">Date</th>
                                     <th className="p-3 text-[11px] font-black text-gray-500 uppercase text-left border-b border-r">Client DC No</th>
-                                    <th className="p-3 text-[11px] font-black text-gray-500 uppercase text-left border-b border-r">Status</th>
                                     <th className="p-3 text-[11px] font-black text-gray-500 uppercase text-left border-b border-r">Items</th>
                                     <th className="p-3 text-[11px] font-black text-gray-500 uppercase text-left border-b">View</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {filteredAllDc.length === 0 ? (
-                                    <tr><td colSpan={7} className="p-8 text-center text-gray-400 text-sm">No DC entries found.</td></tr>
+                                    <tr><td colSpan={6} className="p-8 text-center text-gray-400 text-sm">No DC entries found.</td></tr>
                                 ) : (
                                     filteredAllDc.map((dc, i) => (
                                         <tr key={i} className="border-b border-gray-100 hover:bg-gray-50">
@@ -918,7 +865,6 @@ const DcEntryForm = () => {
                                                 {dc.dc_date ? new Date(dc.dc_date).toLocaleDateString("en-GB") : "—"}
                                             </td>
                                             <td className="p-3 text-[12px] border-r">{dc.party_dc_no || "—"}</td>
-                                            <td className="p-3 text-[12px] text-red-600 font-medium border-r">{dc.status}</td>
                                             <td className="p-3 text-[12px] border-r">
                                                 <div className="max-h-[60px] overflow-y-auto flex flex-wrap gap-1">
                                                     {(dc.items || []).map((item, j) => (
@@ -945,6 +891,9 @@ const DcEntryForm = () => {
                 </div>
 
             </div>
+            {showPasswordModal && (
+                <Addpassword onSuccess={handlePasswordSuccess} onClose={handlePasswordCancel} />
+            )}
         </div>
     );
 };

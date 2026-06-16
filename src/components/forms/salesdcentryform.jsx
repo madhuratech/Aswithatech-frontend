@@ -1,49 +1,54 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import { SquarePen, Trash2, Eye ,CheckCircle} from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { SquarePen, Trash2, Eye, CheckCircle } from "lucide-react";
 import toast from "react-hot-toast";
 import SaleswindowModel from "../ui/saleswindowModal";
 import DeliveryChallan from "../pages/Sales/salesdcformat";
+import Addpassword from "./addeditpassword";
+import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 
 const API = "http://localhost:3000/api/salesdc";
 const TODAY = new Date().toISOString().split("T")[0];
 const UOM_LIST = ["Nos", "Set", "Pkt", "Kg", "Mtr", "Ltr", "Box", "Unit"];
-const DESPATCH_OPTIONS = ["By Hand", "By Courier", "By Transport", "By Air", "By Road", "By Rail", "By Sea"];
+const DESPATCH_OPTIONS = ["Courier", "Transport", "By Hand"];
+const REMARKS_OPTIONS = ["Serviced", "Re Serviced", "For Sale", "Beyond", "For Testing Purpose"];
 
 const INIT_FORM = {
     customer_name: "",
     dc_no: "",
     dc_date: TODAY,
-    client_dc_no: "",
-    Client_dc_date: "",
     order_no: "",
     order_date: "",
     despatch_through: "",
-    status: "To Sell",
     ordertype: "Service",
 };
 
 const INIT_ITEM = {
     item_name: "",
     quantity: "",
-    price: "",
     sl_no: "",
     hsn: "",
     uom: "Nos",
     pending_qty: "",
+    order_no: "",
+    order_date: "",
+    remarks: ""
 };
 
 const SalesDCEntry = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
 
     // ── form & table state ──────────────────────────────────────────────────
     const [form, setForm] = useState(INIT_FORM);
     const [rows, setRows] = useState([]);
     const [item, setItem] = useState(INIT_ITEM);
+    const [editRowIndex, setEditRowIndex] = useState(-1);
 
     //Success Model state
     const [showSuccessModal, setShowSuccessModal] = useState(false);
-    const [savedDcNo , setSavedDcNo] = useState("");
+    const [savedDcNo, setSavedDcNo] = useState("");
     const [showDcFormat, setShowDcFormat] = useState(false);
     const [dcModalMinimized, setDcModalMinimized] = useState(false);
     const [viewDcNo, setViewDcNo] = useState("");
@@ -61,7 +66,7 @@ const SalesDCEntry = () => {
     const [open, setOpen] = useState({
         customer: false, clientDc: false, product: false, uom: false, loadDc: false, despatch: false,
     });
-    const [remarksOpen , setRemarksOpen] = useState(false);
+    const [remarksOpen, setRemarksOpen] = useState(false);
 
     // ── loading flags ────────────────────────────────────────────────────────
     const [busy, setBusy] = useState({
@@ -75,39 +80,22 @@ const SalesDCEntry = () => {
     const uomRef = useRef(null);
     const loadDcRef = useRef(null);
     const despatchRef = useRef(null);
+    const remarksRef = useRef(null);
 
     // ── derived flags ────────────────────────────────────────────────────────
     const customerSelected = !!form.customer_name;
     const clientDcSelected = !!form.client_dc_no;
 
 
-    // Auto update status
-   useEffect(() => {
-          const r = (item.remarks || "").trim().toLowerCase();
-          if (r === "re service") {
-              setForm(p => ({ ...p, status: "Re Service" }));
-          } else if (r === "service" || r === "services") {
-              setForm(p => ({ ...p, status: "Service" }));
-          }
-      }, [item.remarks]);
-
-
-       useEffect(() => {
-              const hasReService = rows.some(item => {
-                  const r = (item.remarks || "").trim().toLowerCase();
-                  return r === "re service";
-              });
-              const hasService = rows.some(item => {
-                  const r = (item.remarks || "").trim().toLowerCase();
-                  return r === "service" || r === "services";
-              });
-              if (hasReService) {
-                  setForm(p => ({ ...p, status: "Re Service" }));
-              } else if (hasService) {
-                  setForm(p => ({ ...p, status: "Service" }));
-              }
-          }, [rows]);
-  
+    // ── auto-load DC from navigation state (e.g. from report view Edit) ──────
+    useEffect(() => {
+        const dcNo = location.state?.loadDcNo;
+        if (dcNo) {
+            setLoadDcSearch(dcNo);
+            loadExistingDC(dcNo);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // ── outside-click + initial DC no ────────────────────────────────────────
     useEffect(() => {
@@ -119,6 +107,7 @@ const SalesDCEntry = () => {
             if (uomRef.current && !uomRef.current.contains(e.target)) closeAll("uom");
             if (loadDcRef.current && !loadDcRef.current.contains(e.target)) closeAll("loadDc");
             if (despatchRef.current && !despatchRef.current.contains(e.target)) closeAll("despatch");
+            if (remarksRef.current && !remarksRef.current.contains(e.target)) setRemarksOpen(false);
         };
         document.addEventListener("mousedown", handler);
         return () => document.removeEventListener("mousedown", handler);
@@ -167,12 +156,12 @@ const SalesDCEntry = () => {
         }
     };
 
-    // Refetch products when order type changes
+    // Refetch products when order type or product search term changes
     useEffect(() => {
         if (form.ordertype) {
             fetchProducts(form.ordertype, prodSearch);
         }
-    }, [form.ordertype]);
+    }, [form.ordertype, prodSearch]);
 
 
     const searchLoadDc = async (q = "") => {
@@ -194,16 +183,11 @@ const SalesDCEntry = () => {
                 customer_name: header.customer_name || "",
                 dc_no: header.dc_no || "",
                 dc_date: header.dc_date ? new Date(header.dc_date).toISOString().split("T")[0] : TODAY,
-                client_dc_no: header.payment_terms || "",
-                client_dc_date: header.Client_dc_date
-                    ? new Date(header.Client_dc_date).toISOString().split("T")[0]
-                    : "",
                 order_no: header.order_no || "",
                 order_date: header.order_date
                     ? new Date(header.order_date).toISOString().split("T")[0]
                     : "",
                 despatch_through: header.despatch_through || "",
-                status: header.status || "To Sell",
                 ordertype: header.ordertype || "Service",
             });
             setCustSearch(header.customer_name || "");
@@ -235,7 +219,7 @@ const SalesDCEntry = () => {
 
 
     const handleProductSelect = (p) => {
-        if (rows.some((r) => r.item_name === p.item_name)) {
+        if (rows.some((r, i) => i !== editRowIndex && r.item_name === p.item_name)) {
             toast.error("This product is already added.");
             return;
         }
@@ -243,46 +227,58 @@ const SalesDCEntry = () => {
             item_name: p.item_name,
             quantity: p.pending_qty > 0 ? String(p.pending_qty) : "",
             price: p.price != null ? String(p.price) : "",
-            sl_no: "",
-            hsn: p.hsn_number || "",
+            sl_no: p.sl_no || p.serial_no || "",
+            hsn: p.hsn_number || p.hsn || "",
             uom: p.uom || "Nos",
-            pending_qty: String(p.pending_qty),
+            pending_qty: p.pending_qty != null ? String(p.pending_qty) : "",
         });
         setProdSearch(p.item_name);
         closeAll("product");
     };
 
     const handleAddItem = () => {
-    if (!item.item_name) {
-        toast.error("Select a product first.");
-        return;
-    }
-
-    let status = form.status;
-
-    if (item.remarks === "Service") {
-        status = "Service";
-    } else if (item.remarks === "Re Service") {
-        status = "Re Service";
-    }
-
-    setForm(prev => ({
-        ...prev,
-        status
-    }));
-
-    setRows(prev => [
-        ...prev,
-        {
-            ...item,
-            remarks: item.remarks,
-            service_status: status
+        if (!item.item_name) {
+            toast.error("Select a product first.");
+            return;
         }
-    ]);
+        if (!item.remarks) {
+            toast.error("Select a remarks value.");
+            return;
+        }
 
-    setItem(INIT_ITEM);
-    setProdSearch("");
-};
+        const newRow = { ...item, order_no: form.order_no, order_date: form.order_date };
+
+        if (editRowIndex >= 0) {
+            setRows(prev => {
+                const updated = [...prev];
+                updated[editRowIndex] = newRow;
+                return updated;
+            });
+            setEditRowIndex(-1);
+        } else {
+            setRows(prev => [...prev, newRow]);
+        }
+        setItem(INIT_ITEM);
+        setProdSearch("");
+    };
+
+    const handleEditRow = (idx) => {
+        const r = rows[idx];
+        setItem({
+            item_name:   r.item_name,
+            quantity:    r.quantity,
+            sl_no:       r.sl_no   || "",
+            hsn:         r.hsn     || "",
+            uom:         r.uom     || "Nos",
+            pending_qty: r.pending_qty || "",
+            order_no:    r.order_no   || "",
+            order_date:  r.order_date || "",
+            remarks:     r.remarks    || "",
+            price:       r.price      || "",
+        });
+        setProdSearch(r.item_name);
+        setEditRowIndex(idx);
+    };
 
     const handleRemoveRow = (idx) => setRows((p) => p.filter((_, i) => i !== idx));
 
@@ -294,27 +290,37 @@ const SalesDCEntry = () => {
         dc_date: form.dc_date,
         order_no: form.order_no || null,
         order_date: form.order_date || null,
-        payment_terms: form.client_dc_no || null,
-        Client_dc_date: form.client_dc_date || null,
         despatch_through: form.despatch_through || null,
-        status: form.status,
         ordertype: form.ordertype,
         items: rows.map((r) => ({
-            item_name: r.item_name,
-            quantity: r.quantity,
-            price: r.price || 0,
-            sl_no: r.sl_no || null,
-            hsn: r.hsn || null,
-            uom: r.uom || "Nos",
-            remarks: r.remarks || null,
-        })),
+        item_name: r.item_name,
+        quantity: r.quantity,
+        sl_no: r.sl_no || null,
+        hsn: r.hsn || null,
+        uom: r.uom || "Nos",
+        remarks: r.remarks || null,
+        order_no: r.order_no || null,
+        order_date: r.order_date || null
+        }))
     });
 
     const validateHeader = () => {
         if (!form.customer_name?.trim()) { toast.error("Customer is required."); return false; }
-        if (!form.client_dc_no?.trim()) { toast.error("Client DC Number is required."); return false; }
+        if (!form.order_no?.trim()) { toast.error("Client DC Number is required."); return false; }
         if (!rows.length) { toast.error("Add at least one product."); return false; }
         return true;
+    };
+
+    const handleSaveDC = () => {
+        saveDC();
+    };
+
+    const handleUpdateDC = () => {
+        updateDC();
+    };
+
+    const handleDeleteDC = () => {
+        deleteDC();
     };
 
     const saveDC = async () => {
@@ -327,8 +333,9 @@ const SalesDCEntry = () => {
                 body: JSON.stringify(buildPayload()),
             });
             if (res.ok) {
-                toast.success("Sales DC saved successfully.");
-                resetForm();
+                const data = await res.json();
+                setSavedDcNo(data.dc_no || form.dc_no);
+                setShowSuccessModal(true);
             } else {
                 const err = await res.json();
                 toast.error(err.message || "Save failed.");
@@ -388,6 +395,7 @@ const SalesDCEntry = () => {
         setLoadDcSearch("");
         setRows([]);
         setItem(INIT_ITEM);
+        setEditRowIndex(-1);
         setProducts([]);
         setDcSearchList([]);
         fetchNextDcNo();
@@ -405,24 +413,24 @@ const SalesDCEntry = () => {
     const disInputCls = "w-full p-2.5 border border-gray-100 rounded-lg text-[13px] font-semibold text-gray-400 bg-gray-50 cursor-not-allowed focus:outline-none";
     const dropdownCls = "absolute top-full left-0 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 max-h-52 overflow-y-auto";
 
- // Close Successmodel
-  const handleCloseSuccessModal = () => {
-    setShowSuccessModal(false);
-    setShowDcFormat(false);
-    resetForm();
-  };
+    // Close Successmodel
+    const handleCloseSuccessModal = () => {
+        setShowSuccessModal(false);
+        setShowDcFormat(false);
+        resetForm();
+    };
 
-  // HandleView Dc
-  const handleViewDc = () =>{
-    setViewDcNo(savedDcNo);
-    setShowSuccessModal(false);
-    setDcModalMinimized(false);
-    setShowDcFormat(true);
-  } 
+    // HandleView Dc
+    const handleViewDc = () => {
+        setViewDcNo(savedDcNo);
+        setShowSuccessModal(false);
+        setDcModalMinimized(false);
+        setShowDcFormat(true);
+    }
 
     return (
         <div className="min-h-screen bg-gray-50/70 p-6 font-sans">
-           {/* ── Success Modal ── */}
+            {/* ── Success Modal ── */}
             {showSuccessModal && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl p-8 shadow-2xl w-full max-w-sm text-center">
@@ -431,8 +439,8 @@ const SalesDCEntry = () => {
                                 <CheckCircle className="w-9 h-9 text-green-500" />
                             </div>
                         </div>
-                        <h2 className="text-xl font-black text-gray-800 mb-1">Service DC Saved Successfully!</h2>
-                        <p className="text-sm text-gray-500 mb-1">Service DC has been created.</p>
+                        <h2 className="text-xl font-black text-gray-800 mb-1">Sales DC Saved Successfully!</h2>
+                        <p className="text-sm text-gray-500 mb-1">Sales DC has been created.</p>
                         <p className="text-sm font-black text-blue-600 mb-6">{savedDcNo}</p>
                         <div className="flex gap-3">
                             <button
@@ -455,19 +463,19 @@ const SalesDCEntry = () => {
             {/* Saleswindow model */}
 
             <SaleswindowModel
-              title="DC Format"
+                title="DC Format"
                 isOpen={showDcFormat}
                 type="DC Format"
                 isMinimized={dcModalMinimized}
                 onMinimize={() => setDcModalMinimized(true)}
                 onClose={() => { setShowDcFormat(false); setDcModalMinimized(false); resetForm(); }}
-                filters={{ dcNumber: viewDcNo }}
-                onFilterChange={(f) => setViewDcNo(f.dcNumber || viewDcNo)}
-              >
-              <DeliveryChallan key={viewDcNo} dcNumber={viewDcNo} />
+                filters={{ QtNumber: viewDcNo, dcNumber: viewDcNo }}
+                onFilterChange={(f) => setViewDcNo(f.QtNumber || f.dcNumber || viewDcNo)}
+            >
+                <DeliveryChallan key={viewDcNo} dcNumber={viewDcNo} />
             </SaleswindowModel>
-          
-{/* Minimized bar */}
+
+            {/* Minimized bar */}
             {showDcFormat && dcModalMinimized && (
                 <div className="fixed bottom-0 left-0 right-0 h-10 bg-[#e0e0e0] border-t border-gray-400 flex items-center px-4 z-[99999] shadow-[0_-2px_10px_rgba(0,0,0,0.1)]">
                     <button
@@ -480,7 +488,7 @@ const SalesDCEntry = () => {
                 </div>
             )}
 
-              {/* Back */}
+            {/* Back */}
             <button
                 onClick={() => navigate(-1)}
                 className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl bg-white hover:bg-gray-50 text-[14px] font-semibold w-fit mb-6 shadow-sm"
@@ -506,21 +514,21 @@ const SalesDCEntry = () => {
                             NEW
                         </button>
                         <button
-                            onClick={saveDC}
+                            onClick={handleSaveDC}
                             disabled={busy.save}
                             className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-green-600 hover:text-white transition-colors disabled:opacity-40"
                         >
                             {busy.save ? "Saving…" : "SAVE"}
                         </button>
                         <button
-                            onClick={updateDC}
+                            onClick={handleUpdateDC}
                             disabled={busy.save}
                             className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-blue-600 hover:text-white transition-colors disabled:opacity-40"
                         >
                             UPDATE
                         </button>
                         <button
-                            onClick={deleteDC}
+                            onClick={handleDeleteDC}
                             className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-red-600 hover:text-white transition-colors"
                         >
                             DELETE
@@ -595,7 +603,7 @@ const SalesDCEntry = () => {
                             />
                         </div>
 
-                       
+
                     </div>
                 </div>
 
@@ -605,11 +613,11 @@ const SalesDCEntry = () => {
                 <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-5 border border-gray-100 mb-5">
                     <div className="grid grid-cols-4 gap-8">
                         <div className="relative" ref={clientDcRef}>
-                            <label className={labelCls}>Client DC Number <span className="text-red-500">*</span></label>
+                            <label className={labelCls}>Order Number <span className="text-red-500">*</span></label>
                             <input
                                 type="text"
-                                value={form.client_dc_no}
-                                onChange={(e) => setForm((p) => ({ ...p, client_dc_no: e.target.value }))}
+                                value={form.order_no}
+                                onChange={(e) => setForm((p) => ({ ...p, order_no: e.target.value }))}
                                 className={`${inputCls} flex justify-between items-center cursor-pointer select-none min-h-[43px]`}
                                 placeholder="Enter client DC number"
                             />
@@ -617,19 +625,16 @@ const SalesDCEntry = () => {
 
                         {/* Client DC Date — auto-filled to today (editable) */}
                         <div>
-                            <label className={labelCls}>
-                                Client DC Date
-                                <span className="ml-1 text-[10px] text-blue-500 font-black normal-case">Auto</span>
-                            </label>
+                            <label className={labelCls}>Order Date</label>
                             <input
                                 type="date"
-                                value={form.client_dc_date || TODAY}
-                                onChange={(e) => setForm((p) => ({ ...p, client_dc_date: e.target.value }))}
+                                value={form.order_date}
+                                onChange={(e) => setForm((p) => ({ ...p, order_date: e.target.value }))}
                                 className={inputCls}
                             />
                         </div>
 
-                         {/* Despatch Through — custom dropdown */}
+                        {/* Despatch Through — custom dropdown */}
                         <div className="relative" ref={despatchRef}>
                             <label className={labelCls}>Despatch Through</label>
                             <div
@@ -652,9 +657,8 @@ const SalesDCEntry = () => {
                                                 setForm((p) => ({ ...p, despatch_through: d }));
                                                 closeAll("despatch");
                                             }}
-                                            className={`px-4 py-2.5 hover:bg-blue-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0 ${
-                                                form.despatch_through === d ? "bg-blue-50 text-blue-700" : ""
-                                            }`}
+                                            className={`px-4 py-2.5 hover:bg-blue-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0 ${form.despatch_through === d ? "bg-blue-50 text-blue-700" : ""
+                                                }`}
                                         >
                                             {d}
                                         </div>
@@ -663,52 +667,13 @@ const SalesDCEntry = () => {
                             )}
                         </div>
 
-                        {/* Order No — manual entry */}
-                        {/* <div>
-                            <label className={labelCls}>Order No</label>
-                            <input
-                                type="text"
-                                value={form.order_no}
-                                onChange={(e) => setForm((p) => ({ ...p, order_no: e.target.value }))}
-                                className={inputCls}
-                                placeholder="Enter order number"
-                            />
-                        </div> */}
-
-                        {/* Order Date — manual entry */}
-                        {/* <div>
-                            <label className={labelCls}>Order Date</label>
-                            <input
-                                type="date"
-                                value={form.order_date}
-                                onChange={(e) => setForm((p) => ({ ...p, order_date: e.target.value }))}
-                                className={inputCls}
-                            />
-                        </div> */}
                     </div>
                 </div>
 
                 {/* ═══════════════════════════════════════════════════════════
-                    Status + Order Type
+                    Order Type
                 ═══════════════════════════════════════════════════════════ */}
                 <div className="flex gap-16 pb-6 mb-5 border-b border-gray-100">
-                    <div>
-                        <label className={labelCls}>Status</label>
-                        <div className="flex items-center gap-6 h-[38px]">
-                            {["Service", "Re Service"].map((s) => (
-                                <label key={s} className="flex items-center gap-2 cursor-pointer">
-                                    <input
-                                        type="radio"
-                                        checked={form.status === s}
-                                        onChange={() => setForm((p) => ({ ...p, status: s }))}
-                                        className="w-4 h-4 accent-black"
-                                    />
-                                    <span className="text-[12px] font-bold text-gray-700 uppercase">{s}</span>
-                                </label>
-                            ))}
-                        </div>
-                    </div>
-
                     <div>
                         <label className={labelCls}>Order Type</label>
                         <div className="flex items-center gap-6 h-[38px]">
@@ -753,15 +718,12 @@ const SalesDCEntry = () => {
                                 value={prodSearch}
                                 onChange={(e) => {
                                     setProdSearch(e.target.value);
+                                    setItem((prev) => ({ ...prev, item_name: e.target.value }));
                                     openDrop("product");
-                                    fetchProducts(form.ordertype, e.target.value);
                                 }}
-                                onFocus={() => {
-                                    openDrop("product");
-                                    fetchProducts(form.ordertype, prodSearch);
-                                }}
-                                className={`${inputCls} bg-gray-50/50`}
-                                placeholder={`Search ${form.ordertype || ''} products…`}
+                                onFocus={() => openDrop("product")}
+                                placeholder="Type to search…"
+                                className={inputCls}
                             />
                             {open.product && filteredProducts.length > 0 && (
                                 <div className={dropdownCls}>
@@ -774,10 +736,12 @@ const SalesDCEntry = () => {
                                             <div className="text-[13px] font-bold text-gray-900">{p.item_name}</div>
                                             <div className="flex gap-4 text-[11px] text-gray-400 mt-0.5">
                                                 {p.hsn_number && <span>HSN: {p.hsn_number}</span>}
-                                                <span className={p.pending_qty > 0 ? "text-green-600 font-semibold" : "text-red-500 font-semibold"}>
-                                                    Pending: {p.pending_qty}
-                                                </span>
-                                                <span>{p.uom}</span>
+                                                {p.pending_qty != null && (
+                                                    <span className={p.pending_qty > 0 ? "text-green-600 font-semibold" : "text-red-500 font-semibold"}>
+                                                        Pending: {p.pending_qty}
+                                                    </span>
+                                                )}
+                                                {p.uom && <span>{p.uom}</span>}
                                             </div>
                                         </div>
                                     ))}
@@ -791,14 +755,9 @@ const SalesDCEntry = () => {
                         </div>
 
                         {/* Quantity */}
-                        <div>
+                        <div className="col-span-1">
                             <label className={labelCls}>
                                 Qty
-                                {item.pending_qty !== "" && (
-                                    <span className="ml-1.5 text-[10px] text-orange-500 font-black normal-case">
-                                        Max: {item.pending_qty}
-                                    </span>
-                                )}
                             </label>
                             <input
                                 type="number"
@@ -810,123 +769,78 @@ const SalesDCEntry = () => {
                             />
                         </div>
 
-                        {/* HSN — auto-filled and editable */}
-                        <div>
-                            <label className={labelCls}>
-                                HSN
-                                {item.item_name && <span className="ml-1 text-[10px] text-blue-500 font-black normal-case">Auto / editable</span>}
-                            </label>
+                        {/* HSN */}
+                        <div className="col-span-1">
+                            <label className={labelCls}>HSN</label>
                             <input
                                 type="text"
                                 value={item.hsn}
                                 onChange={(e) => setItem((p) => ({ ...p, hsn: e.target.value }))}
-                                className={`${inputCls} bg-gray-50/50`}
-                                placeholder="HSN code"
+                                className={inputCls}
                             />
                         </div>
 
                         {/* Serial No */}
-                        <div>
+                        <div className="col-span-1">
                             <label className={labelCls}>Serial No</label>
                             <input
                                 type="text"
                                 value={item.sl_no}
                                 onChange={(e) => setItem((p) => ({ ...p, sl_no: e.target.value }))}
-                                placeholder="Optional"
-                                className={`${inputCls} bg-gray-50/50`}
+                                className={inputCls}
                             />
                         </div>
 
-                        {/* UOM — auto-filled, still editable */}
-                        <div className="relative" ref={uomRef}>
-                            <label className={labelCls}>
-                                UOM
-                                {item.item_name && <span className="ml-1 text-[10px] text-blue-500 font-black normal-case">Auto</span>}
-                            </label>
+                        {/* UOM */}
+                        <div className="col-span-1">
+                            <label className={labelCls}>UOM</label>
+                            <input
+                                type="text"
+                                value={item.uom}
+                                onChange={(e) => setItem((p) => ({ ...p, uom: e.target.value }))}
+                                className={inputCls}
+                            />
+                        </div>
+
+                        {/* Remarks */}
+                        <div className="col-span-1 relative" ref={remarksRef}>
+                            <label className={labelCls}>Remarks</label>
                             <div
-                                onClick={() => setOpen((p) => ({ ...p, uom: !p.uom }))}
-                                className={`${inputCls} ${item.item_name ? "border-blue-100 bg-blue-50 text-blue-800" : "bg-gray-50/50"} flex justify-between items-center cursor-pointer`}
+                                onClick={() => setRemarksOpen((p) => !p)}
+                                className={`${inputCls} bg-gray-50/50 flex justify-between items-center cursor-pointer select-none min-h-[43px]`}
                             >
-                                <span>{item.uom}</span>
-                                <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
+                                <span className={item.remarks ? "text-black" : "text-gray-400"}>
+                                    {item.remarks || "Select"}
+                                </span>
                             </div>
-                            {open.uom && (
+                            {remarksOpen && (
                                 <div className={dropdownCls}>
-                                    {UOM_LIST.map((u) => (
+                                    {REMARKS_OPTIONS.map((remarks) => (
                                         <div
-                                            key={u}
-                                            onClick={() => { setItem((p) => ({ ...p, uom: u })); closeAll("uom"); }}
-                                            className="px-4 py-2 hover:bg-gray-50 cursor-pointer text-[13px] font-medium border-b border-gray-50 last:border-0"
+                                            key={remarks}
+                                            onClick={() => {
+                                                setItem((p) => ({ ...p, remarks }));
+                                                setRemarksOpen(false);
+                                            }}
+                                            className={`px-3 py-2 cursor-pointer hover:bg-blue-100 text-[13px] font-semibold border-b border-gray-50 last:border-0 ${item.remarks === remarks ? "bg-blue-50 text-blue-700" : ""}`}
                                         >
-                                            {u}
+                                            {remarks}
                                         </div>
                                     ))}
                                 </div>
                             )}
                         </div>
 
-                        {/* Price — auto-filled */}
-                      <div className="relative">
-                      <label className={labelCls}>
-                       Remarks
-                       {item.item_name && (
-                      <span className="ml-1 text-[10px] text-blue-500 font-black normal-case">
-                      Auto
-                      </span>
-                       )}
-                     </label>
-
-                     <input
-                      type="text"
-                       value={item.remarks || ""}
-                       onChange={(e) =>
-                       setItem((p) => ({
-                         ...p,
-                          remarks: e.target.value,
-                       }))
-                      }
-                   onFocus={() => setRemarksOpen(true)}
-                   placeholder="Select Remarks"
-                   className={`${inputCls} bg-gray-50/50`}
-                   />
-
-                   {remarksOpen && (
-                   <div className={dropdownCls}>
-                   {["Service", "Re Service"].map((remarks) => (
-                   <div
-                     key={remarks}
-                     onClick={() => {
-                        setItem((p) => ({
-                            ...p,
-                            remarks,
-                            service_status:
-                                remarks === "Service"
-                                    ? "Service"
-                                    : "Re Service",
-                        }));
-                        setRemarksOpen(false);
-                    }}
-                    className="px-3 py-2 cursor-pointer hover:bg-blue-100"
-                >
-                    {remarks}
-                </div>
-            ))}
-        </div>
-    )}
-</div>
-
                         {/* Add / Clear */}
-                        <div className="flex gap-2">
+                        <div className="col-span-1 flex gap-2">
                             <button
                                 onClick={handleAddItem}
-                                className="flex-1 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-[13px] font-bold transition-colors"
+                                className={`flex-1 py-2.5 text-white rounded-lg text-[13px] font-bold transition-colors ${editRowIndex >= 0 ? "bg-blue-600 hover:bg-blue-700" : "bg-green-600 hover:bg-green-700"}`}
                             >
-                                Add
+                                {editRowIndex >= 0 ? "Update" : "Add"}
                             </button>
                             <button
-                                onClick={() => { setItem(INIT_ITEM); setProdSearch(""); }}
+                                onClick={() => { setItem(INIT_ITEM); setProdSearch(""); setEditRowIndex(-1); }}
                                 className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-[13px] font-bold transition-colors"
                             >
                                 Clear
@@ -938,11 +852,11 @@ const SalesDCEntry = () => {
                 {/* ═══════════════════════════════════════════════════════════
                     Products Table
                 ═══════════════════════════════════════════════════════════ */}
-                <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm mt-2 min-h-[220px]">
+                <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm mt-2 h-[250px] overflow-y-auto">
                     <table className="w-full border-collapse">
-                        <thead>
+                        <thead className="sticky top-0 z-10 bg-gray-50">
                             <tr className="bg-gray-50 border-b border-gray-200">
-                                {["#", "Product", "Qty", "Pending Qty", "HSN", "Serial No", "UOM", "Price", ""].map((h, i) => (
+                                {["#", "Product", "Qty", "HSN", "Serial No", "UOM", "Remarks", "Actions"].map((h, i) => (
                                     <th
                                         key={i}
                                         className={`px-4 py-3 text-[11px] font-black text-gray-400 uppercase tracking-wide ${i === 0 ? "w-10 text-center" : i === 1 ? "text-left" : "text-center"
@@ -970,7 +884,7 @@ const SalesDCEntry = () => {
                                 rows.map((r, idx) => (
                                     <tr
                                         key={idx}
-                                        className="border-b border-gray-100 hover:bg-gray-50/70 transition-colors"
+                                        className={`border-b border-gray-100 transition-colors ${editRowIndex === idx ? "bg-blue-50 border-blue-200" : "hover:bg-gray-50/70"}`}
                                     >
                                         <td className="px-4 py-3 text-[12px] font-semibold text-gray-400 text-center">
                                             {idx + 1}
@@ -981,14 +895,6 @@ const SalesDCEntry = () => {
                                         <td className="px-4 py-3 text-[13px] font-semibold text-gray-800 text-center">
                                             {r.quantity}
                                         </td>
-                                        <td className="px-4 py-3 text-center">
-                                            <span className={`text-[12px] font-bold px-2 py-0.5 rounded-full ${parseFloat(r.pending_qty) > 0
-                                                ? "bg-orange-50 text-orange-600"
-                                                : "bg-gray-100 text-gray-400"
-                                                }`}>
-                                                {r.pending_qty || "—"}
-                                            </span>
-                                        </td>
                                         <td className="px-4 py-3 text-[13px] text-gray-600 text-center">{r.hsn || "—"}</td>
                                         <td className="px-4 py-3 text-[13px] text-gray-600 text-center">{r.sl_no || "—"}</td>
                                         <td className="px-4 py-3 text-[13px] text-gray-600 text-center uppercase">{r.uom}</td>
@@ -996,22 +902,39 @@ const SalesDCEntry = () => {
                                             {r.remarks}
                                         </td>
                                         <td className="px-4 py-3 text-center">
-                                            <button
-                                                onClick={() => handleRemoveRow(idx)}
-                                                className="text-red-400 hover:text-red-600 text-[12px] font-bold transition-colors"
-                                            >
-                                                Remove
-                                            </button>
+                                            <div className="flex justify-center gap-3">
+                                                <SquarePen
+                                                    onClick={() => handleEditRow(idx)}
+                                                    className="w-4 h-4 text-blue-600 cursor-pointer hover:text-blue-800"
+                                                />
+                                                <Trash2
+                                                    onClick={() => handleRemoveRow(idx)}
+                                                    className="w-4 h-4 text-red-500 cursor-pointer hover:text-red-700"
+                                                />
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
                             )}
                         </tbody>
+                        <tfoot className="sticky bottom-0 z-10 ">
+                            <tr>
+                                <td colSpan={9} className="px-4 py-3">
+                                    <div className="flex items-center ml-[22%] gap-2">
+                                        <span className="text-[13px] font-black text-gray-600 uppercase tracking-wide">TOTAL QTY</span>
+                                        <span className="text-[13px] font-black text-gray-500">:</span>
+                                        <span className="text-[18px] font-black text-blue-700">
+                                            {rows.reduce((s, r) => s + Number(r.quantity || 0), 0)}
+                                        </span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
 
                 {/* Load Existing Dc */}
-                
+
                 <div className="mt-10 pt-6 border-t border-gray-100">
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">
                         Load / Edit Existing DC
@@ -1032,18 +955,14 @@ const SalesDCEntry = () => {
                                     searchLoadDc(loadDcSearch);
                                 }}
                                 className={`${inputCls} w-52`}
-                                placeholder="AT/SDC-001"
+                                placeholder="AT-DC-001"
                             />
                             {open.loadDc && dcSearchList.length > 0 && (
                                 <div className="absolute top-full left-0 w-52 mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 max-h-40 overflow-y-auto">
                                     {dcSearchList.map((d) => (
                                         <div
                                             key={d.dc_no}
-                                            onClick={() => {
-                                                setLoadDcSearch(d.dc_no);
-                                                loadExistingDC(d.dc_no);
-                                                closeAll("loadDc");
-                                            }}
+                                            onClick={() => { setLoadDcSearch(d.dc_no); closeAll("loadDc"); requirePassword(() => loadExistingDC(d.dc_no)); }}
                                             className="px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0"
                                         >
                                             {d.dc_no}
@@ -1055,6 +974,10 @@ const SalesDCEntry = () => {
                     </div>
                 </div>
             </div>
+
+            {showPasswordModal && (
+                <Addpassword onSuccess={handlePasswordSuccess} onClose={handlePasswordCancel} />
+            )}
         </div>
     );
 };

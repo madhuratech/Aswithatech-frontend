@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import logo from "../../../asset/Logo.jpeg";
 import { toWords } from "number-to-words";
+import { QuotationAddressBlock } from "../../../utils/AddressBlock";
 
 const POLayout = ({ poNumber }) => {
   const [purchase, setPurchase] = useState({
@@ -32,21 +32,16 @@ const POLayout = ({ poNumber }) => {
     fetchData();
   }, [poNumber]);
 
-  const gst = Number(purchase?.cgst || 0) + Number(purchase?.sgst || 0);
 
-  return (
-    <>
-      <style>{`
-        @page { size: A4; margin: 5mm; }
-        @media print {
-          html, body { margin: 0 !important; padding: 0 !important; background: white !important; }
-          table { border-collapse: collapse !important; }
-          tr, td, th { page-break-inside: avoid !important; }
-          .print-wrapper { padding: 0 !important; display: block !important; overflow: visible !important; }
-          .print-container { width: 190mm !important; min-height: 270mm !important; max-height: 270mm !important; overflow: hidden !important; box-shadow: none !important; }
-        }
-      `}</style>
-      <div className="print-wrapper w-full flex justify-center items-start py-6 overflow-auto">
+  const renderPOPage = (copyLabel) => {
+    return (
+      <div className="print-copy-wrapper py-4 print:py-0 flex flex-col items-center animate-in fade-in duration-200">
+        {/* TOP BAR / LABEL */}
+        <div className="w-[190mm] text-right px-4 pt-1 flex-shrink-0">
+          <span className="text-[13px] font-bold uppercase tracking-wider">
+            {copyLabel}
+          </span>
+        </div>
         <div className="print-container w-[190mm] border-2 border-black bg-white relative shadow-lg overflow-hidden">
 
           {/* HEADER */}
@@ -70,19 +65,20 @@ const POLayout = ({ poNumber }) => {
           </div>
 
           {/* DETAILS SECTION */}
-          <div className="flex border-b border-black">
+          <div className="flex border-b-2 border-black">
             {/* Left - To Section */}
             <div className="w-[60%] p-4 min-h-[140px] border-r-2 border-black">
-              <h2 className="text-[15px] font-bold mb-1">To:</h2>
-              <h2 className="text-[14px] font-bold uppercase mb-1">
-                {purchase?.client?.customer_name}
-              </h2>
-              <div className="text-[12px] leading-5 font-medium max-w-[350px]">
-                <p>{purchase?.client?.address}</p>
-                <p>{purchase?.client?.state} - {purchase?.client?.pincode}</p>
-                <p className="mt-2 font-bold">Ph: {purchase?.client?.phone}</p>
-                <p className="font-bold">GSTIN : {purchase?.client?.gst_number}</p>
-              </div>
+              <QuotationAddressBlock
+                name={purchase?.client?.customer_name}
+                address={purchase?.client?.address}
+                state={purchase?.client?.state}
+                pincode={purchase?.client?.pincode}
+                phone={purchase?.client?.phone}
+                gst={purchase?.client?.gst_number}
+                stateCode={purchase?.client?.state_code || ""}
+                labelClassName="text-[15px] font-bold mb-1 uppercase"
+                nameClassName="text-[14px] font-bold uppercase mb-1"
+              />
             </div>
 
             {/* Right - PO Details */}
@@ -106,7 +102,7 @@ const POLayout = ({ poNumber }) => {
           </div>
 
           {/* MESSAGE SECTION */}
-          <div className="p-4 border-b border-black">
+          <div className="p-4 border-b-2 border-black">
             <p className="text-[13px] font-bold mb-1">Dear Sir / Madam,</p>
             <p className="text-[12px] leading-5 indent-16 text-justify">
               Kindly arrange to dispatch the under mentioned quality items at the earliest possible in accordance with our instructions. Please mention our PO No & Date in your Bill or Correspondence. Kindly acknowledge this order immediately.
@@ -114,11 +110,10 @@ const POLayout = ({ poNumber }) => {
           </div>
 
           {/* TABLE SECTION — no flex/flex-col; fixed mm height for print stability */}
-          <div style={{ minHeight: "90mm",overflow: "visible"}}
->
+          <div style={{ minHeight: "90mm", overflow: "visible" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
               <thead>
-                <tr className="bg-gray-50 border-b border-black">
+                <tr className="bg-gray-50 border-b-2 border-black">
                   <th className="border-r-2 border-black p-2 w-[5%] text-center text-[12px]">S.No</th>
                   <th className="border-r-2 border-black p-2 w-[55%] text-center text-[12px]">Description of Goods</th>
                   <th className="border-r-2 border-black p-2 w-[10%] text-center text-[12px]">Quantity</th>
@@ -129,20 +124,20 @@ const POLayout = ({ poNumber }) => {
               <tbody>
                 {purchase.items.map((item, index) => (
                   <tr key={index}>
-                    <td className="border-r border-black p-2 text-center text-[12px]">{index + 1}</td>
-                    <td className="border-r border-black px-3 py-2 text-[12px] font-medium">{item.item_name}</td>
-                    <td className="border-r border-black p-2 text-center text-[12px]">{item.quantity}</td>
-                    <td className="border-r border-black p-2 text-right text-[12px] pr-4">{Number(item.price).toFixed(2)}</td>
+                    <td className="border-r-2 border-black p-2 text-center text-[12px]">{index + 1}</td>
+                    <td className="border-r-2 border-black px-3 py-2 text-[12px] font-medium">{item.item_name}{item.serial_no ? ` (${item.serial_no})` : ""}</td>
+                    <td className="border-r-2 border-black p-2 text-center text-[12px]">{item.quantity}</td>
+                    <td className="border-r-2 border-black p-2 text-right text-[12px] pr-4">{Number(item.price).toFixed(2)}</td>
                     <td className="p-2 text-right text-[12px] font-bold pr-4">{Number(item.amount).toFixed(2)}</td>
                   </tr>
                 ))}
                 {/* Filler rows — &nbsp; prevents cell height collapse during print */}
                 {Array.from({ length: Math.max(0, 12 - purchase.items.length) }).map((_, i) => (
                   <tr key={`filler-${i}`} style={{ height: "28px" }}>
-                    <td className="border-r border-black" style={{ height: "28px" }}>&nbsp;</td>
-                    <td className="border-r border-black"></td>
-                    <td className="border-r border-black"></td>
-                    <td className="border-r border-black"></td>
+                    <td className="border-r-2 border-black" style={{ height: "28px" }}>&nbsp;</td>
+                    <td className="border-r-2 border-black"></td>
+                    <td className="border-r-2 border-black"></td>
+                    <td className="border-r-2 border-black"></td>
                     <td></td>
                   </tr>
                 ))}
@@ -152,18 +147,36 @@ const POLayout = ({ poNumber }) => {
 
           {/* SUMMARY SECTION */}
           <div className="border-t-2 border-black flex">
-            <div className="w-[70%] border-r-2 border-black"></div>
+            <div className="w-[70%] border-r-2 border-black">   </div>
             <div className="w-[30%]">
-              <div className="flex border-b border-black">
-                <div className="w-[50%] p-2 text-[12px] font-bold border-r border-black">SUB Total</div>
-                <div className="w-[50%] p-2 text-[12px] font-bold text-right pr-4">{Number(purchase.subtotal || 0).toFixed(2)}</div>
-              </div>
-              <div className="flex border-b border-black">
-                <div className="w-[50%] p-2 text-[12px] font-bold border-r border-black">GST @18.00%</div>
-                <div className="w-[50%] p-2 text-[12px] font-bold text-right pr-4">{Number(gst).toFixed(2)}</div>
-              </div>
+              {(() => {
+                const sub = Number(purchase.subtotal || 0);
+                const disc = Number(purchase.discount || 0);
+                const trans = Number(purchase.transport || 0);
+                const taxable = sub - disc + trans;
+                const cgstAmt = Number(purchase.cgst || 0);
+                const sgstAmt = Number(purchase.sgst || 0);
+                const igstAmt = Number(purchase.igst || 0);
+                const cgstPct = taxable > 0 ? Math.round((cgstAmt / taxable) * 100) : 0;
+                const sgstPct = taxable > 0 ? Math.round((sgstAmt / taxable) * 100) : 0;
+                const igstPct = taxable > 0 ? Math.round((igstAmt / taxable) * 100) : 0;
+                const rows = [
+                  { label: "SUB TOTAL",          val: sub },
+                  { label: "TAXABLE",            val: taxable },
+                  cgstAmt > 0 && { label: `CGST @${cgstPct}%`, val: cgstAmt },
+                  sgstAmt > 0 && { label: `SGST @${sgstPct}%`, val: sgstAmt },
+                  igstAmt > 0 && { label: `IGST @${igstPct}%`, val: igstAmt },
+                  Number(purchase.round_off || 0) !== 0 && { label: "Round Off", val: purchase.round_off },
+                ].filter(Boolean);
+                return rows.map((row, idx) => (
+                  <div key={idx} className="flex  border-black">
+                    <div className="w-[50%] p-2 text-[12px] font-bold border-r-2 border-black">{row.label}</div>
+                    <div className="w-[50%] p-2 text-[12px] font-bold text-right pr-4">{Number(row.val).toFixed(2)}</div>
+                  </div>
+                ));
+              })()}
               <div className="flex bg-gray-50">
-                <div className="w-[50%] p-2 text-[13px] font-extrabold border-r border-black">NET TOTAL</div>
+                <div className="w-[50%] p-2 text-[13px] font-extrabold border-r-2 border-black">NET TOTAL</div>
                 <div className="w-[50%] p-2 text-[13px] font-extrabold text-right pr-4">{Number(purchase.grandTotal || 0).toFixed(2)}</div>
               </div>
             </div>
@@ -179,11 +192,44 @@ const POLayout = ({ poNumber }) => {
           {/* FOOTER SECTION */}
           <div className="border-t-2 border-black px-4 pt-2 pb-1 relative">
             <div className="right-8 text-right">
-              <h2 className="text-[14px] font-bold mb-4">For ASWITHA TECH</h2>
-              <h3 className="text-[13px] font-bold border-t border-black pt-1 inline-block">Authorized Signatory</h3>
+              <h2 className="text-[14px] font-bold text-red-500 mb-4">For ASWITHA TECH</h2>
+              <h3 className="text-[13px] font-bold  border-black pt-1 inline-block">Authorized Signatory</h3>
             </div>
           </div>
         </div>
+      </div>
+    );
+  };
+
+  return (
+    <>
+      <style>{`
+        @page { size: A4; margin: 5mm; }
+        @media print {
+          html, body { margin: 0 !important; padding: 0 !important; background: white !important; }
+          table { border-collapse: collapse !important; }
+          tr, td, th { page-break-inside: avoid !important; }
+          .print-wrapper { padding: 0 !important; display: block !important; overflow: visible !important; }
+          .print-copy-wrapper {
+            display: block !important;
+            width: 210mm !important;
+            height: auto !important;
+            max-height: none !important;
+            overflow: visible !important;
+            padding: 0 !important;
+            page-break-after: always !important;
+            break-after: page !important;
+          }
+          .print-copy-wrapper:last-child {
+            page-break-after: auto !important;
+            break-after: auto !important;
+          }
+          .print-container { width: 190mm !important; min-height: 270mm !important; max-height: 270mm !important; overflow: hidden !important; box-shadow: none !important; }
+        }
+      `}</style>
+      <div className="print-wrapper w-full flex flex-col items-center py-6 overflow-auto">
+        {renderPOPage("[ORIGINAL FOR RECIPIENT]")}
+        {renderPOPage("[DUPLICATE COPY]")}
       </div>
     </>
   );

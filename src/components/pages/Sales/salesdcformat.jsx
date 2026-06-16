@@ -1,20 +1,22 @@
 import React, { useEffect, useState } from "react";
-import logo from "../../../asset/Logo.jpeg";
+import { DcAddressBlock } from "../../../utils/AddressBlock";
+
+const fmtQty = (val) => {
+  const n = Number(val);
+  if (isNaN(n)) return val || "";
+  return n % 1 === 0 ? String(Math.round(n)) : String(n);
+};
 
 const SalesDCFormat = ({ dcNumber }) => {
-  const [data, setData] = useState({
-    items: [],
-    client: {},
-  });
+  const [data, setData] = useState({ items: [], client: {} });
 
   useEffect(() => {
     if (!dcNumber || dcNumber === "") return;
-
     const fetchData = async () => {
       try {
         const res = await fetch(`http://localhost:3000/api/salesdc/full/${encodeURIComponent(dcNumber)}`);
-        const data = await res.json();
-        setData(data);
+        const result = await res.json();
+        setData(result);
       } catch (error) {
         console.error("Fetch Error in SalesDCFormat", error);
       }
@@ -22,26 +24,43 @@ const SalesDCFormat = ({ dcNumber }) => {
     fetchData();
   }, [dcNumber]);
 
-  return (
-    <div className="bg-white w-full py-4 flex justify-center items-start">
-      <div className="w-[200mm] border-2 border-black bg-white relative flex flex-col"
-        style={{ minHeight: "190mm", boxSizing: "border-box", overflow: "hidden" }}
-      >
-        <div className="flex justify-between items-center px-8 py-3 font-bold text-[18px]">
-          <h1>DELIVERY CHALLAN</h1>
-          <h1>(ORIGINAL COPY)</h1>
-        </div>
+  const partyDcNos = data?.aggregated_order_no
+    ? [...new Set(data.aggregated_order_no.split(",").map(s => s.trim()).filter(Boolean))].join(", ")
+    : "";
 
+  const partyDcDates = data?.aggregated_order_date
+    ? [...new Set(
+        data.aggregated_order_date
+          .split(",")
+          .map(date => new Date(date.trim()).toLocaleDateString("en-GB"))
+          .filter(Boolean)
+      )].join(", ")
+    : "";
+
+
+  const renderChallan = (copyLabel) => (
+    <div className="w-[200mm] flex flex-col items-center">
+      {/* Title row */}
+      <div className="w-[200mm] relative flex justify-center items-center py-1 font-bold text-[15px]">
+        <h1>DELIVERY CHALLAN</h1>
+        <h1 className="absolute right-0 font-bold uppercase">{copyLabel}</h1>
+      </div>
+
+      {/* Challan box */}
+      <div
+        className="w-[200mm] border-2 border-black bg-white relative flex flex-col"
+        style={{ boxSizing: "border-box", overflow: "hidden" }}
+      >
         {/* Company Section */}
-        <div className="flex flex-col justify-center items-center text-center border-y-2 border-black p-2 h-[120px]">
-          <h1 className="text-red-600 text-[26px] font-extrabold mb-0.5 leading-tight uppercase tracking-tight">
+        <div className="flex flex-col justify-center items-center text-center border-b-2 border-black px-2 py-1 h-[100px]">
+          <h1 className="text-red-600 text-[21px] font-extrabold leading-tight uppercase tracking-tight">
             ASWITHA TECH
           </h1>
-          <div className="text-[11px] font-bold space-y-0.5">
+          <div className="text-[12px] font-bold">
             <p>17, Abirami Nagar, Avarampalayam Road,</p>
             <p>K.R. Puram, Ganapathi, Coimbatore - 641006</p>
             <p>Email : aswithatech2020@gmail.com</p>
-            <div className="flex justify-center items-center gap-4 mt-0.5 text-[10px]">
+            <div className="flex justify-center items-center gap-4 text-[11px] mt-0.5">
               <span>GSTIN : 33GYLPS7134C1Z9</span>
               <span>•</span>
               <div className="flex items-center gap-1">
@@ -55,111 +74,123 @@ const SalesDCFormat = ({ dcNumber }) => {
         {/* Customer & DC Details */}
         <div className="flex border-b-2 border-black">
           {/* Left - Customer */}
-          <div className="w-[60%] p-4 min-h-[140px] border-r-2 border-black">
-            <h2 className="text-[15px] font-bold mb-2 uppercase">
-              TO: M/S.{data?.customer_name}
-            </h2>
-            <div className="text-[13px] leading-6 font-medium uppercase">
-              <p>{data?.client?.address || ""}</p>
-              <p>{data?.client?.state || ""} {data?.client?.pincode || ""}</p>
-              <p>PH : {data?.client?.phone || ""}</p>
-              <p>Email : {data?.client?.email || ""}</p>
-            </div>
-            <div className="flex gap-10 mt-4">
-              <h3 className="text-[13px] font-bold">
-                GSTIN : {data?.client?.gst_number || ""}
-              </h3>
-              <h3 className="text-[13px] font-bold uppercase">
-                ST CODE : {data?.client?.state_code || ""}
-              </h3>
-            </div>
+          <div className="w-[60%] px-3 py-2 min-h-[88px] border-r-2 border-black">
+            <DcAddressBlock
+              name={data?.customer_name}
+              address={data?.client?.address}
+              state={data?.client?.state}
+              pincode={data?.client?.pincode}
+              phone={data?.client?.phone}
+              gst={data?.client?.gst_number}
+              stateCode={data?.client?.state_code}
+            />
           </div>
 
           {/* Right - DC Details */}
-          <div className="w-[40%] p-4 flex flex-col space-y-2">
+          <div className="w-[40%] px-3 py-2 flex flex-col space-y-0.5 leading-5">
             {[
-              { label: "DC No", value: data?.dc_no },
-              { label: "Date", value: data?.dc_date ? new Date(data.dc_date).toLocaleDateString('en-GB') : "" },
-              { label: "Your Dc No", value: data?.order_no || "" },
-              { label: "Your Dc Date", value: data?.order_date ? new Date(data.order_date).toLocaleDateString('en-GB') : "" },
-              { label: "Despatch", value: data?.despatch_through || "" }
+              { label: "DC No",        value: data?.dc_no },
+              { label: "DC Date",      value: data?.dc_date ? new Date(data.dc_date).toLocaleDateString("en-GB") : "" },
+              { label: "Your DC No",   value: partyDcNos },
+              { label: "Your DC Date", value: partyDcDates },
+              { label: "Despatch",     value: data?.despatch_through || "" },
             ].map((row, i) => (
-              <div key={i} className="flex text-[13px] font-bold">
-                <div className="w-[100px] uppercase">{row.label}</div>
-                <div className="w-[20px]">:</div>
+              <div key={i} className="flex text-[11px] font-bold">
+                <div className="w-[90px] uppercase">{row.label}</div>
+                <div className="w-[15px]">:</div>
                 <div className="flex-1 uppercase">{row.value}</div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Table — flex-1 so it stretches to fill remaining page height */}
-        <div className="flex-1 flex flex-col">
-          <table className="w-full border-collapse flex-1" style={{ display: "flex", flexDirection: "column" }}>
-            <thead style={{ display: "table", width: "100%", tableLayout: "fixed" }}>
+        {/* Table */}
+        <div className="flex-1">
+          <table className="w-full border-collapse" style={{ tableLayout: "fixed" }}>
+            <colgroup>
+              <col style={{ width: "8%" }} />
+              <col style={{ width: "35%" }} />
+              <col style={{ width: "13%" }} />
+              <col style={{ width: "10%" }} />
+              <col style={{ width: "20%" }} />
+            </colgroup>
+            <thead>
               <tr className="bg-gray-50">
-                <th className="border-r-2 border-b-2 border-black p-2 w-[8%] text-center text-[13px] font-bold uppercase">SNO</th>
-                <th className="border-r-2 border-b-2 border-black p-2 w-[47%] text-center text-[13px] font-bold uppercase">PARTICULARS</th>
-                <th className="border-r-2 border-b-2 border-black p-2 w-[15%] text-center text-[13px] font-bold uppercase">HSN</th>
-                <th className="border-r-2 border-b-2 border-black p-2 w-[10%] text-center text-[13px] font-bold uppercase">QTY</th>
-                <th className="border-b-2 border-black p-2 w-[20%] text-center text-[13px] font-bold uppercase">REMARKS</th>
+                <th className="border-r-2 border-b-2 border-black p-1 text-center text-[11px] font-bold uppercase">SNO</th>
+                <th className="border-r-2 border-b-2 border-black p-1 text-center text-[11px] font-bold uppercase">PARTICULARS</th>
+                <th className="border-r-2 border-b-2 border-black p-1 text-center text-[11px] font-bold uppercase">HSN</th>
+                <th className="border-r-2 border-b-2 border-black p-1 text-center text-[11px] font-bold uppercase">QTY</th>
+                <th className="border-b-2 border-black p-1 text-center text-[11px] font-bold uppercase">REMARKS</th>
               </tr>
             </thead>
-            <tbody style={{ display: "table", width: "100%", tableLayout: "fixed", flex: 1 }}>
+            <tbody>
               {data?.items?.map((item, index) => (
-                <tr key={index} className="min-h-[40px]">
-                  <td className="border-r-2 border-black p-2 text-center text-[13px] font-medium w-[8%]">
-                    {index + 1}
-                  </td>
-                  <td className="border-r-2 border-black px-3 py-2 text-[13px] font-bold uppercase w-[47%]">
-                    {item.item_name}
-                  </td>
-                  <td className="border-r-2 border-black p-2 text-center text-[13px] w-[15%]">
-                    {item.hsn}
-                  </td>
-                  <td className="border-r-2 border-black p-2 text-center text-[13px] w-[10%]">
-                    {item.quantity}
-                  </td>
-                  <td className="border-black px-3 py-2 text-[13px] uppercase w-[20%]">
-                     {item.remarks || data.status}
-                  </td>
+                <tr key={index}>
+                  <td className="border-r-2 border-black p-1 text-center text-[11px] font-medium">{index + 1}</td>
+                  <td className="border-r-2 border-black px-2 py-1 text-[11px] font-bold uppercase">{item.item_name}{item.sl_no || ""}</td>
+                  <td className="border-r-2 border-black p-1 text-center text-[11px]">{item.hsn}</td>
+                  <td className="border-r-2 border-black p-1 text-center text-[11px]">{fmtQty(item.quantity)}</td>
+                  <td className="border-black px-2 py-1 text-[11px] uppercase text-center">{item.remarks || ""}</td>
                 </tr>
               ))}
-              {/* Filler row — stretches to fill remaining table space so border-r covers fully */}
-              <tr style={{ height: "100%" }}>
-                <td className="border-r-2 border-black w-[8%]"></td>
-                <td className="border-r-2 border-black w-[47%]"></td>
-                <td className="border-r-2 border-black w-[15%]"></td>
-                <td className="border-r-2 border-black w-[10%]"></td>
-                <td className="w-[20%]"></td>
+              {/* Filler row */}
+              <tr style={{ height: "2px" }}>
+                <td className="border-r-2 border-black"></td>
+                <td className="border-r-2 border-black"></td>
+                <td className="border-r-2 border-black"></td>
+                <td className="border-r-2 border-black"></td>
+                <td></td>
               </tr>
               {/* Total row */}
               <tr>
-                <td className="border-r-2 border-t-2 border-b-2 border-black w-[8%]"></td>
-                <td className="border-r-2 border-t-2 border-b-2 border-black text-center font-bold text-[18px] w-[47%]"></td>
-                <td className="border-r-2 border-t-2 border-b-2 border-black text-center font-bold text-[18px] w-[15%]">
+                <td className=" border-t-2 border-b-2 border-black"></td>
+                <td className=" border-t-2 border-b-2 border-black"></td>
+                <td className=" border-t-2 border-b-2 border-black text-center font-bold text-[11px] py-1 uppercase">TOTAL QTY</td>
+                <td className=" border-t-2 border-b-2 border-black text-center font-bold text-[15px] py-1">
                   {data?.items?.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0) || 0}
                 </td>
-                <td className="border-r-2 border-t-2 border-b-2 border-black w-[10%]"></td>
-                <td className="border-t-2 border-b-2 border-black w-[20%]"></td>
+                <td className="border-t-2 border-b-2 border-black"></td>
               </tr>
             </tbody>
           </table>
         </div>
 
         {/* Footer */}
-        <div className="relative min-h-[150px] mt-4 px-4 py-2">
+        <div className="relative min-h-[68px] px-3 py-1">
           <div>
-            <p className="text-[14px] font-bold">Received the goods in good condition</p>
-            <p className="text-[14px] mt-10 font-bold uppercase">Receiver's Signature</p>
+            <p className="text-[12px] font-bold">Received the goods in good condition</p>
+            <p className="text-[12px] mt-3 font-bold uppercase relative top-3">Receiver's Signature</p>
           </div>
-
-          <div className="absolute right-8 bottom-4 text-right">
-            <h2 className="text-red-600 text-[20px] font-extrabold mb-8 uppercase">For ASWITHA TECH</h2>
-            <h3 className="text-[15px] font-bold uppercase tracking-tight">Authorised Signatory</h3>
+          <div className="absolute right-6 bottom-5 text-right">
+            <h2 className="text-red-600 text-[13px] font-extrabold mb-2 uppercase">For ASWITHA TECH</h2>
+            <h3 className="text-[11px] font-bold uppercase tracking-tight relative top-3">Authorised Signatory</h3>
           </div>
         </div>
       </div>
+    </div>
+  );
+
+  return (
+    <div className="bg-white w-full py-2 flex flex-col justify-center items-center print:py-0 print:bg-white">
+      {renderChallan("(ORIGINAL COPY)")}
+
+      {/* Dashed divider between copies */}
+      <div className="w-[200mm] mt-10 border-t py-2 border-dashed border-black print:mt-10"></div>
+
+      {renderChallan("(DUPLICATE COPY)")}
+
+      <style>{`
+        @page { size: A4 portrait; margin: 5mm; }
+        @media print {
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+            overflow: hidden !important;
+          }
+          .bg-white { background-color: white !important; }
+        }
+      `}</style>
     </div>
   );
 };

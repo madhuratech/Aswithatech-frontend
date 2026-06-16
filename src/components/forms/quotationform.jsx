@@ -2,7 +2,14 @@ import React, { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { errorToast } from '../ui/nottifications';
-import { SquarePen, Trash2 } from 'lucide-react';
+import { SquarePen, Trash2, UserPlus, PackagePlus,Eye,CheckCircle} from 'lucide-react';
+import { isTamilNadu, calcGstAmounts } from '../../utils/gstUtils';
+import CustomerQuickAddModal from '../ui/CustomerQuickAddModal';
+import ProductQuickAddModal from '../ui/ProductQuickAddModal';
+import Addpassword from "./addeditpassword";
+import { usePasswordProtection } from "../../hooks/usePasswordProtection";
+import SaleswindowModel from '../ui/saleswindowModal';
+import QuotationFormat from '../pages/Sales/quotationoverview'
 
 const Quotation = () => {
   const [tableItems, setTableItems] = useState([]);
@@ -12,10 +19,16 @@ const Quotation = () => {
   const [ordertype , setordertype] = useState("");
   const [itemsearch , setitemsearch] = useState("");
   const [items , setitems] = useState([]);
-  const [cgstpercentage , setCgstpercentage] = useState(9);
-  const [sgstpercentage , setSgstpercentage] = useState(9); 
+  const [gstPct, setGstPct] = useState(18);
+  const [customerState, setCustomerState] = useState("");
+  const [customerGst, setCustomerGst] = useState("");
   const [loadquotation , setloadquotation] = useState("")
   const [qtlist , setLoadQt] = useState([]);
+  const [editIndex, setEditIndex] = useState(-1);
+  const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [showProductModal, setShowProductModal] = useState(false);
+  const [clientRefreshKey, setClientRefreshKey] = useState(0);
+  const [itemRefreshKey, setItemRefreshKey] = useState(0);
 
 //   Dropdown state
   const [openUom , setopenUom] = useState(false);
@@ -24,7 +37,14 @@ const Quotation = () => {
   const [shouldAutoSelect, setShouldAutoSelect] = useState(false);
   const [loadqtopen , setloadqtopen] = useState(false);
   const navigate = useNavigate();
+  const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
 
+  // Success Model
+     const [showSuccessModal, setShowSuccessModal] = useState(false);
+      const [savedDcNo, setSavedDcNo] = useState("");
+      const [showDcFormat, setShowDcFormat] = useState(false);
+      const [dcModalMinimized, setDcModalMinimized] = useState(false);
+      const [viewDcNo, setViewDcNo] = useState("");
 
 const Api_url = "http://localhost:3000/api/quotations"
 
@@ -50,6 +70,7 @@ const Api_url = "http://localhost:3000/api/quotations"
 
 const [currentrow , setcurrentrow] = useState({
     item_name: "",
+    serial_no: "",
     quantity: "",
     price: "",
     part_no:"",
@@ -68,13 +89,13 @@ useEffect(() =>{
             const res = await fetch(url);
             const data = await res.json();
 
-           setclients(data); 
+           setclients(data);
         }catch(error){
             console.log("Error fetching clients:", error);
         }
     }
     fetchclients();
-},[search]);
+},[search, clientRefreshKey]);
 
 // Get Quotation Number
 
@@ -152,7 +173,7 @@ useEffect(() => {
   };
 
   fetchItems();
-},[ordertype, itemsearch, shouldAutoSelect]);
+},[ordertype, itemsearch, shouldAutoSelect, itemRefreshKey]);
 
 // Select items
 const selectitem = (selectedItem) => {
@@ -164,6 +185,32 @@ const selectitem = (selectedItem) => {
   setitemopen(false); 
 };
 
+
+// Quick Add handlers
+
+const handleCustomerCreated = (newCustomer) => {
+  setClientRefreshKey(k => k + 1);
+  setformdata(p => ({ ...p, customer_name: newCustomer.customer_name }));
+  setCustomerState(newCustomer.state || "");
+  setCustomerGst(newCustomer.gst_number || "");
+  setsearch(newCustomer.customer_name);
+  setclientopen(false);
+  setShowCustomerModal(false);
+};
+
+const handleProductCreated = (newItem) => {
+  const type = newItem.type;
+  setordertype(type);
+  setItemRefreshKey(k => k + 1);
+  setcurrentrow(prev => ({
+    ...prev,
+    item_name: newItem.item_name,
+    part_no: newItem.hsn_number || "",
+  }));
+  setitemsearch("");
+  setitemopen(false);
+  setShowProductModal(false);
+};
 
 // ResetFrom
 
@@ -179,11 +226,13 @@ const resetall = async () =>{
   setTableItems([]);
   setcurrentrow({
     item_name: "",
+    serial_no: "",
     price: "",
     quantity: "",
     part_no:"",
     uom:"",
-  })
+  });
+ setEditIndex(-1);
  setQuotationNo('');
  setordertype('');
  setloadquotation('');
@@ -200,6 +249,14 @@ const resetall = async () =>{
 };
 
 // Save and Edit
+
+const handleSaveQuotation = () => {
+    SaveQuotation();
+};
+
+const handleDeleteQuotation = () => {
+    deleteQuotation();
+};
 
 const SaveQuotation = async () =>{
   if (!formdata.customer_name?.trim()) {
@@ -234,6 +291,7 @@ const SaveQuotation = async () =>{
     for_sign: formdata.for_sign,
     items: tableItems.map(item => ({
      item_name: item.item_name,
+     serial_no: item.serial_no || "",
      price: item.price,
      quantity: item.quantity,
      part_no: item.part_no,
@@ -242,7 +300,7 @@ const SaveQuotation = async () =>{
   subtotal: subtotal,
   cgst: cgst,
   sgst: sgst,
-  igst: 0,
+  igst: igst,
   round_off: roundOff,
   grandTotal: grandtotal,
 
@@ -263,8 +321,13 @@ const SaveQuotation = async () =>{
     if(!res.ok){
       throw new Error(data.message || "Failed");
     }
-    toast.success(method === "PUT" ? "Quotation Updated" : "Quotation Create Successfully");
-    resetall();
+    if (method === "PUT") {
+      toast.success("Quotation Updated Successfully");
+      resetall();
+    } else {
+      setSavedDcNo(data.quotation_no || quotationNo);
+      setShowSuccessModal(true);
+    }
   }catch(error){
   console.log("Error Failed",error);
   errorToast("Failed to save quotation");
@@ -280,9 +343,16 @@ const additem = async() =>{
   }
 
   const amount = currentrow.quantity * currentrow.price;
-  setTableItems([...tableItems, {...currentrow, amount}]);
+  const newRow = { ...currentrow, amount };
+  if (editIndex >= 0) {
+    setTableItems(prev => { const u = [...prev]; u[editIndex] = newRow; return u; });
+    setEditIndex(-1);
+  } else {
+    setTableItems([...tableItems, newRow]);
+  }
   setcurrentrow({
     item_name: "",
+    serial_no: "",
     quantity: "",
     price: "",
     part_no:"",
@@ -294,6 +364,7 @@ const additem = async() =>{
 const clearrow = () =>{
     setcurrentrow({
         item_name: "",
+        serial_no: "",
         quantity: "",
         price: "",
         part_no:"",
@@ -305,18 +376,16 @@ const clearrow = () =>{
 
  const subtotal = tableItems.reduce((sum,items) =>{
   return sum + Number(items.amount || 0);
+ },0);
 
- },0)
+ const discount = Number(formdata.discount || 0);
+ const transport = Number(formdata.transport || 0);
+ const isIntrastate = isTamilNadu(customerState, customerGst);
+ const { cgst, sgst, igst, cgstPct, sgstPct, igstPct } = calcGstAmounts(subtotal, gstPct, isIntrastate);
 
- const discount = Number(formdata.discount || 0)
- const transport = Number(formdata.transport || 0)
- const cgst = subtotal * (cgstpercentage / 100);
- const sgst = subtotal * (sgstpercentage / 100);
-
- const rawTotal = subtotal - discount + transport + cgst + sgst;
+ const rawTotal = subtotal - discount + transport + cgst + sgst + igst;
  const roundedTotal = Math.round(rawTotal);
  const roundOff = roundedTotal - rawTotal;
-
 
  const grandtotal = roundedTotal;
 
@@ -383,19 +452,17 @@ const searchQt = async (value) => {
 };
 
 // Edit 
-
 const edititem = (index) => {
   const item = tableItems[index];
   setcurrentrow({
     item_name: item.item_name || "",
+    serial_no: item.serial_no || "",
     quantity: item.quantity || "",
     price: item.price || "",
     part_no: item.part_no || "",
     uom: item.uom || "",
   });
-  // Remove the item from the table
-  const updatedItems = tableItems.filter((_, i) => i !== index);
-  setTableItems(updatedItems);
+  setEditIndex(index);
 }
 
 const deleteitem = (index) => {
@@ -404,7 +471,6 @@ const deleteitem = (index) => {
 };
 
  //delete
-
  const deleteQuotation = async () => {
   if (!loadquotation) {
     alert("Please select a quotation first.");
@@ -450,8 +516,86 @@ const deleteitem = (index) => {
   const roInputCls = "w-full p-2.5 border border-blue-100 rounded-lg text-[13px] font-semibold text-blue-800 bg-blue-50 cursor-not-allowed focus:outline-none";
   const dropdownCls = "absolute top-full left-0 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 max-h-52 overflow-y-auto";
 
+
+  // Close Successmodel
+    const handleCloseSuccessModal = () => {
+        setShowSuccessModal(false);
+        setShowDcFormat(false);
+        resetall();
+    };
+
+    // HandleView Dc
+    const handleViewDc = () => {
+        setViewDcNo(savedDcNo);
+        setShowSuccessModal(false);
+        setDcModalMinimized(false);
+        setShowDcFormat(true);
+    }
+
   return (
+    <>
     <div className="min-h-screen bg-gray-50/70 p-6 font-sans">
+
+       {/* Successmodel */}
+      
+      {showSuccessModal && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl p-8 shadow-2xl w-full max-w-sm text-center">
+                        <div className="flex justify-center mb-4">
+                            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+                                <CheckCircle className="w-9 h-9 text-green-500" />
+                            </div>
+                        </div>
+                        <h2 className="text-xl font-black text-gray-800 mb-1">Quotation Saved Successfully!</h2>
+                        <p className="text-sm text-gray-500 mb-1">Quotation has been created.</p>
+                        <p className="text-sm font-black text-blue-600 mb-6">{savedDcNo}</p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={handleViewDc}
+                                className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white py-2.5 rounded-xl font-bold hover:bg-blue-700 transition-colors"
+                            >
+                                <Eye className="w-4 h-4" /> View Quotation
+                            </button>
+                            <button
+                                onClick={handleCloseSuccessModal}
+                                className="flex-1 border border-gray-300 py-2.5 rounded-xl font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Saleswindow Model */}
+
+             <SaleswindowModel
+              title = "Quotation"
+              isOpen={showDcFormat}
+              type="Quotation"
+              isMinimized={dcModalMinimized}
+              onMinimize={() => setDcModalMinimized(true)}
+              onClose={() => { setShowDcFormat(false); setDcModalMinimized(false); resetall(); }}
+              filters={{ QtNumber: viewDcNo, dcNumber: viewDcNo }}
+              onFilterChange={(f) => setViewDcNo(f.QtNumber || f.dcNumber || viewDcNo)}
+              children={<Quotation qtNumber={viewDcNo} />}
+             >
+              <QuotationFormat key={viewDcNo} QtNumber={viewDcNo}/>
+             </SaleswindowModel>
+
+             {/* minimised */}
+
+             {showDcFormat && dcModalMinimized && (
+                <div className="fixed bottom-0 left-0 right-0 h-10 bg-[#e0e0e0] border-t border-gray-400 flex items-center px-4 z-[99999] shadow-[0_-2px_10px_rgba(0,0,0,0.1)]">
+                    <button
+                        onClick={() => setDcModalMinimized(false)}
+                        className="flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-blue-700 to-blue-500 text-white text-xs font-bold rounded-sm border border-gray-600 shadow-[inset_1px_1px_0px_rgba(255,255,255,0.3)] hover:from-blue-600 hover:to-blue-400 transition-all"
+                    >
+                        <div className="w-3 h-3 border border-white/50"></div>
+                        QT Format
+                    </button>
+                </div>
+            )}
 
       <button onClick={() => navigate(-1)}
         className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl bg-white hover:bg-gray-50 text-[14px] font-semibold w-fit mb-6 shadow-sm">
@@ -468,8 +612,8 @@ const deleteitem = (index) => {
           </div>
           <div className="flex gap-2">
             <button onClick={resetall} className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-gray-800 hover:text-white transition-colors">NEW</button>
-            <button onClick={SaveQuotation} className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-green-600 hover:text-white transition-colors">SAVE</button>
-            <button onClick={deleteQuotation} className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-red-600 hover:text-white transition-colors">DELETE</button>
+            <button onClick={handleSaveQuotation} className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-green-600 hover:text-white transition-colors">SAVE</button>
+            <button onClick={handleDeleteQuotation} className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-red-600 hover:text-white transition-colors">DELETE</button>
           </div>
         </div>
 
@@ -478,27 +622,44 @@ const deleteitem = (index) => {
           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Step 1 — Quotation Header</p>
           <div className="grid grid-cols-4 gap-5">
             {/* Customer */}
-            <div className="relative col-span-2">
+            <div className="col-span-2">
               <label className={labelCls}>Customer / Company <span className="text-red-500">*</span></label>
-              <input type="text"
-                value={formdata.customer_name}
-                onFocus={() => setclientopen(true)}
-                onChange={(e) => { const v = e.target.value; setformdata({...formdata, customer_name: v}); setsearch(v); }}
-                placeholder="Type to search customers…"
-                className={inputCls} />
-              {clientopen && (
-                <div className={dropdownCls}>
-                  {clients.length > 0 ? clients.map((client) => (
-                    <div key={client.id}
-                      onClick={() => { setformdata({...formdata, customer_name: client.customer_name}); setclientopen(false); }}
-                      className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0">
-                      {client.customer_name}
+              <div className="flex items-center gap-1.5">
+                <div className="relative flex-1">
+                  <input type="text"
+                    value={formdata.customer_name}
+                    onFocus={() => setclientopen(true)}
+                    onChange={(e) => { const v = e.target.value; setformdata({...formdata, customer_name: v}); setsearch(v); }}
+                    placeholder="Type to search customers…"
+                    className={inputCls} />
+                  {clientopen && (
+                    <div className={dropdownCls}>
+                      {clients.length > 0 ? clients.map((client) => (
+                        <div key={client.id}
+                          onClick={() => {
+                            setCustomerState(client.state || "");
+                            setCustomerGst(client.gst_number || "");
+                            setformdata({...formdata, customer_name: client.customer_name});
+                            setclientopen(false);
+                          }}
+                          className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0">
+                          {client.customer_name}
+                        </div>
+                      )) : (
+                        <div className="px-4 py-3 text-[13px] text-gray-400">No clients found</div>
+                      )}
                     </div>
-                  )) : (
-                    <div className="px-4 py-3 text-[13px] text-gray-400">No clients found</div>
                   )}
                 </div>
-              )}
+                <button
+                  type="button"
+                  onClick={() => setShowCustomerModal(true)}
+                  title="Quick Add Customer"
+                  className="shrink-0 p-2.5 border border-gray-200 rounded-lg bg-white hover:bg-gray-50 shadow-sm transition-colors"
+                >
+                  <UserPlus size={15} className="text-gray-500" />
+                </button>
+              </div>
             </div>
             {/* QT No */}
             <div>
@@ -524,34 +685,57 @@ const deleteitem = (index) => {
                 <input type="radio" name="ordertype" checked={ordertype === val} onChange={() => typechange(val)} className="w-4 h-4 accent-black" /> {label}
               </label>
             ))}
+            <div>
+            <button
+                  type="button"
+                  onClick={() => setShowProductModal(true)}
+                  title="Quick Add Product / Service"
+                  className="shrink-0 p-2.5 border border-gray-200 rounded-lg bg-white hover:bg-gray-50 shadow-sm transition-colors"
+                >
+                  <PackagePlus size={15} className="text-gray-500" />
+                </button>
+           </div>
           </div>
         </div>
 
         {/* Step 3 — Add Products */}
         <div className="mb-4">
           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Step 3 — Add Products</p>
-          <div className="grid grid-cols-8 gap-3 items-end">
+           <div className="grid grid-cols-10 gap-3 items-end">
             {/* Item Name */}
-            <div className="col-span-2 relative">
+            <div className="col-span-3">
               <label className={labelCls}>Item Name <span className="text-red-500">*</span></label>
-              <input type="text" placeholder="Search item…"
-                value={currentrow.item_name}
-                onFocus={() => setitemopen(true)}
-                onChange={(e) => { const v = e.target.value; setcurrentrow({...currentrow, item_name: v}); setitemsearch(v); }}
-                className={`${inputCls} bg-gray-50/60`} />
-              {itemopen && (
-                <div className={dropdownCls}>
-                  {Array.isArray(items) && items.length > 0 ? items.map((item, i) => (
-                    <div key={`${item.item_name}-${i}`}
-                      onClick={(e) => { e.stopPropagation(); selectitem(item); }}
-                      className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0">
-                      {item.item_name}
+              <div className="flex items-center gap-1.5">
+                
+                <div className="relative flex-1">
+                  <input type="text" placeholder="Search item…"
+                    value={currentrow.item_name}
+                    onFocus={() => setitemopen(true)}
+                    onChange={(e) => { const v = e.target.value; setcurrentrow({...currentrow, item_name: v}); setitemsearch(v); }}
+                    className={`${inputCls} bg-gray-50/60`} />
+                  {itemopen && (
+                    <div className={dropdownCls}>
+                      {Array.isArray(items) && items.length > 0 ? items.map((item, i) => (
+                        <div key={`${item.item_name}-${i}`}
+                          onClick={(e) => { e.stopPropagation(); selectitem(item); }}
+                          className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0">
+                          {item.item_name}
+                        </div>
+                      )) : (
+                        <div className="px-4 py-3 text-[13px] text-gray-400">No items found</div>
+                      )}
                     </div>
-                  )) : (
-                    <div className="px-4 py-3 text-[13px] text-gray-400">No items found</div>
                   )}
                 </div>
-              )}
+            </div>
+            </div>
+            {/* Serial Number */}
+            <div>
+              <label className={labelCls}>Serial Number</label>
+              <input type="text" placeholder="Serial Number"
+                value={currentrow.serial_no || ""}
+                onChange={(e) => setcurrentrow({...currentrow, serial_no: e.target.value})}
+                className={`${inputCls} bg-gray-50/60`} />
             </div>
             {/* Qty */}
             <div>
@@ -606,27 +790,29 @@ const deleteitem = (index) => {
             </div>
             {/* Buttons */}
             <div className="flex gap-2">
-              <button onClick={additem} className="flex-1 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-[13px] font-bold transition-colors">Add</button>
-              <button onClick={clearrow} className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-[13px] font-bold transition-colors">Clear</button>
+              <button onClick={additem} className={`flex-1 py-2.5 text-white rounded-lg text-[13px] font-bold transition-colors ${editIndex >= 0 ? "bg-blue-600 hover:bg-blue-700" : "bg-green-600 hover:bg-green-700"}`}>{editIndex >= 0 ? "Update" : "Add"}</button>
+              <button onClick={() => { clearrow(); setEditIndex(-1); }} className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-[13px] font-bold transition-colors">Clear</button>
             </div>
           </div>
-        </div>
+          </div>
 
         {/* Items Table */}
-        <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm mt-3 min-h-[220px]">
+        <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm mt-3">
+          <div className="h-[250px] overflow-y-auto">
           <table className="w-full border-collapse">
-            <thead>
+            <thead className="sticky top-0 z-10 bg-gray-50">
               <tr className="bg-gray-50 border-b border-gray-200">
-                {["#", "Item Name", "Quantity", "Price", "Amount", "UOM", "Part No", "Actions"].map((h, i) => (
-                  <th key={i} className={`px-4 py-3 text-[11px] font-black text-gray-400 uppercase tracking-wide ${i === 0 ? "w-10 text-center" : i === 1 ? "text-left" : "text-center"}`}>{h}</th>
+                {["#", "Item Name", "Serial Number", "Quantity", "Price", "Amount", "UOM", "Part No", "Actions"].map((h, i) => (
+                  <th key={i} className={`px-4 py-3 text-[11px] font-black text-gray-400 uppercase tracking-wide ${i === 0 ? "w-10 text-center" : i === 1 || i === 2 ? "text-left" : "text-center"}`}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {tableItems.length > 0 ? tableItems.map((item, index) => (
-                <tr key={`${item.item_name}-${index}`} className="border-b border-gray-100 hover:bg-gray-50/70 transition-colors">
+                <tr key={`${item.item_name}-${index}`} className={`border-b border-gray-100 transition-colors ${editIndex === index ? "bg-blue-50" : "hover:bg-gray-50/70"}`}>
                   <td className="px-4 py-3 text-[12px] font-semibold text-gray-400 text-center">{index + 1}</td>
                   <td className="px-4 py-3 text-[13px] font-semibold text-gray-800 uppercase">{item.item_name}</td>
+                  <td className="px-4 py-3 text-[13px] text-gray-600 text-left">{item.serial_no || "—"}</td>
                   <td className="px-4 py-3 text-[13px] font-semibold text-gray-800 text-center">{item.quantity}</td>
                   <td className="px-4 py-3 text-[13px] font-medium text-gray-700 text-center">₹{item.price}</td>
                   <td className="px-4 py-3 text-[13px] font-bold text-gray-900 text-center">₹{Number(item.amount).toFixed(2)}</td>
@@ -641,7 +827,7 @@ const deleteitem = (index) => {
                 </tr>
               )) : (
                 <tr>
-                  <td colSpan="8" className="py-14 text-center">
+                  <td colSpan="9" className="py-14 text-center">
                     <div className="text-gray-300 text-4xl mb-3">📋</div>
                     <p className="text-[13px] text-gray-400 font-medium">No products added yet.</p>
                     <p className="text-[12px] text-gray-300 mt-1">Select customer → products to begin.</p>
@@ -649,7 +835,19 @@ const deleteitem = (index) => {
                 </tr>
               )}
             </tbody>
+            <tfoot className="sticky bottom-0 z-10 bg-gray-100">
+              <tr>
+                <td colSpan="9" className="px-4 py-3">
+                  <div className="flex items-center ml-[22%] gap-2">
+                    <span className="text-[13px] font-black text-gray-600 uppercase tracking-wide">TOTAL QTY</span>
+                    <span className="text-[13px] font-black text-gray-500">:</span>
+                    <span className="text-[18px] font-black text-blue-700">{tableItems.reduce((s, r) => s + Number(r.quantity || 0), 0)}</span>
+                  </div>
+                </td>
+              </tr>
+            </tfoot>
           </table>
+          </div>
         </div>
 
         {/* Bottom: Load Quotation + Grand Total */}
@@ -668,7 +866,7 @@ const deleteitem = (index) => {
                 <div className={`${dropdownCls} w-64`}>
                   {Array.isArray(qtlist) && qtlist.length > 0 ? qtlist.map((qt, i) => (
                     <div key={qt.quotation_no || i}
-                      onClick={() => { setloadquotation(qt.quotation_no); loadQuotation(qt.quotation_no); setloadqtopen(false); }}
+                      onClick={() => { setloadquotation(qt.quotation_no); setloadqtopen(false); requirePassword(() => loadQuotation(qt.quotation_no)); }}
                       className="px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0">
                       {qt.quotation_no}
                     </div>
@@ -702,25 +900,25 @@ const deleteitem = (index) => {
               </div>
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
-                  <span className="text-[12px] font-black text-gray-500 uppercase">CGST</span>
-                  <input type="number" value={cgstpercentage} onChange={(e) => setCgstpercentage(e.target.value)}
-                    className="w-10 p-1 border border-gray-200 rounded text-center text-[11px] font-bold outline-none" />
-                  <span className="text-[11px] text-gray-400">%</span>
+                  <span className="text-[12px] font-black text-gray-500 uppercase">GST %</span>
+                  <input type="number" value={gstPct} onChange={(e) => setGstPct(Number(e.target.value))}
+                    className="w-12 p-1 border border-gray-200 rounded text-center text-[11px] font-bold outline-none" />
                 </div>
+                <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${isIntrastate ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"}`}>
+                  {isIntrastate ? "TN — CGST+SGST" : "IGST"}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[12px] font-black text-gray-500 uppercase">CGST @{cgstPct}%</span>
                 <span className="text-[13px] font-bold text-gray-700">₹{cgst.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <span className="text-[12px] font-black text-gray-500 uppercase">SGST</span>
-                  <input type="number" value={sgstpercentage} onChange={(e) => setSgstpercentage(e.target.value)}
-                    className="w-10 p-1 border border-gray-200 rounded text-center text-[11px] font-bold outline-none" />
-                  <span className="text-[11px] text-gray-400">%</span>
-                </div>
+                <span className="text-[12px] font-black text-gray-500 uppercase">SGST @{sgstPct}%</span>
                 <span className="text-[13px] font-bold text-gray-700">₹{sgst.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-[12px] font-black text-gray-500 uppercase">IGST</span>
-                <span className="text-[13px] font-bold text-gray-700">₹0.00</span>
+                <span className="text-[12px] font-black text-gray-500 uppercase">IGST @{igstPct}%</span>
+                <span className="text-[13px] font-bold text-gray-700">₹{igst.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-[12px] font-black text-gray-500 uppercase">Transport (+)</span>
@@ -774,8 +972,28 @@ const deleteitem = (index) => {
         </div>
 
       </div>
-    </div>
+   </div>
+    {/* Customer Quick Add Modal */}
+    {showCustomerModal && (
+      <CustomerQuickAddModal
+        onClose={() => setShowCustomerModal(false)}
+        onSuccess={handleCustomerCreated}
+      />
+    )}
+
+    {/* Product Quick Add Modal */}
+    {showProductModal && (
+      <ProductQuickAddModal
+        onClose={() => setShowProductModal(false)}
+        onSuccess={handleProductCreated}
+        defaultType={ordertype === "spare" || ordertype === "service" ? ordertype : "spare"}
+      />
+    )}
+    {showPasswordModal && (
+        <Addpassword onSuccess={handlePasswordSuccess} onClose={handlePasswordCancel} />
+    )}
+    </>
   );
 };
 
-export default Quotation; 
+export default Quotation;

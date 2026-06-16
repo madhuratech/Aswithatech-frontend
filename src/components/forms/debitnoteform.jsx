@@ -1,5 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import Addpassword from "./addeditpassword";
+import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import { errorToast } from "../ui/nottifications";
 import { SquarePen, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
@@ -16,10 +18,12 @@ function debounce(func, delay) {
 const Debitnote = () => {
 
   const navigate = useNavigate();
+  const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
   const [loadDnnumber , setloadDnnumber] = useState("");
   const [ordertype , setordertype] = useState("");
   const [dnNumber , setdnNumber] = useState("");
   const [tabledata , settabledata] = useState([]);
+  const [editIndex, setEditIndex] = useState(-1);
   const [Dnlist , setDnlist] = useState([]); 
   const [loadingclients , setloadingclients] = useState(false);
   const [clientname , setclientName] = useState([]);
@@ -231,20 +235,16 @@ const addItem = () => {
   const price = Number(currentrow.price);
   const discount = Number(currentrow.discount || 0);
 
-  const amount = quantity * price;        
-  const net_amount = amount - discount;  
+  const amount = quantity * price;
+  const net_amount = amount - discount;
+  const newRow = { ...currentrow, quantity, price, discount, amount, net_amount };
 
-  settabledata([
-    ...tabledata,
-    {
-      ...currentrow,
-      quantity,
-      price,
-      discount,
-      amount,        
-      net_amount,
-    },
-  ]);
+  if (editIndex >= 0) {
+    settabledata(prev => { const u = [...prev]; u[editIndex] = newRow; return u; });
+    setEditIndex(-1);
+  } else {
+    settabledata([...tabledata, newRow]);
+  }
 
   setcurrentrow({
     item_name: "",
@@ -340,6 +340,14 @@ const clearRow = () => {
   }
 
 
+
+const handleSaveDebitNote = () => {
+  submitdebitNote();
+};
+
+const handleDeleteDebitNote = () => {
+  deleteDn();
+};
 
 //  Save Debit Notes;
 
@@ -508,7 +516,7 @@ const item = tabledata[index];
     partno: item.partno,
     unit: item.unit,
   });
-  settabledata(tabledata.filter((_, i) => i !==index));
+  setEditIndex(index);
 }
 const deleteItem = (index) =>{
       settabledata(tabledata.filter((_, i) => i !== index));
@@ -549,13 +557,13 @@ const deleteItem = (index) =>{
               NEW
             </button>
             <button
-              onClick={submitdebitNote}
+              onClick={handleSaveDebitNote}
               className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-green-600 hover:text-white transition-colors"
             >
               SAVE
             </button>
             <button
-              onClick={deleteDn}
+              onClick={handleDeleteDebitNote}
               className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-red-600 hover:text-white transition-colors"
             >
               DELETE
@@ -856,7 +864,7 @@ const deleteItem = (index) =>{
 
             {/* Part No */}
             <div className="col-span-1">
-              <label className={labelCls}>Part No <span className="text-red-500">*</span></label>
+              <label className={labelCls}>Serial No <span className="text-red-500">*</span></label>
               <input
                 type="text"
                 value={currentrow.partno || ""}
@@ -872,12 +880,12 @@ const deleteItem = (index) =>{
               <button
                 onClick={addItem}
                 disabled={!ordertype}
-                className="flex-1 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-[13px] font-bold transition-colors disabled:opacity-40"
+                className={`flex-1 py-2.5 text-white rounded-lg text-[13px] font-bold transition-colors disabled:opacity-40 ${editIndex >= 0 ? "bg-blue-600 hover:bg-blue-700" : "bg-green-600 hover:bg-green-700"}`}
               >
-                Add
+                {editIndex >= 0 ? "Update" : "Add"}
               </button>
               <button
-                onClick={clearRow}
+                onClick={() => { clearRow(); setEditIndex(-1); }}
                 disabled={!ordertype}
                 className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-[13px] font-bold transition-colors disabled:opacity-40"
               >
@@ -888,9 +896,10 @@ const deleteItem = (index) =>{
         </div>
 
         {/* ITEMS TABLE */}
-        <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm mt-3 min-h-[220px]">
+        <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm mt-3">
+          <div className="h-[250px] overflow-y-auto">
           <table className="w-full border-collapse">
-            <thead>
+            <thead className="sticky top-0 z-10 bg-gray-50">
               <tr className="bg-gray-50 border-b border-gray-200">
                 {["#", "Product", "Qty", "Price", "Amount", "Disc", "Part No", "UOM", "Net Amount", "Actions"].map((h, i) => (
                   <th
@@ -914,7 +923,7 @@ const deleteItem = (index) =>{
                 </tr>
               ) : (
                 tabledata.map((item, index) => (
-                  <tr key={index} className="border-b border-gray-100 hover:bg-gray-50/70 transition-colors">
+                  <tr key={index} className={`border-b border-gray-100 transition-colors ${editIndex === index ? "bg-blue-50 border-blue-200" : "hover:bg-gray-50/70"}`}>
                     <td className="px-4 py-3 text-[12px] font-semibold text-gray-400 text-center">{index + 1}</td>
                     <td className="px-4 py-3 text-[13px] font-semibold text-gray-800 uppercase">{item.item_name}</td>
                     <td className="px-4 py-3 text-[13px] text-gray-800 text-center">{item.quantity}</td>
@@ -938,7 +947,19 @@ const deleteItem = (index) =>{
                 ))
               )}
             </tbody>
+            <tfoot className="sticky bottom-0 z-10 ">
+              <tr>
+                <td colSpan={10} className="px-4 py-3">
+                  <div className="flex items-center ml-[15%]  gap-2">
+                    <span className="text-[13px] font-black text-gray-600 uppercase tracking-wide">TOTAL QTY</span>
+                    <span className="text-[13px] font-black text-gray-500">:</span>
+                    <span className="text-[18px] font-black text-blue-700">{tabledata.reduce((s, r) => s + Number(r.quantity || 0), 0)}</span>
+                  </div>
+                </td>
+              </tr>
+            </tfoot>
           </table>
+          </div>
         </div>
 
         {/* BOTTOM: Load & Totals */}
@@ -973,7 +994,7 @@ const deleteItem = (index) =>{
                         onClick={() => {
                           setloadDnnumber(dn.dn_number);
                           setshowdnNumber(false);
-                          loadDn(dn.dn_number);
+                          requirePassword(() => loadDn(dn.dn_number));
                         }}
                         className="px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0"
                       >
@@ -1032,6 +1053,11 @@ const deleteItem = (index) =>{
         </div>
 
       </div>
+
+      {showPasswordModal && (
+        <Addpassword onSuccess={handlePasswordSuccess} onClose={handlePasswordCancel} />
+      )}
+
     </div>
   );
 };

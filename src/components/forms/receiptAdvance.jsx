@@ -1,9 +1,12 @@
 ﻿import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import Addpassword from "./addeditpassword";
+import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 
 const ReceiptAdvance = () => {
   const navigate = useNavigate();
+  const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
   const Api_url = "http://localhost:3000/api/receipts";
 
   const [formData, setFormData] = useState({
@@ -123,6 +126,14 @@ const ReceiptAdvance = () => {
     }
   };
 
+  const handleSave = () => {
+    saveReceipt();
+  };
+
+  const handleDelete = () => {
+    deleteReceipt();
+  };
+
   const deleteReceipt = async () => {
     if (!loadedId) {
       toast.error("Load a receipt before deleting");
@@ -188,9 +199,9 @@ const ReceiptAdvance = () => {
             <h2 className="text-2xl font-bold text-black tracking-tight">Receipt Advance</h2>
             <div className="flex flex-wrap gap-2">
               <button onClick={resetForm} className="px-4 py-2 border rounded-lg text-sm hover:bg-green-600 hover:text-white">NEW</button>
-              <button onClick={saveReceipt} className="px-4 py-2 border rounded-lg text-sm hover:bg-green-600 hover:text-white">SAVE</button>
+              <button onClick={handleSave} className="px-4 py-2 border rounded-lg text-sm hover:bg-green-600 hover:text-white">SAVE</button>
               <button onClick={() => loadReceiptData(loadReceipt)} className="px-4 py-2 border rounded-lg text-sm hover:bg-yellow-600 hover:text-white">EDIT</button>
-              <button onClick={deleteReceipt} className="px-4 py-2 border rounded-lg text-sm hover:bg-red-600 hover:text-white">DELETE</button>
+              <button onClick={handleDelete} className="px-4 py-2 border rounded-lg text-sm hover:bg-red-600 hover:text-white">DELETE</button>
               <button onClick={() => window.print()} className="px-4 py-2 border rounded-lg text-sm hover:bg-purple-600 hover:text-white">PRINT</button>
               <button onClick={resetForm} className="px-4 py-2 border rounded-lg text-sm hover:bg-blue-600 hover:text-white">RESET</button>
               <button onClick={() => navigate(-1)} className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-800 hover:text-white">CLOSE</button>
@@ -388,7 +399,7 @@ const ReceiptAdvance = () => {
                     receiptList.map((receipt) => (
                       <div
                         key={receipt.id}
-                        onClick={() => loadReceiptData(receipt.receipt_no)}
+                        onClick={() => requirePassword(() => loadReceiptData(receipt.receipt_no))}
                         className="cursor-pointer px-4 py-3 text-sm hover:bg-gray-100"
                       >
                         {receipt.receipt_no}
@@ -403,6 +414,9 @@ const ReceiptAdvance = () => {
           </div>
         </div>
       </div>
+      {showPasswordModal && (
+        <Addpassword onSuccess={handlePasswordSuccess} onClose={handlePasswordCancel} />
+      )}
     </div>
   );
 };

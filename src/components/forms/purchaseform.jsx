@@ -3,8 +3,12 @@ import { Search, X } from "lucide-react";
 import { useState } from "react";
 import { errorToast,loadingToast,successToast } from "../ui/nottifications";
 import toast from "react-hot-toast";
+import Addpassword from "./addeditpassword";
+import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 
 const PurchaseForm = ({ onclose, editItem, purchase, refresh }) => {
+
+      const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
 
       const [search, setSearch] = useState("");
       const[result,setResult] = useState([]);
@@ -26,6 +30,10 @@ const PurchaseForm = ({ onclose, editItem, purchase, refresh }) => {
   }, [purchase, editItem]);
 
 // Save Purchase Item
+
+const handleSave = () => {
+  savePurchaseItem();
+};
 
 const savePurchaseItem = async (e) => {
     e.preventDefault();
@@ -204,16 +212,18 @@ const purchaseSelect = (selectedPurchase) => {
           Cancel
         </button>
         <button 
-          onClick={savePurchaseItem}
+          onClick={handleSave}
           className="px-4 py-2 rounded-lg bg-black text-white text-sm hover:bg-gray-800"
         >
           Save Item
         </button>
-      </div>
-                
-          </div>
-
         </div>
-    )
+      </div>
+
+      {showPasswordModal && (
+        <Addpassword onSuccess={handlePasswordSuccess} onClose={handlePasswordCancel} />
+      )}
+    </div>
+  );
 };
 export default PurchaseForm;

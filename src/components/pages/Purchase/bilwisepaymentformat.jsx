@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from "react";
-import logo from "../../../asset/Logo.jpeg";
 import { toWords } from "number-to-words";
-
 
 const Billwiseformat = ({ billNo, title }) => {
   const [purchase, setPurchase] = useState({
@@ -48,19 +46,15 @@ const Billwiseformat = ({ billNo, title }) => {
 
   const gst = Number(purchase?.cgst || 0) + Number(purchase?.sgst || 0);
 
-  return (
-    <>
-      <style>{`
-        @page { size: A4; margin: 5mm; }
-        @media print {
-          html, body { margin: 0 !important; padding: 0 !important; background: white !important; }
-          table { border-collapse: collapse !important; }
-          tr, td, th { page-break-inside: avoid !important; }
-          .print-wrapper { padding: 0 !important; display: block !important; overflow: visible !important; }
-          .print-container { width: 190mm !important; min-height: 270mm !important; max-height: 270mm !important; overflow: hidden !important; box-shadow: none !important; }
-        }
-      `}</style>
-      <div className="print-wrapper w-full flex justify-center items-start py-6 overflow-auto">
+  const renderBillwisePage = (copyLabel) => {
+    return (
+      <div className="print-copy-wrapper py-4 print:py-0 flex flex-col items-center animate-in fade-in duration-200">
+        {/* TOP BAR / LABEL */}
+        <div className="w-[190mm] text-right px-4 pt-1 flex-shrink-0">
+          <span className="text-[13px] font-bold uppercase tracking-wider">
+            {copyLabel}
+          </span>
+        </div>
         <div className="print-container w-[190mm] border-2 border-black bg-white relative shadow-lg overflow-hidden">
 
           {/* HEADER */}
@@ -84,7 +78,7 @@ const Billwiseformat = ({ billNo, title }) => {
           </div>
 
           {/* DETAILS SECTION */}
-          <div className="flex border-b border-black">
+          <div className="flex border-b-2 border-black">
             {/* Left - To Section */}
             <div className="w-[60%] p-4 min-h-[140px] border-r-2 border-black">
               <h2 className="text-[15px] font-bold mb-1">To:</h2>
@@ -125,7 +119,7 @@ const Billwiseformat = ({ billNo, title }) => {
           </div>
 
           {/* MESSAGE SECTION */}
-          <div className="p-4 border-b border-black">
+          <div className="p-4 border-b-2 border-black">
             <p className="text-[13px] font-bold mb-1">Dear Sir / Madam,</p>
             <p className="text-[12px] leading-5 indent-16 text-justify">
               Kindly arrange to dispatch the under mentioned quality items at the earliest possible in accordance with our instructions. Please mention our PO No & Date in your Bill or Correspondence. Kindly acknowledge this order immediately.
@@ -136,7 +130,7 @@ const Billwiseformat = ({ billNo, title }) => {
           <div style={{ height: "65mm", overflow: "hidden" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
               <thead>
-                <tr className="bg-gray-50 border-b border-black">
+                <tr className="bg-gray-50 border-b-2 border-black">
                   <th className="border-r-2 border-black p-2 w-[7%] text-center text-[12px]">S.No</th>
                   <th className="border-r-2 border-black p-2 w-[15%] text-center text-[12px]">Bill No</th>
                   <th className="border-r-2 border-black p-2 w-[15%] text-center text-[12px]">Bill Date</th>
@@ -149,24 +143,24 @@ const Billwiseformat = ({ billNo, title }) => {
               <tbody>
                 {purchase.items.map((item, index) => (
                   <tr key={index}>
-                    <td className="border-r border-black p-2 text-center text-[12px]">{index + 1}</td>
-                    <td className="border-r border-black px-3 py-2 text-[12px] text-center font-medium">{item.bill_no}</td>
-                    <td className="border-r border-black p-2 text-center text-[12px]">{item.bill_date}</td>
-                    <td className="border-r border-black p-2 text-right text-[12px] pr-4">{Number(item.bill_amount).toFixed(2)}</td>
-                    <td className="border-r border-black p-2 text-right text-[12px] pr-4">{Number(item.paid_amount).toFixed(2)}</td>
-                    <td className="border-r border-black p-2 text-right text-[12px] pr-4">{Number(item.balance_amount).toFixed(2)}</td>
+                    <td className="border-r-2 border-black p-2 text-center text-[12px]">{index + 1}</td>
+                    <td className="border-r-2 border-black px-3 py-2 text-[12px] text-center font-medium">{item.bill_no}</td>
+                    <td className="border-r-2 border-black p-2 text-center text-[12px]">{item.bill_date}</td>
+                    <td className="border-r-2 border-black p-2 text-right text-[12px] pr-4">{Number(item.bill_amount).toFixed(2)}</td>
+                    <td className="border-r-2 border-black p-2 text-right text-[12px] pr-4">{Number(item.paid_amount).toFixed(2)}</td>
+                    <td className="border-r-2 border-black p-2 text-right text-[12px] pr-4">{Number(item.balance_amount).toFixed(2)}</td>
                     <td className="p-2 text-center text-[12px] font-bold">{Number(item.bill_amount || 0).toFixed(2)}</td>
                   </tr>
                 ))}
                 {/* Filler rows — &nbsp; prevents cell height collapse during print */}
                 {Array.from({ length: Math.max(0, 10 - (purchase.items?.length || 0)) }).map((_, i) => (
                   <tr key={`filler-${i}`} style={{ height: "28px" }}>
-                    <td className="border-r border-black" style={{ height: "28px" }}>&nbsp;</td>
-                    <td className="border-r border-black"></td>
-                    <td className="border-r border-black"></td>
-                    <td className="border-r border-black"></td>
-                    <td className="border-r border-black"></td>
-                    <td className="border-r border-black"></td>
+                    <td className="border-r-2 border-black" style={{ height: "28px" }}>&nbsp;</td>
+                    <td className="border-r-2 border-black"></td>
+                    <td className="border-r-2 border-black"></td>
+                    <td className="border-r-2 border-black"></td>
+                    <td className="border-r-2 border-black"></td>
+                    <td className="border-r-2 border-black"></td>
                     <td></td>
                   </tr>
                 ))}
@@ -194,16 +188,16 @@ const Billwiseformat = ({ billNo, title }) => {
               </div>
             </div>
             <div className="w-[30%]">
-              <div className="flex border-b border-black">
-                <div className="w-[50%] p-2 text-[12px] font-bold border-r border-black">SUB Total</div>
+              <div className="flex  border-black">
+                <div className="w-[50%] p-2 text-[12px] font-bold border-r-2 border-black">SUB Total</div>
                 <div className="w-[50%] p-2 text-[12px] font-bold text-right pr-4">{Number(purchase.subtotal || 0).toFixed(2)}</div>
               </div>
-              <div className="flex border-b border-black">
-                <div className="w-[50%] p-2 text-[12px] font-bold border-r border-black">GST @18.00%</div>
+              <div className="flex  border-black">
+                <div className="w-[50%] p-2 text-[12px] font-bold border-r-2 border-black">GST @18.00%</div>
                 <div className="w-[50%] p-2 text-[12px] font-bold text-right pr-4">{Number(gst).toFixed(2)}</div>
               </div>
               <div className="flex bg-gray-50">
-                <div className="w-[50%] p-2 text-[13px] font-extrabold border-r border-black">NET TOTAL</div>
+                <div className="w-[50%] p-2 text-[13px] font-extrabold border-r-2 border-black">NET TOTAL</div>
                 <div className="w-[50%] p-2 text-[13px] font-extrabold text-right pr-4">{Number(purchase.grand_total || 0).toFixed(2)}</div>
               </div>
             </div>
@@ -219,12 +213,45 @@ const Billwiseformat = ({ billNo, title }) => {
           {/* FOOTER SECTION */}
           <div className="border-t-2 border-black px-4 pt-2 pb-1 relative">
             <div className="right-8 text-right">
-              <h2 className="text-[14px] font-bold mb-4">For ASWITHA TECH</h2>
-              <h3 className="text-[13px] font-bold border-t border-black pt-1 inline-block">Authorized Signatory</h3>
+              <h2 className="text-[14px] font-bold text-red-500 mb-4">For ASWITHA TECH</h2>
+              <h3 className="text-[13px] font-bold  border-black pt-1 inline-block">Authorized Signatory</h3>
             </div>
           </div>
 
         </div>
+      </div>
+    );
+  };
+
+  return (
+    <>
+      <style>{`
+        @page { size: A4; margin: 5mm; }
+        @media print {
+          html, body { margin: 0 !important; padding: 0 !important; background: white !important; }
+          table { border-collapse: collapse !important; }
+          tr, td, th { page-break-inside: avoid !important; }
+          .print-wrapper { padding: 0 !important; display: block !important; overflow: visible !important; }
+          .print-copy-wrapper {
+            display: block !important;
+            width: 210mm !important;
+            height: auto !important;
+            max-height: none !important;
+            overflow: visible !important;
+            padding: 0 !important;
+            page-break-after: always !important;
+            break-after: page !important;
+          }
+          .print-copy-wrapper:last-child {
+            page-break-after: auto !important;
+            break-after: auto !important;
+          }
+          .print-container { width: 190mm !important; min-height: 270mm !important; max-height: 270mm !important; overflow: hidden !important; box-shadow: none !important; }
+        }
+      `}</style>
+      <div className="print-wrapper w-full flex flex-col items-center py-6 overflow-auto">
+        {renderBillwisePage("[ORIGINAL FOR RECIPIENT]")}
+        {renderBillwisePage("[DUPLICATE COPY]")}
       </div>
     </>
   );

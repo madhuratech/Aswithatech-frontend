@@ -2,8 +2,16 @@ import { useState,useEffect } from 'react';
 import React from "react";
 import { successToast,errorToast } from "../ui/nottifications";
 import { X } from "lucide-react";
+import Addpassword from "./addeditpassword";
+import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 
 const SpareModel = ({ onClose, refreshSpare, editMode, spare }) => { 
+  const {
+    showPasswordModal,
+    requirePassword,
+    handlePasswordSuccess,
+    handlePasswordCancel,
+  } = usePasswordProtection();
 
   const [search, setSearch] = useState("");
   const[result,setResult] = useState([]);
@@ -63,6 +71,11 @@ const Sparesearch = async (value = "") => {
 
 
 // Spare Save;
+const handleSave = (e) => {
+  e.preventDefault();
+  Savespare(e);
+};
+
 const Savespare = async (e) => {
   e.preventDefault();
 
@@ -90,7 +103,7 @@ const Savespare = async (e) => {
       },
       body: JSON.stringify({
         spare_name: sparename,
-        hsn_number: hsn,
+        hsn_number: hsn === "" ? null : hsn,
       }),
     });
 
@@ -189,7 +202,7 @@ const Savespare = async (e) => {
                 Cancel
               </button>
 
-              <button onClick={Savespare}
+              <button onClick={handleSave}
                 className="px-4 py-2 bg-black text-white rounded-lg"
               >
                 Save Spare
@@ -197,6 +210,9 @@ const Savespare = async (e) => {
             </div>
           </div>
         </div>
+        {showPasswordModal && (
+          <Addpassword onSuccess={handlePasswordSuccess} onClose={handlePasswordCancel} />
+        )}
     </div>
 
   )

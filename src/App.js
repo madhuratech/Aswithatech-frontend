@@ -56,6 +56,8 @@ import CustomerLedger from "./components/ui/customerledger";
 import SalesReport from "./components/ui/salesreport";
 import PendingBillsReport from "./components/ui/pendingbillsreport";
 import ReceiptReport from "./components/ui/receiptreport";
+import SalesViewReport from "./components/ui/salesviewreport";
+import PurchaseViewReport from "./components/ui/purchaseviewreport";
 import CreditNote from "./components/forms/creditnoteform";
 import creditnoteview from "./components/pages/Sales/creditnote";
 
@@ -66,6 +68,16 @@ import ServicedcEntry from "./components/forms/dcEntryform";
 import ServiceInvoice from "./components/forms/serviceinvoice";
 import ServiceDCView from "./components/pages/Services/dcFormat";
 import InvoiceView from "./components/pages/Sales/invoiceview";
+
+// Job
+import JobDcEntryForm from "./components/forms/jobDcEntryForm";
+import JobReturnDcEntryForm from "./components/forms/jobReturnDcEntryForm";
+import JobDetailsReport from "./components/pages/Reports/jobDetailsReport";
+
+// Standby
+import StandbyDcEntryForm from "./components/forms/standbyDcEntryForm";
+import StandbyReturnDcEntryForm from "./components/forms/standbyReturnDcEntryForm";
+import StandbyDetailsReport from "./components/pages/Reports/standbyDetailsReport";
 
 
 
@@ -108,6 +120,7 @@ function App() {
             <Route path="billwise" element={<BillwisePayment />} />
             <Route path="bill-format" element={<Billwiseformat />} />
             <Route path="monthly-statement" element={<MonthlyReport />} />
+            <Route path="purchase-view-report" element={<PurchaseViewReport />} />
           </Route>
 
   // Production Modules
@@ -140,6 +153,7 @@ function App() {
             <Route path="Reciept-Format" element={<ReceiptReport />} />
             <Route path="credit-note" element={<CreditNote />} />
             <Route path="credit-note-view/:cnNumber" element={<creditnoteview />} />
+            <Route path="sales-view-report" element={<SalesViewReport />} />
           </Route>
 
           {/* Service Module */}
@@ -151,6 +165,22 @@ function App() {
             <Route path="service-invoice" element={<ServiceInvoice />} />
             <Route path="dc-format" element={<ServiceDCView />} />
             <Route path="pending" element={<PendingForm />} />
+          </Route>
+
+          {/* Job Module */}
+
+          <Route path="job" element={<MainLayout />}>
+            <Route path="job-dc" element={<JobDcEntryForm />} />
+            <Route path="job-return-dc" element={<JobReturnDcEntryForm />} />
+            <Route path="job-details" element={<JobDetailsReport />} />
+          </Route>
+
+          {/* Standby Module */}
+
+          <Route path="standby" element={<MainLayout />}>
+            <Route path="standby-dc" element={<StandbyDcEntryForm />} />
+            <Route path="standby-return-dc" element={<StandbyReturnDcEntryForm />} />
+            <Route path="standby-details" element={<StandbyDetailsReport />} />
           </Route>
 
 

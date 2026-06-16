@@ -122,9 +122,10 @@ const InwardFormat = ({ dcNumber }) => {
               </tr>
             )}
             <tr>
-              <td colSpan={3} className="border-r-2 border-b-2 border-black p-2 text-right font-bold text-[13px]">
+              <td colSpan={2} className="border-r-2 border-b-2 border-black p-2 text-right font-bold text-[13px]">
                 TOTAL
               </td>
+              <td className="border-r-2 border-b-2 border-black p-2 text-center font-bold text-[11px] uppercase">TOTAL QTY</td>
               <td className="border-r-2 border-b-2 border-black p-2 text-center font-bold text-[15px]">
                 {data.items.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0)}
               </td>

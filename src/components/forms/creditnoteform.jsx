@@ -1,8 +1,12 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import Addpassword from "./addeditpassword";
+import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import { errorToast } from "../ui/nottifications";
-import { SquarePen, Trash2 } from "lucide-react";
+import { SquarePen, Trash2, CheckCircle, Eye } from "lucide-react";
 import toast from "react-hot-toast";
+import SaleswindowModel from "../ui/saleswindowModal";
+import Creditnoteview from "../pages/Sales/creditnote";
 
 // Debounse function;
 function debounce(func, delay) {
@@ -16,14 +20,23 @@ function debounce(func, delay) {
 const Creditnote = () => {
 
   const navigate = useNavigate();
+  const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
   const [loadCnnumber , setloadCnnumber] = useState("");
   const [ordertype , setordertype] = useState("");
   const [cnNumber , setcnNumber] = useState("");
   const [tabledata , settabledata] = useState([]);
+  const [editIndex, setEditIndex] = useState(-1);
   const [Cnlist , setCnlist] = useState([]); 
   const [loadingclients , setloadingclients] = useState(false);
   const [clientname , setclientName] = useState([]);
   const [items , setItems] = useState([]);
+
+  // Success popup modal states
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [savedCnNo, setSavedCnNo] = useState("");
+  const [showCnModal, setShowCnModal] = useState(false);
+  const [cnModalMin, setCnModalMin] = useState(false);
+  const [viewCnNo, setViewCnNo] = useState("");
 
 
   // Dropdown state;
@@ -231,20 +244,16 @@ const addItem = () => {
   const price = Number(currentrow.price);
   const discount = Number(currentrow.discount || 0);
 
-  const amount = quantity * price;        
-  const net_amount = amount - discount;  
+  const amount = quantity * price;
+  const net_amount = amount - discount;
+  const newRow = { ...currentrow, quantity, price, discount, amount, net_amount };
 
-  settabledata([
-    ...tabledata,
-    {
-      ...currentrow,
-      quantity,
-      price,
-      discount,
-      amount,        
-      net_amount,
-    },
-  ]);
+  if (editIndex >= 0) {
+    settabledata(prev => { const u = [...prev]; u[editIndex] = newRow; return u; });
+    setEditIndex(-1);
+  } else {
+    settabledata([...tabledata, newRow]);
+  }
 
   setcurrentrow({
     item_name: "",
@@ -342,6 +351,14 @@ const resetForm = async() =>{
 
 
 
+const handleSaveCreditNote = () => {
+  submitcreditNote();
+};
+
+const handleDeleteCreditNote = () => {
+  deleteCn();
+};
+
 //  Save Credit Notes;
 
 const submitcreditNote = async () => {
@@ -397,13 +414,25 @@ const payload = {
     }
     toast.success(method === "PUT" ? "Credit Note updated successfully!" : "Credit Note created successfully!",{id: toastId});
    
-    resetForm();
+    setSavedCnNo(cnNumber);
+    setShowSuccessModal(true);
    
   } catch(error){
     toast.error(error.message, { id: toastId })
     errorToast("Failed To Create Credit Note");
   }
 }
+
+const handleViewCn = () => {
+  setViewCnNo(savedCnNo);
+  setShowSuccessModal(false);
+  setShowCnModal(true);
+};
+
+const handleCloseSuccessModal = () => {
+  setShowSuccessModal(false);
+  resetForm();
+};
 
 
 // Client Search 
@@ -510,7 +539,7 @@ const item = tabledata[index];
     partno: item.partno,
     unit: item.unit,
   });
-  settabledata(tabledata.filter((_, i) => i !==index));
+  setEditIndex(index);
 }
 const deleteItem = (index) =>{
       settabledata(tabledata.filter((_, i) => i !== index));
@@ -551,13 +580,13 @@ const deleteItem = (index) =>{
               NEW
             </button>
             <button
-              onClick={submitcreditNote}
+              onClick={handleSaveCreditNote}
               className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-green-600 hover:text-white transition-colors"
             >
               SAVE
             </button>
             <button
-              onClick={deleteCn}
+              onClick={handleDeleteCreditNote}
               className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-red-600 hover:text-white transition-colors"
             >
               DELETE
@@ -874,12 +903,12 @@ const deleteItem = (index) =>{
               <button
                 onClick={addItem}
                 disabled={!ordertype}
-                className="flex-1 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-[13px] font-bold transition-colors disabled:opacity-40"
+                className={`flex-1 py-2.5 text-white rounded-lg text-[13px] font-bold transition-colors disabled:opacity-40 ${editIndex >= 0 ? "bg-blue-600 hover:bg-blue-700" : "bg-green-600 hover:bg-green-700"}`}
               >
-                Add
+                {editIndex >= 0 ? "Update" : "Add"}
               </button>
               <button
-                onClick={clearRow}
+                onClick={() => { clearRow(); setEditIndex(-1); }}
                 disabled={!ordertype}
                 className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-[13px] font-bold transition-colors disabled:opacity-40"
               >
@@ -890,9 +919,10 @@ const deleteItem = (index) =>{
         </div>
 
         {/* ITEMS TABLE */}
-        <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm mt-3 min-h-[220px]">
+        <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm mt-3">
+          <div className="h-[250px] overflow-y-auto">
           <table className="w-full border-collapse">
-            <thead>
+            <thead className="sticky top-0 z-10 bg-gray-50">
               <tr className="bg-gray-50 border-b border-gray-200">
                 {["#", "Product", "Qty", "Price", "Amount", "Disc", "Part No", "UOM", "Net Amount", "Actions"].map((h, i) => (
                   <th
@@ -916,7 +946,7 @@ const deleteItem = (index) =>{
                 </tr>
               ) : (
                 tabledata.map((item, index) => (
-                  <tr key={index} className="border-b border-gray-100 hover:bg-gray-50/70 transition-colors">
+                  <tr key={index} className={`border-b border-gray-100 transition-colors ${editIndex === index ? "bg-blue-50" : "hover:bg-gray-50/70"}`}>
                     <td className="px-4 py-3 text-[12px] font-semibold text-gray-400 text-center">{index + 1}</td>
                     <td className="px-4 py-3 text-[13px] font-semibold text-gray-800 uppercase">{item.item_name}</td>
                     <td className="px-4 py-3 text-[13px] text-gray-800 text-center">{item.quantity}</td>
@@ -940,7 +970,19 @@ const deleteItem = (index) =>{
                 ))
               )}
             </tbody>
+            <tfoot className="sticky bottom-0 z-10">
+              <tr>
+                <td colSpan={10} className="px-4 py-3">
+                  <div className="flex items-center ml-[14%] gap-2">
+                    <span className="text-[13px] font-black text-gray-600 uppercase tracking-wide">TOTAL QTY</span>
+                    <span className="text-[13px] font-black text-gray-500">:</span>
+                    <span className="text-[18px] font-black text-blue-700">{tabledata.reduce((s, r) => s + Number(r.quantity || 0), 0)}</span>
+                  </div>
+                </td>
+              </tr>
+            </tfoot>
           </table>
+          </div>
         </div>
 
         {/* BOTTOM: Load & Totals */}
@@ -975,7 +1017,7 @@ const deleteItem = (index) =>{
                         onClick={() => {
                           setloadCnnumber(cn.cn_number);
                           setshowcnNumber(false);
-                          loadCn(cn.cn_number);
+                          requirePassword(() => loadCn(cn.cn_number));
                         }}
                         className="px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0"
                       >
@@ -1034,6 +1076,72 @@ const deleteItem = (index) =>{
         </div>
 
       </div>
+
+      {/* ── Success Modal ── */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-8 shadow-2xl w-full max-w-sm text-center">
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+                <CheckCircle className="w-9 h-9 text-green-500" />
+              </div>
+            </div>
+            <h2 className="text-xl font-black text-gray-800 mb-1">Credit Note Saved Successfully!</h2>
+            <p className="text-sm text-gray-500 mb-1">Credit Note has been created.</p>
+            <p className="text-sm font-black text-blue-600 mb-6">Credit Note No : {savedCnNo}</p>
+            <div className="flex gap-3">
+              <button
+                onClick={handleViewCn}
+                className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white py-2.5 rounded-xl font-bold hover:bg-blue-700 transition-colors"
+              >
+                <Eye className="w-4 h-4" /> View
+              </button>
+              <button
+                onClick={handleCloseSuccessModal}
+                className="flex-1 border border-gray-300 py-2.5 rounded-xl font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Credit Note View Modal ── */}
+      <SaleswindowModel
+        title="Credit Note"
+        isOpen={showCnModal}
+        type="Credit Note Format"
+        isMinimized={cnModalMin}
+        onMinimize={() => setCnModalMin(true)}
+        onClose={() => {
+          setShowCnModal(false);
+          setCnModalMin(false);
+          resetForm();
+        }}
+        filters={{ QtNumber: viewCnNo }}
+        onFilterChange={(f) => setViewCnNo(f.QtNumber || viewCnNo)}
+      >
+        <Creditnoteview key={viewCnNo} cnNumber={viewCnNo} />
+      </SaleswindowModel>
+
+      {/* ── Minimized bar ── */}
+      {showCnModal && cnModalMin && (
+        <div className="fixed bottom-0 left-0 right-0 h-10 bg-[#e0e0e0] border-t border-gray-400 flex items-center px-4 z-[99999] shadow-[0_-2px_10px_rgba(0,0,0,0.1)]">
+          <button
+            onClick={() => setCnModalMin(false)}
+            className="flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-blue-700 to-blue-500 text-white text-xs font-bold rounded-sm border border-gray-600 shadow-[inset_1px_1px_0px_rgba(255,255,255,0.3)] hover:from-blue-600 hover:to-blue-400 transition-all"
+          >
+            <div className="w-3 h-3 border border-white/50"></div>
+            Credit Note
+          </button>
+        </div>
+      )}
+
+      {showPasswordModal && (
+        <Addpassword onSuccess={handlePasswordSuccess} onClose={handlePasswordCancel} />
+      )}
+
     </div>
   );
 };

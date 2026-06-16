@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import logo from "../../../asset/Logo.jpeg";
 import { toWords } from "number-to-words";
 
 const TaxPurchaseFormat = ({ billNo }) => {
@@ -30,19 +29,15 @@ const TaxPurchaseFormat = ({ billNo }) => {
     return isNaN(date) ? d : date.toLocaleDateString("en-IN");
   };
 
-  return (
-    <>
-      <style>{`
-        @page { size: A4; margin: 5mm; }
-        @media print {
-          html, body { margin: 0 !important; padding: 0 !important; background: white !important; }
-          table { border-collapse: collapse !important; }
-          tr, td, th { page-break-inside: avoid !important; }
-          .print-wrapper { padding: 0 !important; display: block !important; overflow: visible !important; }
-          .print-container { width: 190mm !important; min-height: 270mm !important; max-height: 270mm !important; overflow: hidden !important; box-shadow: none !important; }
-        }
-      `}</style>
-      <div className="print-wrapper w-full flex justify-center items-start py-6 overflow-auto">
+  const renderTaxPurchasePage = (copyLabel) => {
+    return (
+      <div className="print-copy-wrapper py-4 print:py-0 flex flex-col items-center animate-in fade-in duration-200">
+        {/* TOP BAR / LABEL */}
+        <div className="w-[190mm] text-right px-4 pt-1 flex-shrink-0">
+          <span className="text-[13px] font-bold uppercase tracking-wider">
+            {copyLabel}
+          </span>
+        </div>
         <div className="print-container w-[190mm] border-2 border-black bg-white relative shadow-lg overflow-hidden">
 
           {/* HEADER */}
@@ -120,7 +115,7 @@ const TaxPurchaseFormat = ({ billNo }) => {
                 {entry.items.map((item, idx) => (
                   <tr key={idx} className="border-b border-black">
                     <td className="border-r-2 border-black p-2 text-center text-[12px]">{idx + 1}</td>
-                    <td className="border-r-2 border-black px-3 py-2 text-[12px] font-medium">{item.item_name}</td>
+                    <td className="border-r-2 border-black px-3 py-2 text-[12px] font-medium">{item.item_name}{item.serial_no ? ` (${item.serial_no})` : ""}</td>
                     <td className="border-r-2 border-black p-2 text-center text-[12px]">{item.hsn || "—"}</td>
                     <td className="border-r-2 border-black p-2 text-center text-[12px]">{item.uom || "—"}</td>
                     <td className="border-r-2 border-black p-2 text-center text-[12px]">{item.quantity}</td>
@@ -146,6 +141,18 @@ const TaxPurchaseFormat = ({ billNo }) => {
             </table>
           </div>
 
+          {/* TOTAL QTY */}
+          <div className="border-t-2 border-black flex">
+            <div className="w-[65%] border-r-2 border-black p-2">
+              <div className="flex items-center gap-3">
+                <span className="text-[12px] font-bold uppercase">TOTAL QTY</span>
+                <span className="text-[12px] font-bold">:</span>
+                <span className="text-[13px] font-extrabold">{entry.items.reduce((s, it) => s + Number(it.quantity || 0), 0)}</span>
+              </div>
+            </div>
+            <div className="w-[35%]"></div>
+          </div>
+
           {/* SUMMARY */}
           <div className="border-t-2 border-black flex">
             <div className="w-[65%] border-r-2 border-black p-4 space-y-1">
@@ -154,24 +161,38 @@ const TaxPurchaseFormat = ({ billNo }) => {
               )}
             </div>
             <div className="w-[35%]">
-              {[
-                { label: "Sub Total",     val: entry.subtotal },
-                { label: "CGST",          val: entry.cgst },
-                { label: "SGST",          val: entry.sgst },
-                { label: "IGST",          val: entry.igst },
-                { label: "Discount (−)",  val: entry.discount, minus: true },
-                { label: "Other Charges", val: entry.other_charges },
-                { label: "Round Off",     val: entry.round_off },
-              ].map(({ label, val, minus }) => (
-                val != null && Number(val) !== 0 ? (
-                  <div key={label} className="flex border-b border-black">
-                    <div className="w-[55%] p-2 text-[12px] font-bold border-r border-black">{label}</div>
-                    <div className="w-[45%] p-2 text-[12px] font-bold text-right pr-3">
-                      {minus ? "-" : ""}₹{Number(val).toFixed(2)}
+              {(() => {
+                const sub = Number(entry.subtotal || 0);
+                const disc = Number(entry.discount || 0);
+                const other = Number(entry.other_charges || 0);
+                const taxable = sub - disc + other;
+                const cgstAmt = Number(entry.cgst || 0);
+                const sgstAmt = Number(entry.sgst || 0);
+                const igstAmt = Number(entry.igst || 0);
+                const cgstPct = taxable > 0 ? Math.round((cgstAmt / taxable) * 100) : 0;
+                const sgstPct = taxable > 0 ? Math.round((sgstAmt / taxable) * 100) : 0;
+                const igstPct = taxable > 0 ? Math.round((igstAmt / taxable) * 100) : 0;
+                const rows = [
+                  { label: "Sub Total",              val: entry.subtotal },
+                  { label: "Discount (−)",            val: entry.discount, minus: true },
+                  { label: "Other Charges",           val: entry.other_charges },
+                  { label: "TAXABLE",                 val: taxable },
+                  { label: `CGST @${cgstPct}%`,       val: cgstAmt },
+                  { label: `SGST @${sgstPct}%`,       val: sgstAmt },
+                  { label: `IGST @${igstPct}%`,       val: igstAmt },
+                  { label: "Round Off",               val: entry.round_off },
+                ];
+                return rows.map(({ label, val, minus }) =>
+                  val != null && Number(val) !== 0 ? (
+                    <div key={label} className="flex border-b border-black">
+                      <div className="w-[55%] p-2 text-[12px] font-bold border-r border-black">{label}</div>
+                      <div className="w-[45%] p-2 text-[12px] font-bold text-right pr-3">
+                        {minus ? "-" : ""}₹{Number(val).toFixed(2)}
+                      </div>
                     </div>
-                  </div>
-                ) : null
-              ))}
+                  ) : null
+                );
+              })()}
               <div className="flex bg-gray-50">
                 <div className="w-[55%] p-2 text-[13px] font-extrabold border-r border-black">NET TOTAL</div>
                 <div className="w-[45%] p-2 text-[13px] font-extrabold text-right pr-3">
@@ -197,6 +218,39 @@ const TaxPurchaseFormat = ({ billNo }) => {
           </div>
 
         </div>
+      </div>
+    );
+  };
+
+  return (
+    <>
+      <style>{`
+        @page { size: A4; margin: 5mm; }
+        @media print {
+          html, body { margin: 0 !important; padding: 0 !important; background: white !important; }
+          table { border-collapse: collapse !important; }
+          tr, td, th { page-break-inside: avoid !important; }
+          .print-wrapper { padding: 0 !important; display: block !important; overflow: visible !important; }
+          .print-copy-wrapper {
+            display: block !important;
+            width: 210mm !important;
+            height: auto !important;
+            max-height: none !important;
+            overflow: visible !important;
+            padding: 0 !important;
+            page-break-after: always !important;
+            break-after: page !important;
+          }
+          .print-copy-wrapper:last-child {
+            page-break-after: auto !important;
+            break-after: auto !important;
+          }
+          .print-container { width: 190mm !important; min-height: 270mm !important; max-height: 270mm !important; overflow: hidden !important; box-shadow: none !important; }
+        }
+      `}</style>
+      <div className="print-wrapper w-full flex flex-col items-center py-6 overflow-auto">
+        {renderTaxPurchasePage("[ORIGINAL FOR RECIPIENT]")}
+        {renderTaxPurchasePage("[DUPLICATE COPY]")}
       </div>
     </>
   );

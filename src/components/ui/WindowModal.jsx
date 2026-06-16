@@ -149,26 +149,26 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
     }
   };
 
- 
+
   const handlePrint = () => {
-  window.print();
-};
+    window.print();
+  };
   if (!isOpen || isMinimized) return null;
 
   // Compute totals for report view
-  const totalQty      = reportData.reduce((s, r) => s + (Number(r.quantity)   || 0), 0);
-  const totalPrice    = reportData.reduce((s, r) => s + (Number(r.price)      || 0), 0).toFixed(2);
-  const totalDiscount = reportData.reduce((s, r) => s + (Number(r.discount)   || 0), 0).toFixed(2);
-  const totalSubtotal = reportData.reduce((s, r) => s + (Number(r.subtotal)   || 0), 0).toFixed(2);
-  const totalSgst     = reportData.reduce((s, r) => s + (Number(r.sgst)       || 0), 0).toFixed(2);
-  const totalCgst     = reportData.reduce((s, r) => s + (Number(r.cgst)       || 0), 0).toFixed(2);
-  const totalIgst     = reportData.reduce((s, r) => s + (Number(r.igst)       || 0), 0).toFixed(2);
+  const totalQty = reportData.reduce((s, r) => s + (Number(r.quantity) || 0), 0);
+  const totalPrice = reportData.reduce((s, r) => s + (Number(r.price) || 0), 0).toFixed(2);
+  const totalDiscount = reportData.reduce((s, r) => s + (Number(r.discount) || 0), 0).toFixed(2);
+  const totalSubtotal = reportData.reduce((s, r) => s + (Number(r.subtotal) || 0), 0).toFixed(2);
+  const totalSgst = reportData.reduce((s, r) => s + (Number(r.sgst) || 0), 0).toFixed(2);
+  const totalCgst = reportData.reduce((s, r) => s + (Number(r.cgst) || 0), 0).toFixed(2);
+  const totalIgst = reportData.reduce((s, r) => s + (Number(r.igst) || 0), 0).toFixed(2);
   const totalDelivery = reportData.reduce((s, r) => s + (Number(r.delivery_charge) || 0), 0).toFixed(2);
-  const totalGrand    = reportData.reduce((s, r) => s + (Number(r.grandTotal) || 0), 0).toFixed(2);
+  const totalGrand = reportData.reduce((s, r) => s + (Number(r.grandTotal) || 0), 0).toFixed(2);
 
   return (
-    <div className={`fixed inset-0 z-[9999] flex ${isMaximized ? "items-stretch" : "items-center justify-center p-4 bg-black/30"}`}>
-      <div className={`bg-[#f0f0f0] border-2 border-white flex flex-col shadow-2xl transition-all duration-200 ${isMaximized ? "w-full h-full border-none" : "w-[98vw] h-[95vh]"}`}>
+    <div className={`fixed inset-0 z-[9999] flex ${isMaximized ? "items-stretch" : "items-center justify-center p-4 bg-black/30"} purchase-modal-overlay`}>
+      <div className={`bg-[#f0f0f0] border-2 border-white flex flex-col shadow-2xl transition-all duration-200 ${isMaximized ? "w-full h-full border-none" : "w-[98vw] h-[95vh]"} purchase-modal-container`}>
 
         {/* ── Title Bar ── */}
         <div
@@ -348,8 +348,8 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
 
           {/* Report Canvas */}
           <div className="print-area bg-white mx-2 my-2 border border-gray-300"
-  ref={contentRef}
->
+            ref={contentRef}
+          >
 
             {/* Report View — tabular data */}
             {viewMode === "report" && type !== "billwise" && (
@@ -372,20 +372,20 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
                     <thead>
                       <tr style={{ background: "#c5d7e9", color: "#0d2340", position: "sticky", top: 0, zIndex: 10 }}>
                         {[
-                          ["SNO",        "center", "36px"],
+                          ["SNO", "center", "36px"],
                           [type === "po" ? "PO NUMBER" : "DN NUMBER", "left", "130px"],
-                          ["DATE",       "center", "90px"],
-                          ["CLIENT NAME","left",   "220px"],
-                          ["PURCHASE ITEM","left", "200px"],
-                          ["QUANTITY",   "right",  "80px"],
-                          ["PRICE",      "right",  "80px"],
+                          ["DATE", "center", "90px"],
+                          ["CLIENT NAME", "left", "220px"],
+                          ["PURCHASE ITEM", "left", "200px"],
+                          ["QUANTITY", "right", "80px"],
+                          ["PRICE", "right", "80px"],
                           ...(type === "dn" ? [["DISCOUNT", "right", "80px"]] : []),
-                          ["SUBTOTAL",   "right",  "90px"],
-                          ["SGST",       "right",  "70px"],
-                          ["CGST",       "right",  "70px"],
+                          ["SUBTOTAL", "right", "90px"],
+                          ["SGST", "right", "70px"],
+                          ["CGST", "right", "70px"],
                           ...(type === "dn" ? [["IGST", "right", "70px"]] : []),
                           ...(type === "dn" ? [["DELIVERY CHARGE", "right", "90px"]] : []),
-                          ["GRAND TOTAL","right",  "100px"],
+                          ["GRAND TOTAL", "right", "100px"],
                         ].map(([label, align, width]) => (
                           <th key={label} style={{
                             border: "1px solid #8ca8c5",
@@ -486,46 +486,71 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
       </div>
 
       <style>{`
-  @media print {
-
-  .bg-black,
-  .no-print,
-  button,
-  .custom-scrollbar + div,
-  .status-bar {
-    display: none !important;
-  }
-
-  body {
-    margin: 0 !important;
-    padding: 0 !important;
-    background: white !important;
-  }
-
-  .print-area {
-    display: block !important;
-    width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border: none !important;
-    box-shadow: none !important;
-  }
-
-  table {
-    border-collapse: collapse !important;
-  }
-
-  tr,
-  td,
-  th {
-    page-break-inside: avoid !important;
-  }
-
-  .custom-scrollbar {
-    overflow: visible !important;
-  }
-}
-`}</style>
+        @media print {
+          body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+          }
+          body * {
+            visibility: hidden;
+          }
+          .print-area, .print-area * {
+            visibility: visible;
+          }
+          .print-area {
+            display: block !important;
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+          }
+          #root,
+          #root > div,
+          main,
+          main > div,
+          main > div > div,
+          body *:has(.print-area),
+          .purchase-modal-overlay,
+          .purchase-modal-container,
+          .custom-scrollbar {
+            display: block !important;
+            position: static !important;
+            height: auto !important;
+            min-height: auto !important;
+            max-height: none !important;
+            overflow: visible !important;
+            float: none !important;
+            box-shadow: none !important;
+            border: none !important;
+            background: transparent !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+          .no-print,
+          .no-print *,
+          button,
+          select,
+          input,
+          .bg-black,
+          .status-bar,
+          header,
+          nav,
+          .bg-white.border-t {
+            display: none !important;
+          }
+          table {
+            border-collapse: collapse !important;
+          }
+          tr, td, th {
+            page-break-inside: avoid !important;
+          }
+        }
+      `}</style>
     </div>
   );
 };

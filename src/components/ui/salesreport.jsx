@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { X, Square, Minus, Printer } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import html2pdf from "html2pdf.js";
 import * as XLSX from "xlsx";
 
@@ -8,6 +8,7 @@ const API = "http://localhost:3000/api/salesinvoices";
 
 const SalesReport = ({ onClose, onMinimize, title = "Sales Report" }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const contentRef = useRef(null);
 
   const [isMaximized, setIsMaximized] = useState(false);
@@ -18,7 +19,9 @@ const SalesReport = ({ onClose, onMinimize, title = "Sales Report" }) => {
   const [clientList, setClientList] = useState([]);
   const [data, setData] = useState([]);
 
-  const [activeTab, setActiveTab] = useState("main");
+  const [activeTab, setActiveTab] = useState(() => {
+    return location.state?.activeTab === "pending" ? "pending" : "main";
+  });
   const [pendingData, setPendingData] = useState([]);
   const [loadingPending, setLoadingPending] = useState(false);
 
@@ -48,7 +51,15 @@ const SalesReport = ({ onClose, onMinimize, title = "Sales Report" }) => {
       if (f.clientName) params.set("clientName", f.clientName);
       const res = await fetch(`${API}/report/filters?${params}`);
       const json = await res.json();
-      setData(Array.isArray(json) ? json : []);
+      const records = Array.isArray(json) ? json : [];
+      const salesCount   = records.filter(r => r.invoice_type === "Sales Invoice").length;
+      const serviceCount = records.filter(r => r.invoice_type === "Service Invoice").length;
+      const directCount  = records.filter(r => r.invoice_type === "Direct Invoice").length;
+      console.log("[Sales Report] Sales Invoice count:", salesCount);
+      console.log("[Sales Report] Service Invoice count:", serviceCount);
+      console.log("[Sales Report] Direct Invoice count:", directCount);
+      console.log("[Sales Report] Combined total records:", records.length);
+      setData(records);
     } catch (err) {
       console.error(err);
       setData([]);
@@ -147,7 +158,7 @@ const SalesReport = ({ onClose, onMinimize, title = "Sales Report" }) => {
       XLSX.writeFile(wb, `PendingBills_${filters.clientName || "All"}.xlsx`);
     } else {
       const header = [["GST NO", "CUSTOMER NAME", "HSN/SAC", "INVOICE NO", "DATE",
-        "TOTAL INVOICE VALUE", "TAXABLE VALUE", "QTY",
+        "TOTAL INVOICE VALUE", "PAID AMOUNT", "BALANCE AMOUNT", "TAXABLE VALUE", "QTY",
         "CGST %", "CGST AMOUNT", "SGST %", "SGST AMOUNT", "IGST %", "IGST AMOUNT"]];
       const rows = data.map((r) => [
         r.gst_no || "",
@@ -156,6 +167,8 @@ const SalesReport = ({ onClose, onMinimize, title = "Sales Report" }) => {
         r.invoice_no || "",
         fmtDate(r.invoice_date),
         Number(fmt(r.total_invoice_value)),
+        Number(fmt(r.paid_amount)),
+        Number(fmt(r.balance_amount)),
         Number(fmt(r.taxable_value)),
         Number(r.total_qty || 0),
         Number(fmt(r.cgst_percent)),
@@ -166,7 +179,7 @@ const SalesReport = ({ onClose, onMinimize, title = "Sales Report" }) => {
         Number(fmt(r.igst_amount)),
       ]);
       const ws = XLSX.utils.aoa_to_sheet([...header, ...rows]);
-      ws["!cols"] = [14, 22, 12, 14, 11, 16, 14, 6, 8, 13, 8, 13, 8, 13].map(w => ({ wch: w }));
+      ws["!cols"] = [14, 22, 12, 14, 11, 16, 16, 16, 14, 6, 8, 13, 8, 13, 8, 13].map(w => ({ wch: w }));
       XLSX.utils.book_append_sheet(wb, ws, "Sales Report");
       XLSX.writeFile(wb, `SalesReport_${filters.clientName || "All"}.xlsx`);
     }
@@ -175,12 +188,14 @@ const SalesReport = ({ onClose, onMinimize, title = "Sales Report" }) => {
   // Main report totals
   const totals = data.reduce((acc, r) => ({
     total_invoice_value: acc.total_invoice_value + Number(r.total_invoice_value || 0),
+    paid_amount:         acc.paid_amount         + Number(r.paid_amount         || 0),
+    balance_amount:      acc.balance_amount      + Number(r.balance_amount      || 0),
     taxable_value:       acc.taxable_value       + Number(r.taxable_value       || 0),
     total_qty:           acc.total_qty           + Number(r.total_qty           || 0),
     cgst_amount:         acc.cgst_amount         + Number(r.cgst_amount         || 0),
     sgst_amount:         acc.sgst_amount         + Number(r.sgst_amount         || 0),
     igst_amount:         acc.igst_amount         + Number(r.igst_amount         || 0),
-  }), { total_invoice_value: 0, taxable_value: 0, total_qty: 0, cgst_amount: 0, sgst_amount: 0, igst_amount: 0 });
+  }), { total_invoice_value: 0, paid_amount: 0, balance_amount: 0, taxable_value: 0, total_qty: 0, cgst_amount: 0, sgst_amount: 0, igst_amount: 0 });
 
   // Pending report totals
   const pendingTotals = pendingData.reduce((acc, r) => ({
@@ -328,6 +343,8 @@ const SalesReport = ({ onClose, onMinimize, title = "Sales Report" }) => {
                         ["INVOICE NO",          "left",   "130px"],
                         ["DATE",                "center", "80px"],
                         ["TOTAL INVOICE VALUE", "right",  "110px"],
+                        ["PAID AMOUNT",         "right",  "95px"],
+                        ["BALANCE DUE",         "right",  "95px"],
                         ["TAXABLE VALUE",       "right",  "95px"],
                         ["QTY",                 "right",  "50px"],
                         ["CGST %",              "right",  "58px"],
@@ -343,7 +360,7 @@ const SalesReport = ({ onClose, onMinimize, title = "Sales Report" }) => {
                   </thead>
                   <tbody>
                     {loading ? (
-                      <tr><td colSpan="15" style={{ textAlign: "center", padding: "20px", color: "#666", fontStyle: "italic", border: "1px solid #ddd" }}>Loading...</td></tr>
+                      <tr><td colSpan="17" style={{ textAlign: "center", padding: "20px", color: "#666", fontStyle: "italic", border: "1px solid #ddd" }}>Loading...</td></tr>
                     ) : data.length > 0 ? (
                       <>
                         {data.map((row, i) => (
@@ -355,6 +372,8 @@ const SalesReport = ({ onClose, onMinimize, title = "Sales Report" }) => {
                             <td style={{ border: "1px solid #d0d0d0", padding: "3px 5px", color: "#00008b", fontWeight: "600", whiteSpace: "nowrap" }}>{row.invoice_no}</td>
                             <td style={{ border: "1px solid #d0d0d0", padding: "3px 5px", textAlign: "center", whiteSpace: "nowrap" }}>{fmtDate(row.invoice_date)}</td>
                             <td style={{ border: "1px solid #d0d0d0", padding: "3px 5px", textAlign: "right", color: "#8b0000", fontWeight: "600", fontVariantNumeric: "tabular-nums" }}>{fmt(row.total_invoice_value)}</td>
+                            <td style={{ border: "1px solid #d0d0d0", padding: "3px 5px", textAlign: "right", color: "#006400", fontWeight: "600", fontVariantNumeric: "tabular-nums" }}>{fmt(row.paid_amount)}</td>
+                            <td style={{ border: "1px solid #d0d0d0", padding: "3px 5px", textAlign: "right", color: "#8b0000", fontWeight: "600", fontVariantNumeric: "tabular-nums" }}>{fmt(row.balance_amount)}</td>
                             <td style={{ border: "1px solid #d0d0d0", padding: "3px 5px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{fmt(row.taxable_value)}</td>
                             <td style={{ border: "1px solid #d0d0d0", padding: "3px 5px", textAlign: "right" }}>{row.total_qty || "—"}</td>
                             <td style={{ border: "1px solid #d0d0d0", padding: "3px 5px", textAlign: "right", color: "#555" }}>{Number(row.cgst_percent) > 0 ? `${fmt(row.cgst_percent)}%` : <span style={{ color: "#bbb" }}>—</span>}</td>
@@ -368,6 +387,8 @@ const SalesReport = ({ onClose, onMinimize, title = "Sales Report" }) => {
                         <tr style={{ background: "#d5e3f0", fontWeight: "bold", borderTop: "2px solid #6a90b5" }}>
                           <td colSpan="6" style={{ border: "1px solid #a0bbd0", padding: "4px 8px", textAlign: "right", textTransform: "uppercase", letterSpacing: "0.5px", fontSize: "10px" }}>TOTAL</td>
                           <td style={{ border: "1px solid #a0bbd0", padding: "4px 5px", textAlign: "right", color: "#8b0000", fontVariantNumeric: "tabular-nums" }}>{fmt(totals.total_invoice_value)}</td>
+                          <td style={{ border: "1px solid #a0bbd0", padding: "4px 5px", textAlign: "right", color: "#006400", fontVariantNumeric: "tabular-nums" }}>{fmt(totals.paid_amount)}</td>
+                          <td style={{ border: "1px solid #a0bbd0", padding: "4px 5px", textAlign: "right", color: "#8b0000", fontVariantNumeric: "tabular-nums" }}>{fmt(totals.balance_amount)}</td>
                           <td style={{ border: "1px solid #a0bbd0", padding: "4px 5px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{fmt(totals.taxable_value)}</td>
                           <td style={{ border: "1px solid #a0bbd0", padding: "4px 5px", textAlign: "right" }}>{totals.total_qty}</td>
                           <td style={{ border: "1px solid #a0bbd0", padding: "4px 5px" }}></td>
@@ -379,7 +400,7 @@ const SalesReport = ({ onClose, onMinimize, title = "Sales Report" }) => {
                         </tr>
                       </>
                     ) : (
-                      <tr><td colSpan="15" style={{ textAlign: "center", padding: "24px", color: "#aaa", fontStyle: "italic", border: "1px solid #ddd" }}>No sales records found.</td></tr>
+                      <tr><td colSpan="17" style={{ textAlign: "center", padding: "24px", color: "#aaa", fontStyle: "italic", border: "1px solid #ddd" }}>No sales records found.</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -388,46 +409,48 @@ const SalesReport = ({ onClose, onMinimize, title = "Sales Report" }) => {
 
             {/* ── PENDING REPORT TABLE ── */}
             {activeTab === "pending" && (
-              <div className="overflow-x-auto w-full">
-                <table className="w-full border-collapse table-auto min-w-full" style={{ fontSize: "13px", fontFamily: "Arial, sans-serif" }}>
+              <div className="w-full overflow-x-auto">
+                <table className="w-full border border-gray-600 border-collapse" style={{ fontSize: '13px', fontFamily: "'Tahoma','Arial',sans-serif" }}>
                   <thead>
-                    <tr style={{ background: "#c5d7e9", color: "#0d2340", position: "sticky", top: 0, zIndex: 10 }}>
-                      {[
-                        ["S.NO",           "center", "50px"],
-                        ["CUSTOMER NAME",  "left",   "320px"],
-                        ["INVOICE NO",     "left",   "160px"],
-                        ["BILL AMOUNT",    "right",  "140px"],
-                        ["PAID AMOUNT",    "right",  "140px"],
-                        ["BALANCE AMOUNT", "right",  "140px"],
-                      ].map(([label, align, width]) => (
-                        <th key={label} style={{ border: "1px solid #8ca8c5", padding: "4px 5px", textAlign: align, fontWeight: "bold", whiteSpace: "nowrap", width, minWidth: width }}>{label}</th>
-                      ))}
+                    <tr style={{ background: '#c5d7e9', color: '#0d2340', position: 'sticky', top: 0, zIndex: 10 }}>
+                      <th style={{ border: '1px solid #8ca8c5', padding: '5px 5px', textAlign: 'center', width: '42px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>SNO</th>
+                      <th style={{ border: '1px solid #8ca8c5', padding: '5px 8px', textAlign: 'left', fontWeight: 'bold', whiteSpace: 'nowrap' }}>CUSTOMER NAME</th>
+                      <th style={{ border: '1px solid #8ca8c5', padding: '5px 8px', textAlign: 'left', fontWeight: 'bold', whiteSpace: 'nowrap' }}>BILL NO</th>
+                      <th style={{ border: '1px solid #8ca8c5', padding: '5px 8px', textAlign: 'left', fontWeight: 'bold', whiteSpace: 'nowrap' }}>DATE</th>
+                      <th style={{ border: '1px solid #8ca8c5', padding: '5px 8px', textAlign: 'right', fontWeight: 'bold', whiteSpace: 'nowrap' }}>BILL AMOUNT</th>
+                      <th style={{ border: '1px solid #8ca8c5', padding: '5px 8px', textAlign: 'right', fontWeight: 'bold', whiteSpace: 'nowrap' }}>PAID AMOUNT</th>
+                      <th style={{ border: '1px solid #8ca8c5', padding: '5px 8px', textAlign: 'right', fontWeight: 'bold', whiteSpace: 'nowrap' }}>BALANCE DUE</th>
                     </tr>
                   </thead>
                   <tbody>
                     {loadingPending ? (
-                      <tr><td colSpan="6" style={{ textAlign: "center", padding: "20px", color: "#666", fontStyle: "italic", border: "1px solid #ddd" }}>Loading...</td></tr>
+                      <tr><td colSpan="7" className="text-center py-8 text-gray-500 italic">Loading...</td></tr>
                     ) : pendingData.length > 0 ? (
                       <>
                         {pendingData.map((row, i) => (
-                          <tr key={i} style={{ background: i % 2 === 0 ? "#ffffff" : "#edf2f8" }}>
-                            <td style={{ border: "1px solid #d0d0d0", padding: "3px 5px", textAlign: "center", color: "#555" }}>{i + 1}</td>
-                            <td style={{ border: "1px solid #d0d0d0", padding: "3px 5px", color: "#00008b", fontWeight: "600", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "320px" }}>{row.customer_name}</td>
-                            <td style={{ border: "1px solid #d0d0d0", padding: "3px 5px", color: "#00008b", fontWeight: "600", whiteSpace: "nowrap" }}>{row.invoice_no}</td>
-                            <td style={{ border: "1px solid #d0d0d0", padding: "3px 5px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>₹{fmt(row.bill_amount)}</td>
-                            <td style={{ border: "1px solid #d0d0d0", padding: "3px 5px", textAlign: "right", color: "#006400", fontVariantNumeric: "tabular-nums" }}>₹{fmt(row.paid_amount)}</td>
-                            <td style={{ border: "1px solid #d0d0d0", padding: "3px 5px", textAlign: "right", color: "#8b0000", fontWeight: "700", fontVariantNumeric: "tabular-nums" }}>₹{fmt(row.balance_amount)}</td>
+                          <tr key={i} className={`${i % 2 === 0 ? "bg-white" : "bg-[#f5f5f5]"} hover:bg-yellow-50`}>
+                            <td className="border border-gray-300 px-3 py-1.5 text-center">{i + 1}</td>
+                            <td className="border border-gray-300 px-3 py-1.5 font-semibold text-blue-800">{row.customer_name}</td>
+                            <td className="border border-gray-300 px-3 py-1.5 font-semibold text-blue-800">{row.invoice_no}</td>
+                            <td className="border border-gray-300 px-3 py-1.5 text-gray-700">{fmtDate(row.invoice_date)}</td>
+                            <td className="border border-gray-300 px-3 py-1.5 text-right text-gray-700">{fmt(row.bill_amount)}</td>
+                            <td className="border border-gray-300 px-3 py-1.5 text-right text-gray-700">{fmt(row.paid_amount)}</td>
+                            <td className="border border-gray-300 px-3 py-1.5 text-right font-bold text-gray-800">{fmt(row.balance_amount)}</td>
                           </tr>
                         ))}
-                        <tr style={{ background: "#d5e3f0", fontWeight: "bold", borderTop: "2px solid #6a90b5" }}>
-                          <td colSpan="3" style={{ border: "1px solid #a0bbd0", padding: "4px 8px", textAlign: "right", textTransform: "uppercase", letterSpacing: "0.5px", fontSize: "10px" }}>TOTAL</td>
-                          <td style={{ border: "1px solid #a0bbd0", padding: "4px 5px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>₹{fmt(pendingTotals.bill_amount)}</td>
-                          <td style={{ border: "1px solid #a0bbd0", padding: "4px 5px", textAlign: "right", color: "#006400", fontVariantNumeric: "tabular-nums" }}>₹{fmt(pendingTotals.paid_amount)}</td>
-                          <td style={{ border: "1px solid #a0bbd0", padding: "4px 5px", textAlign: "right", color: "#8b0000", fontVariantNumeric: "tabular-nums" }}>₹{fmt(pendingTotals.balance_amount)}</td>
+                        <tr className="bg-[#dde3ec] font-bold border-t-2 border-gray-600">
+                          <td colSpan="4" className="border border-gray-400 px-3 py-2 text-right uppercase">Total</td>
+                          <td className="border border-gray-400 px-3 py-2 text-right text-gray-700">{fmt(pendingTotals.bill_amount)}</td>
+                          <td className="border border-gray-400 px-3 py-2 text-right text-gray-700">{fmt(pendingTotals.paid_amount)}</td>
+                          <td className="border border-gray-400 px-3 py-2 text-right text-gray-800 font-bold">{fmt(pendingTotals.balance_amount)}</td>
                         </tr>
                       </>
                     ) : (
-                      <tr><td colSpan="6" style={{ textAlign: "center", padding: "24px", color: "#aaa", fontStyle: "italic", border: "1px solid #ddd" }}>No pending bills found.</td></tr>
+                      <tr>
+                        <td colSpan="7" className="text-center py-10 text-gray-400 italic">
+                          No pending bills found.
+                        </td>
+                      </tr>
                     )}
                   </tbody>
                 </table>

@@ -4,10 +4,13 @@ import { useScrollLock } from '../../hooks/useScrollLock';
 import { successToast,errorToast, loadingToast } from '../ui/nottifications';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import Addpassword from "./addeditpassword";
+import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 
 const ExpenseForm = ({onClose,refresh}) => {
 const [openIndex, setOpenIndex] = useState(null);
   useScrollLock(true);
+  const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
 
   useEffect(() => {
     const handleClickOutside = () => setOpenIndex(null);
@@ -56,6 +59,11 @@ const handleChange = (index, field, value) => {
   setFormData(updatedForms);
 };
 
+  const handleSaveExpenses = (e) => {
+    e.preventDefault();
+    Saveexpenses(e);
+  };
+
   return (
      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 overflow-y-auto">
            <div className="bg-white w-[650px] mt-[180px] rounded-xl shadow-lg p-6 flex flex-col mb-[80px]">
@@ -70,7 +78,7 @@ const handleChange = (index, field, value) => {
               </div>
           </div>
 
-                <form onSubmit={Saveexpenses} className='space-y-5'>
+                <form onSubmit={handleSaveExpenses} className='space-y-5'>
                   {formData.map((form, index) => (
                     <div key={index} className="">
                     <div>
@@ -144,6 +152,10 @@ const handleChange = (index, field, value) => {
                         </div>
                 </form>
            </div>
+
+      {showPasswordModal && (
+        <Addpassword onSuccess={handlePasswordSuccess} onClose={handlePasswordCancel} />
+      )}
      </div>
   )
 };

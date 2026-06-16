@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { SquarePen, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
+import Addpassword from "./addeditpassword";
+import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 
 // Debounce helper
 function debounce(func, delay) {
@@ -14,6 +16,7 @@ function debounce(func, delay) {
 
 const ScrapPcb = () => {
   const navigate = useNavigate();
+  const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
 
   // Form states
   const [scrapNo, setScrapNo] = useState("");
@@ -219,6 +222,14 @@ const ScrapPcb = () => {
     }
   };
 
+  const handleSaveWithPassword = () => {
+    handleSaveEntry();
+  };
+
+  const handleDeleteWithPassword = () => {
+    handleDeleteEntry();
+  };
+
   // Load selected scrap entry details for edit
   const handleLoadEntry = async (selectedSno) => {
     try {
@@ -368,13 +379,13 @@ const ScrapPcb = () => {
               NEW
             </button>
             <button
-              onClick={handleSaveEntry}
+              onClick={handleSaveWithPassword}
               className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-green-600 hover:text-white transition-colors"
             >
               {isEditing ? "UPDATE" : "SAVE"}
             </button>
             <button
-              onClick={() => handleDeleteEntry()}
+              onClick={handleDeleteWithPassword}
               className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-red-600 hover:text-white transition-colors"
             >
               DELETE
@@ -677,7 +688,7 @@ const ScrapPcb = () => {
                     snoList.map((item, i) => (
                       <div
                         key={i}
-                        onClick={() => handleLoadEntry(item.scrap_no)}
+                        onClick={() => requirePassword(() => handleLoadEntry(item.scrap_no))}
                         className="px-4 py-2.5 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0"
                       >
                         <div className="text-[13px] font-bold text-gray-800">{item.scrap_no}</div>
@@ -739,7 +750,7 @@ const ScrapPcb = () => {
                       </td>
                       <td className="px-5 py-3 text-center">
                         <div className="flex justify-center gap-3">
-                          <button onClick={() => handleLoadEntry(item.scrap_no)} title="Edit">
+                          <button onClick={() => requirePassword(() => handleLoadEntry(item.scrap_no))} title="Edit">
                             <SquarePen size={17} className="text-blue-500 hover:text-blue-700 transition-colors" />
                           </button>
                           <button onClick={() => handleDeleteEntry(item.scrap_no)} title="Delete">
@@ -755,6 +766,9 @@ const ScrapPcb = () => {
           </div>
         </div>
       </div>
+      {showPasswordModal && (
+        <Addpassword onSuccess={handlePasswordSuccess} onClose={handlePasswordCancel} />
+      )}
     </div>
   );
 };

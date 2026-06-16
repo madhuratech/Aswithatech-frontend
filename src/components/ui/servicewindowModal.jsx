@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useRef } from "react";
 import { X, Minus, Square, Printer } from "lucide-react";
 import html2pdf from "html2pdf.js";
-import { useNavigate } from "react-router-dom";
+import JobDeliveryChallan from "../pages/Services/jobDcFormat";
+import StandbyDeliveryChallan from "../pages/Services/standbyDcFormat";
 
 const ServiceWindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, children, onFilterChange, initialViewMode, initialView, filters: externalFilters }) => {
-    const navigate = useNavigate();
     const [isMaximized, setIsMaximized] = useState(false);
     const [reportData, setReportData] = useState([]);
     const [dcList, setDcList] = useState([]);
@@ -12,7 +12,9 @@ const ServiceWindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinim
     const [viewMode, setViewMode] = useState(initialViewMode || initialView || "dc");
     const [clientopen, setclientopen] = useState(false);
     const [clientlist, setclientlist] = useState([]);
+    const [docType, setDocType] = useState("Job DC");
     const contentRef = useRef(null);
+    
 
     useEffect(() => {
         if (isOpen) {
@@ -23,7 +25,25 @@ const ServiceWindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinim
 
     const Api_urls = type === "Inward Report"
         ? "http://localhost:3000/api/Inwardentries"
-        : "http://localhost:3000/api/servicedcentry";
+        : type === "DC Format View"
+            ? docType === "Job DC"
+                ? "http://localhost:3000/api/jobdcentry"
+                : docType === "Job Return DC"
+                    ? "http://localhost:3000/api/jobreturndc"
+                    : docType === "Standby DC"
+                        ? "http://localhost:3000/api/standbydcentry"
+                        : docType === "Standby Return DC"
+                            ? "http://localhost:3000/api/standbyreturndc"
+                            : "http://localhost:3000/api/jobdcentry"
+            : type === "Standby DC Format"
+                ? "http://localhost:3000/api/standbydcentry"
+                : type === "Job DC Format"
+                    ? "http://localhost:3000/api/jobdcentry"
+                    : type === "Job Return DC Format"
+                        ? "http://localhost:3000/api/jobreturndc"
+                        : type === "Standby Return DC Format"
+                            ? "http://localhost:3000/api/standbyreturndc"
+                            : "http://localhost:3000/api/servicedcentry";
 
     const [filters, setFilters] = useState({
         fromDate: "",
@@ -40,7 +60,7 @@ const ServiceWindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinim
 
             try {
                 let searchurl = null;
-                if (type === "DC Format") {
+                if (type === "DC Format" || type === "Standby DC Format" || type === "Job DC Format" || type === "Job Return DC Format" || type === "Standby Return DC Format" || type === "DC Format View") {
                     searchurl = `${Api_urls}/DC/search?q=`;
                 } else if (type === "dc" || type === "Inward Report") {
                     searchurl = `${Api_urls}/IE/search?q=`;
@@ -66,9 +86,15 @@ const ServiceWindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinim
 
                 if (uniqueDCs.length > 0) {
                     setFilters(prev => {
-                        if (prev.dcNumber) return prev;
+                        if (prev.dcNumber && type !== "DC Format View") return prev;
                         const latestDC = uniqueDCs[0]?.dc_number || uniqueDCs[0]?.inward_dc_no || uniqueDCs[0]?.invoice_no || "";
                         const updated = { ...prev, dcNumber: latestDC };
+                        onFilterChange?.(updated);
+                        return updated;
+                    });
+                } else {
+                    setFilters(prev => {
+                        const updated = { ...prev, dcNumber: "" };
                         onFilterChange?.(updated);
                         return updated;
                     });
@@ -161,37 +187,14 @@ const ServiceWindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinim
     }, []);
 
     const handlePrint = () => {
-        const printContents = contentRef.current;
-        const printWindow = window.open("", "_blank");
-        printWindow.document.write(`
-    <html>
-      <head>
-        <title>${title || "Report"}</title>
-        <script src="https://cdn.tailwindcss.com"></script>
-        <style>
-          body { margin:0; padding:0; background:white; }
-          @page { size:A4; margin:10mm 0; }
-          html, body { height:auto !important; overflow:hidden !important; }
-          .print-container { width:100%; background:white; display:flex; justify-content:center; padding:0; }
-          table { width:100%; border-collapse:collapse; }
-          th,td {padding:0; }
-          tr { page-break-inside:avoid; }
-          .no-print { display:none !important; }
-        </style>
-      </head>
-      <body>
-        <div class="print-container">${printContents.outerHTML}</div>
-      </body>
-    </html>
-  `);
-        printWindow.document.close();
-        setTimeout(() => { printWindow.focus(); printWindow.print(); }, 1000);
+        window.print();
     };
 
     if (!isOpen || isMinimized) return null;
 
     return (
         <div
+            className="service-modal-overlay"
             style={{
                 position: "fixed", inset: 0, zIndex: 9999,
                 display: "flex",
@@ -201,6 +204,7 @@ const ServiceWindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinim
             }}
         >
             <div
+                className="service-modal-container"
                 style={{
                     display: "flex", flexDirection: "column",
                     boxShadow: "0 4px 24px rgba(0,0,0,0.45)",
@@ -267,6 +271,28 @@ const ServiceWindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinim
                     {/* Left: filter fields */}
                     <div style={{ display: "flex", alignItems: "flex-end", gap: "20px", flexWrap: "wrap" }}>
 
+                        {/* DOCUMENT TYPE */}
+                        {type === "DC Format View" && (
+                            <div style={{ display: "flex", flexDirection: "column" }}>
+                                <label style={{ color: "#fff", fontWeight: "bold", fontSize: "11px", marginBottom: "4px", letterSpacing: "0.5px" }}>
+                                    DOCUMENT TYPE
+                                </label>
+                                <select
+                                    value={docType}
+                                    onChange={(e) => {
+                                        const nextDocType = e.target.value;
+                                        setDocType(nextDocType);
+                                        setFilters(prev => ({ ...prev, dcNumber: "" }));
+                                    }}
+                                    style={{ width: 180, padding: "4px 6px", border: "1px solid #aaa", background: "white", color: "#000", fontSize: "12px", outline: "none" }}
+                                >
+                                    <option value="Job DC">Job DC</option>
+                                    <option value="Standby DC">Standby DC</option>
+                                   
+                                </select>
+                            </div>
+                        )}
+
                         {/* FROM DATE */}
                         <div style={{ display: "flex", flexDirection: "column" }}>
                             <label style={{ color: "#fff", fontWeight: "bold", fontSize: "11px", marginBottom: "4px", letterSpacing: "0.5px" }}>
@@ -296,11 +322,18 @@ const ServiceWindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinim
                         {/* DC / INVOICE NUMBER */}
                         <div style={{ display: "flex", flexDirection: "column", position: "relative" }} className="dc-dropdown">
                             <label style={{ color: "#fff", fontWeight: "bold", fontSize: "11px", marginBottom: "4px", letterSpacing: "0.5px" }}>
-                                {type === "dc" || type === "DC Format" ? "DC NO" : "INVOICE NO"}
+                                {type === "DC Format View"
+                                    ? (docType.includes("Return") ? "RETURN DC NO" : "DC NO")
+                                    : (type === "dc" || type === "DC Format" || type === "Standby DC Format" || type === "Job DC Format" || type === "Job Return DC Format" || type === "Standby Return DC Format" ? "DC NO" : "INVOICE NO")
+                                }
                             </label>
                             <input
                                 type="text"
-                                placeholder={type === "dc" || type === "DC Format" ? "e.g. DC-001" : "e.g. INV-001"}
+                                placeholder={
+                                    type === "DC Format View"
+                                        ? "e.g. DC-001"
+                                        : (type === "dc" || type === "DC Format" || type === "Standby DC Format" || type === "Job DC Format" || type === "Job Return DC Format" || type === "Standby Return DC Format" ? "e.g. DC-001" : "e.g. INV-001")
+                                }
                                 value={filters.dcNumber}
                                 onFocus={() => setopendown(true)}
                                 onChange={(e) => {
@@ -412,6 +445,23 @@ const ServiceWindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinim
                         >
                             GENERATE REPORT
                         </button>
+                        {type === "DC Format View" && (
+                            <button
+                                onClick={() => {
+                                    setViewMode("dc");
+                                    if (onFilterChange) onFilterChange(filters);
+                                }}
+                                style={{
+                                    background: "#0069d9", color: "#fff", border: "1px solid #0062cc",
+                                    padding: "5px 18px", fontSize: "12px", fontWeight: "bold",
+                                    cursor: "pointer", boxShadow: "1px 1px 0 rgba(0,0,0,0.4)", letterSpacing: "0.3px",
+                                }}
+                                onMouseOver={e => e.currentTarget.style.background = "#0056b3"}
+                                onMouseOut={e => e.currentTarget.style.background = "#0069d9"}
+                            >
+                                VIEW
+                            </button>
+                        )}
                         <button
                             onClick={onClose}
                             style={{
@@ -464,12 +514,13 @@ const ServiceWindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinim
                     {/* Printable / report area */}
                     <div
                         ref={contentRef}
+                        className="print-area"
                         style={{ width: "100%", minHeight: "100%", boxSizing: "border-box" }}
                     >
 
                         {/* ── REPORT VIEW ── */}
                         {viewMode === "report" && (
-                            <div style={{ background: "white", border: "1px solid #bbb", padding: "16px 18px 20px 18px", minHeight: "297mm" }}>
+                            <div className="report-sheet" style={{ background: "white", border: "1px solid #bbb", padding: "16px 18px 20px 18px", minHeight: "297mm" }}>
 
                                 {/* Report heading */}
                                 <div style={{ marginBottom: "10px" }}>
@@ -528,7 +579,7 @@ const ServiceWindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinim
                                             </tbody>
                                         </table>
                                     ) : (
-                                    /* ── DC / INVOICE REPORT TABLE ── */
+                                        /* ── DC / INVOICE REPORT TABLE ── */
                                         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px", tableLayout: "auto" }}>
                                             <thead>
                                                 <tr style={{ background: "#b8cce4" }}>
@@ -575,9 +626,21 @@ const ServiceWindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinim
                         {viewMode === "dc" && (
                             <div
                                 className="printable-area"
-                                style={{ width: "100%", minHeight: "auto", padding: 0, overflow: "hidden", boxSizing: "border-box", background: "white" }}
+                                style={{ width: "100%", minHeight: "auto", padding: 0, overflow: "visible", boxSizing: "border-box", background: "white" }}
                             >
-                                {children}
+                                {type === "DC Format View" ? (
+                                    filters.dcNumber ? (
+                                        docType === "Job DC" ? (
+                                            <JobDeliveryChallan key={filters.dcNumber} dcNumber={filters.dcNumber} />
+                                        ): docType === "Standby DC" ? (
+                                            <StandbyDeliveryChallan key={filters.dcNumber} dcNumber={filters.dcNumber} />
+                                        ) : null
+                                    ) : (
+                                        <div style={{ padding: "24px", textAlign: "center", color: "#888", fontSize: "13px" }}>No Document Number Selected</div>
+                                    )
+                                ) : (
+                                    children
+                                )}
                             </div>
                         )}
 
@@ -607,10 +670,45 @@ const ServiceWindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinim
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: #9ca3af; }
                 .printable-area { width: 100% !important; max-width: 100% !important; }
                 @media print {
-                    body { margin: 0 !important; padding: 0 !important; }
-                    .no-print { display: none !important; }
-                    .printable-area { width: 100% !important; overflow: visible !important; }
-                    tr,td,th { page-break-inside: avoid !important; }
+                    body { margin: 0 !important; padding: 0 !important; background: white !important; }
+                    body * { visibility: hidden; }
+                    .print-area, .print-area * { visibility: visible; }
+                    .print-area {
+                        display: block !important;
+                        position: absolute !important;
+                        left: 0 !important; top: 0 !important;
+                        width: 100% !important;
+                        margin: 0 !important; padding: 0 !important;
+                        border: none !important; box-shadow: none !important;
+                    }
+                    #root,
+                    #root > div,
+                    main,
+                    main > div,
+                    main > div > div,
+                    .service-modal-overlay,
+                    .service-modal-container,
+                    .custom-scrollbar {
+                        display: block !important;
+                        position: static !important;
+                        height: auto !important;
+                        min-height: auto !important;
+                        max-height: none !important;
+                        overflow: visible !important;
+                        float: none !important;
+                        box-shadow: none !important;
+                        border: none !important;
+                        background: transparent !important;
+                    }
+                    .custom-scrollbar {
+                        padding: 0 !important;
+                        margin: 0 !important;
+                    }
+                    .no-print, button { display: none !important; }
+                    .report-sheet { min-height: auto !important; border: none !important; }
+                    .printable-area { width: 100% !important; min-height: auto !important; overflow: visible !important; }
+                    table { border-collapse: collapse !important; }
+                    tr, td, th { page-break-inside: avoid !important; }
                 }
             `}</style>
         </div>

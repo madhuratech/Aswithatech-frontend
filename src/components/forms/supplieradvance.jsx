@@ -2,10 +2,13 @@ import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { errorToast, successToast } from "../ui/nottifications";
+import Addpassword from "./addeditpassword";
+import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 
 const Supplieradvance = () => {
 
    const navigate = useNavigate();
+   const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
    const [modeopen , setModeopen] = useState(false);
    const [receipt, setReceipt] = useState("");
    const [receiptlist , setReceiptlist] = useState([]);
@@ -197,6 +200,14 @@ const Supplieradvance = () => {
      }
    };
 
+   const handleSave = () => {
+     savesupplier();
+   };
+
+   const handleDelete = () => {
+     deleteReceipt();
+   };
+
    const balance =
        Number(pototal || 0) -
        Number(formData.paid_amount || 0) -
@@ -326,7 +337,7 @@ const Supplieradvance = () => {
    const dropdownCls = "absolute top-full left-0 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 max-h-52 overflow-y-auto";
 
    return (
-     <div className="min-h-screen bg-gray-50/70 p-6 font-sans">
+     <><div className="min-h-screen bg-gray-50/70 p-6 font-sans">
        {/* Back Button */}
        <button
          onClick={() => navigate(-1)}
@@ -357,18 +368,18 @@ const Supplieradvance = () => {
              >
                EDIT
              </button>
-             <button
-               onClick={savesupplier}
-               className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-green-600 hover:text-white transition-colors"
-             >
-               SAVE
-             </button>
-             <button
-               onClick={deleteReceipt}
-               className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-red-600 hover:text-white transition-colors"
-             >
-               DELETE
-             </button>
+              <button
+                onClick={handleSave}
+                className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-green-600 hover:text-white transition-colors"
+              >
+                SAVE
+              </button>
+              <button
+                onClick={handleDelete}
+                className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-red-600 hover:text-white transition-colors"
+              >
+                DELETE
+              </button>
              <button
                onClick={() => navigate(-1)}
                className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-red-600 hover:text-white transition-colors"
@@ -656,11 +667,11 @@ const Supplieradvance = () => {
                      receiptlist.map((item, i) => (
                        <div
                          key={i}
-                         onClick={() => {
-                           setloadreceipt(item.receipt_no);
-                           setreceiptsearch(false);
-                           loadReceipt(item.receipt_no);
-                         }}
+                          onClick={() => {
+                            setloadreceipt(item.receipt_no);
+                            setreceiptsearch(false);
+                            requirePassword(() => loadReceipt(item.receipt_no));
+                          }}
                          className="px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0"
                        >
                          {item.receipt_no}
@@ -676,9 +687,12 @@ const Supplieradvance = () => {
 
          </div>
 
-       </div>
-     </div>
-   );
+        </div>
+      </div>
+      {showPasswordModal && (
+        <Addpassword onSuccess={handlePasswordSuccess} onClose={handlePasswordCancel} />
+      )}
+    </>);
 };
 
 export default Supplieradvance;

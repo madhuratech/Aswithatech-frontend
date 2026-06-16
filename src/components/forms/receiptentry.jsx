@@ -1,10 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Trash2 } from "lucide-react";
+import { Trash2, CheckCircle, Eye } from "lucide-react";
 import toast from "react-hot-toast";
+import SaleswindowModel from "../ui/saleswindowModal";
+import { ReceiptVoucher } from "../ui/receiptreport";
+import Addpassword from "./addeditpassword";
+import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 
 const ReceiptEntry = () => {
   const navigate = useNavigate();
+  const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
   const Api_url = "http://localhost:3000/api/receipts";
 
   // ── header ────────────────────────────────────────────────────
@@ -19,6 +24,7 @@ const ReceiptEntry = () => {
     bill_no: "",
     bill_date: "",
     bill_amount: "",
+    already_paid: "",
     advance_paid: "",
     tds_amt: "",
     paid_amount: "",
@@ -49,6 +55,14 @@ const ReceiptEntry = () => {
   const [loadOpen, setLoadOpen] = useState(false);
   const [receiptList, setReceiptList] = useState([]);
   const [loadedId, setLoadedId] = useState(null);
+
+  // ── success modal & view modal ────────────────────────────────
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [savedReceiptNo, setSavedReceiptNo] = useState("");
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [receiptModalMin, setReceiptModalMin] = useState(false);
+  const [viewReceiptNo, setViewReceiptNo] = useState("");
+  const [viewReceiptData, setViewReceiptData] = useState(null);
 
   // ── init: today + auto receipt no ────────────────────────────
   useEffect(() => {
@@ -97,16 +111,15 @@ const ReceiptEntry = () => {
   // ── select a bill from dropdown → auto-fill bill amount ───────
   const selectBill = (bill) => {
     const ba  = Number(bill.bill_amount || 0);
-    const adv = Number(entry.advance_paid || 0);
-    const tds = Number(entry.tds_amt || 0);
+    const ap  = Number(bill.already_paid || 0);
     const paid = Number(entry.paid_amount || 0);
-    const ded  = Number(entry.other_deduction || 0);
     setEntry((p) => ({
       ...p,
       bill_no: bill.bill_no,
       bill_date: bill.bill_date ? String(bill.bill_date).split("T")[0] : "",
       bill_amount: ba,
-      balance: (ba - adv - tds - paid - ded).toFixed(2),
+      already_paid: ap,
+      balance: (ba - ap - paid).toFixed(2),
     }));
     setBillOpen(false);
   };
@@ -114,16 +127,32 @@ const ReceiptEntry = () => {
   // ── recalculate balance whenever any amount field changes ─────
   const calcBalance = (updated) => {
     const ba   = Number(updated.bill_amount   || 0);
-    const adv  = Number(updated.advance_paid  || 0);
-    const tds  = Number(updated.tds_amt       || 0);
+    const ap   = Number(updated.already_paid  || 0);
     const paid = Number(updated.paid_amount   || 0);
-    const ded  = Number(updated.other_deduction || 0);
-    return (ba - adv - tds - paid - ded).toFixed(2);
+    return (ba - ap - paid).toFixed(2);
   };
 
   const updateEntry = (field, value) => {
     setEntry((prev) => {
       const updated = { ...prev, [field]: value };
+      updated.balance = calcBalance(updated);
+      return updated;
+    });
+  };
+
+  const handlePaymentModeChange = (mode) => {
+    const isBankMode = ["Bank Transfer", "Cheque", "UPI", "NEFT", "RTGS", "DD"].includes(mode);
+    setEntry((prev) => {
+      let bankName = prev.bank_name;
+      if (isBankMode && !bankName?.trim()) {
+        for (let i = tabledata.length - 1; i >= 0; i--) {
+          if (tabledata[i].bank_name?.trim()) {
+            bankName = tabledata[i].bank_name;
+            break;
+          }
+        }
+      }
+      const updated = { ...prev, payment_mode: mode, bank_name: bankName };
       updated.balance = calcBalance(updated);
       return updated;
     });
@@ -143,20 +172,21 @@ const ReceiptEntry = () => {
       if (!entry.reference_number?.trim()) { toast.error("Reference Number is required for " + entry.payment_mode); return; }
     }
 
+    const lastBankName = entry.bank_name;
     setTabledata((prev) => [...prev, { ...entry }]);
     setEntry({
-      bill_no: "", bill_date: "", bill_amount: "", advance_paid: "",
-      tds_amt: "", paid_amount: "", other_deduction: "",
+      bill_no: "", bill_date: "", bill_amount: "", already_paid: "",
+      paid_amount: "",
       balance: "", remarks: "", payment_mode: "",
-      bank_name: "", reference_number: "",
+      bank_name: lastBankName, reference_number: "",
     });
   };
 
   // ── CLEAR current entry row ───────────────────────────────────
   const clearEntry = () =>
     setEntry({
-      bill_no: "", bill_date: "", bill_amount: "", advance_paid: "",
-      tds_amt: "", paid_amount: "", other_deduction: "",
+      bill_no: "", bill_date: "", bill_amount: "", already_paid: "",
+      paid_amount: "",
       balance: "", remarks: "", payment_mode: "",
       bank_name: "", reference_number: "",
     });
@@ -166,10 +196,17 @@ const ReceiptEntry = () => {
 
   // ── table totals ──────────────────────────────────────────────
   const totalBillAmt  = tabledata.reduce((s, r) => s + Number(r.bill_amount  || 0), 0);
-  const totalAdvance  = tabledata.reduce((s, r) => s + Number(r.advance_paid || 0), 0);
-  const totalTds      = tabledata.reduce((s, r) => s + Number(r.tds_amt      || 0), 0);
+  const totalAlreadyPaid = tabledata.reduce((s, r) => s + Number(r.already_paid || 0), 0);
   const totalPaid     = tabledata.reduce((s, r) => s + Number(r.paid_amount  || 0), 0);
   const totalBalance  = tabledata.reduce((s, r) => s + Number(r.balance      || 0), 0);
+
+  const handleSaveReceipt = () => {
+    saveReceipt();
+  };
+
+  const handleDeleteReceipt = () => {
+    deleteReceipt();
+  };
 
   // ── SAVE ──────────────────────────────────────────────────────
   const saveReceipt = async () => {
@@ -186,10 +223,8 @@ const ReceiptEntry = () => {
       items: tabledata.map((r) => ({
         bill_no:         r.bill_no,
         bill_amount:     r.bill_amount,
-        advance_paid:    r.advance_paid,
-        tds_amt:         r.tds_amt,
+        already_paid:    r.already_paid,
         paid_amount:     r.paid_amount,
-        other_deduction: r.other_deduction,
         balance:         r.balance,
         remarks:         r.remarks,
         payment_mode:    r.payment_mode,
@@ -205,8 +240,32 @@ const ReceiptEntry = () => {
       const data   = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed");
       toast.success(method === "PUT" ? "Receipt updated" : "Receipt saved");
-      resetAll();
+      setSavedReceiptNo(header.receipt_no);
+      setShowSuccessModal(true);
     } catch (e) { console.error(e); toast.error("Failed to save receipt"); }
+  };
+
+  const handleViewReceipt = async () => {
+    try {
+      const res = await fetch(`${Api_url}/${encodeURIComponent(savedReceiptNo)}`);
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.message); return; }
+      setViewReceiptData({
+        ...data.header,
+        items: data.items,
+      });
+      setViewReceiptNo(savedReceiptNo);
+      setShowSuccessModal(false);
+      setShowReceiptModal(true);
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to load receipt details");
+    }
+  };
+
+  const handleCloseSuccessModal = () => {
+    setShowSuccessModal(false);
+    resetAll();
   };
 
   // ── DELETE ────────────────────────────────────────────────────
@@ -242,10 +301,8 @@ const ReceiptEntry = () => {
       setTabledata((data.items || []).map((item) => ({
         bill_no:         item.bill_no         || "",
         bill_amount:     item.bill_amount      || 0,
-        advance_paid:    item.advance_paid     || 0,
-        tds_amt:         item.tds_amt          || 0,
+        already_paid:    item.already_paid     || 0,
         paid_amount:     item.paid_amount      || 0,
-        other_deduction: item.other_deduction  || 0,
         balance:         item.balance          || 0,
         remarks:         item.remarks          || "",
         payment_mode:    item.payment_mode     || "",
@@ -262,7 +319,7 @@ const ReceiptEntry = () => {
   const resetAll = async () => {
     const today = new Date().toISOString().split("T")[0];
     setHeader({ receipt_no: "", receipt_date: today, customer_name: "" });
-    setEntry({ bill_no: "", bill_amount: "", advance_paid: "", tds_amt: "", paid_amount: "", other_deduction: "", balance: "", remarks: "", payment_mode: "", bank_name: "", reference_number: "" });
+    setEntry({ bill_no: "", bill_amount: "", already_paid: "", paid_amount: "", balance: "", remarks: "", payment_mode: "", bank_name: "", reference_number: "" });
     setTabledata([]);
     setPendingBills([]);
     setLoadedId(null);
@@ -293,35 +350,16 @@ const ReceiptEntry = () => {
           <h2 className="text-xl font-bold text-black tracking-tight">Receipt Entry</h2>
           <div className="flex gap-1.5">
             <button onClick={resetAll}       className="border px-3 py-1.5 rounded-lg hover:bg-green-600 hover:text-white text-sm">NEW</button>
-            <button onClick={saveReceipt}    className="border px-3 py-1.5 rounded-lg hover:bg-green-600 hover:text-white text-sm">SAVE</button>
-            <button onClick={deleteReceipt}  className="border px-3 py-1.5 rounded-lg hover:bg-red-600   hover:text-white text-sm">DELETE</button>
+            <button onClick={handleSaveReceipt}    className="border px-3 py-1.5 rounded-lg hover:bg-green-600 hover:text-white text-sm">SAVE</button>
+            <button onClick={handleDeleteReceipt}  className="border px-3 py-1.5 rounded-lg hover:bg-red-600   hover:text-white text-sm">DELETE</button>
             <button onClick={() => navigate(-1)} className="border px-3 py-1.5 rounded-lg hover:bg-red-600 hover:text-white text-sm">CLOSE</button>
           </div>
         </div>
 
         {/* ── Row 1: Receipt No | Date | Customer Name ── */}
-        <div className="flex flex-row items-end gap-10 border-b border-gray-100 pb-6 mb-6">
-          <div className="flex flex-col gap-2">
-            <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Receipt No</label>
-            <input
-              readOnly
-              value={header.receipt_no}
-              className="w-[160px] p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black bg-gray-50 outline-none shadow-sm"
-            />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Date</label>
-            <input
-              type="date"
-              value={header.receipt_date}
-              onChange={(e) => setHeader({ ...header, receipt_date: e.target.value })}
-              className="w-[180px] p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black outline-none shadow-sm"
-            />
-          </div>
-
+        <div className="grid grid-cols-12 gap-7   border-b border-gray-100 pb-6 mb-6">
           {/* Customer Name — auto-loads bills on selection */}
-          <div className="flex flex-col gap-2 flex-1 relative">
+          <div className="col-span-4 flex flex-col relative">
             <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Customer Name</label>
             <input
               type="text"
@@ -329,7 +367,7 @@ const ReceiptEntry = () => {
               value={header.customer_name}
               onFocus={() => setClientOpen(true)}
               onChange={(e) => setHeader({ ...header, customer_name: e.target.value })}
-              className="w-full max-w-[380px] p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black outline-none bg-white shadow-sm"
+              className="w-full max-w-[350px] p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black outline-none bg-white shadow-sm mt-2"
             />
             {clientOpen && clientList.length > 0 && (
               <div className="absolute top-[66px] left-0 w-full max-w-[380px] bg-white shadow-lg z-50 border border-gray-200 rounded max-h-40 overflow-y-auto">
@@ -350,6 +388,25 @@ const ReceiptEntry = () => {
                 ))}
               </div>
             )}
+          </div>
+          
+          <div className="flex flex-col col-span-3 gap-2">
+            <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Receipt No</label>
+            <input
+              readOnly
+              value={header.receipt_no}
+              className="w-full max-w-[250px] p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black bg-gray-50 outline-none shadow-sm"
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Date</label>
+            <input
+              type="date"
+              value={header.receipt_date}
+              onChange={(e) => setHeader({ ...header, receipt_date: e.target.value })}
+              className="w-[180px] p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black outline-none shadow-sm"
+            />
           </div>
         </div>
 
@@ -407,27 +464,13 @@ const ReceiptEntry = () => {
               />
             </div>
 
-            {/* Advance Paid */}
+            {/* Already Paid — readonly, auto-filled */}
             <div className="flex flex-col gap-1">
-              <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Advance Paid</label>
+              <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Already Paid</label>
               <input
-                type="number"
-                placeholder="0.00"
-                value={entry.advance_paid}
-                onChange={(e) => updateEntry("advance_paid", e.target.value)}
-                className="p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black outline-none bg-white shadow-sm"
-              />
-            </div>
-
-            {/* TDS Amount */}
-            <div className="flex flex-col gap-1">
-              <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">TDS Amount</label>
-              <input
-                type="number"
-                placeholder="0.00"
-                value={entry.tds_amt}
-                onChange={(e) => updateEntry("tds_amt", e.target.value)}
-                className="p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black outline-none bg-white shadow-sm"
+                readOnly
+                value={entry.already_paid}
+                className="p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black bg-gray-100 outline-none shadow-sm"
               />
             </div>
 
@@ -439,18 +482,6 @@ const ReceiptEntry = () => {
                 placeholder="0.00"
                 value={entry.paid_amount}
                 onChange={(e) => updateEntry("paid_amount", e.target.value)}
-                className="p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black outline-none bg-white shadow-sm"
-              />
-            </div>
-
-            {/* Other Deduction */}
-            <div className="flex flex-col gap-1">
-              <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Other Deduction</label>
-              <input
-                type="number"
-                placeholder="0.00"
-                value={entry.other_deduction}
-                onChange={(e) => updateEntry("other_deduction", e.target.value)}
                 className="p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black outline-none bg-white shadow-sm"
               />
             </div>
@@ -473,7 +504,7 @@ const ReceiptEntry = () => {
                 placeholder="Select Mode"
                 value={entry.payment_mode}
                 onFocus={() => setModeOpen(true)}
-                onChange={(e) => setEntry((p) => ({ ...p, payment_mode: e.target.value }))}
+                onChange={(e) => handlePaymentModeChange(e.target.value)}
                 className="p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black outline-none bg-white shadow-sm"
               />
               {modeOpen && (
@@ -481,7 +512,7 @@ const ReceiptEntry = () => {
                   {["Cash", "Bank Transfer", "UPI", "Cheque", "NEFT", "RTGS", "DD"].map((m) => (
                     <div
                       key={m}
-                      onClick={() => { setEntry((p) => ({ ...p, payment_mode: m })); setModeOpen(false); }}
+                      onClick={() => { handlePaymentModeChange(m); setModeOpen(false); }}
                       className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
                     >
                       {m}
@@ -568,7 +599,7 @@ const ReceiptEntry = () => {
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200 text-left">
-                {["Bill No","Bill Date","Bill Amount","Advance Paid","TDS","Paid Amount","Other Deduction","Balance","Payment Mode","Bank Name","Reference No","Remarks","Del"].map((h) => (
+                {["Bill No","Bill Date","Bill Amount","Already Paid","Paid Amount","Balance","Payment Mode","Bank Name","Reference No","Remarks","Del"].map((h) => (
                   <th key={h} className="p-3 text-[11px] font-black text-gray-500 border-r border-gray-100 uppercase text-center whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -580,10 +611,8 @@ const ReceiptEntry = () => {
                     <td className="p-3 text-[12px] font-bold text-black border-r border-gray-100 text-center">{row.bill_no}</td>
                     <td className="p-3 text-[12px] text-gray-700 border-r border-gray-100 text-center">{row.bill_date || ""}</td>
                     <td className="p-3 text-[12px] font-bold text-blue-700 border-r border-gray-100 text-center">{fmt(row.bill_amount)}</td>
-                    <td className="p-3 text-[12px] font-semibold text-gray-700 border-r border-gray-100 text-center">{fmt(row.advance_paid)}</td>
-                    <td className="p-3 text-[12px] font-semibold text-gray-700 border-r border-gray-100 text-center">{fmt(row.tds_amt)}</td>
+                    <td className="p-3 text-[12px] font-semibold text-gray-700 border-r border-gray-100 text-center">{fmt(row.already_paid)}</td>
                     <td className="p-3 text-[12px] font-bold text-green-700 border-r border-gray-100 text-center">{fmt(row.paid_amount)}</td>
-                    <td className="p-3 text-[12px] font-semibold text-gray-700 border-r border-gray-100 text-center">{fmt(row.other_deduction)}</td>
                     <td className="p-3 text-[12px] font-bold text-red-600 border-r border-gray-100 text-center">{fmt(row.balance)}</td>
                     <td className="p-3 text-[12px] font-semibold text-gray-700 border-r border-gray-100 text-center">{row.payment_mode}</td>
                     <td className="p-3 text-[12px] font-semibold text-gray-700 border-r border-gray-100 text-center">{row.bank_name || ""}</td>
@@ -600,7 +629,7 @@ const ReceiptEntry = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="13" className="p-10 text-center text-gray-400 text-sm">
+                  <td colSpan="11" className="p-10 text-center text-gray-400 text-sm">
                     Select a customer, choose a bill and click <strong>ADD</strong>
                   </td>
                 </tr>
@@ -613,10 +642,8 @@ const ReceiptEntry = () => {
                   <td className="p-3 text-center text-gray-600 border-r border-gray-100">TOTAL</td>
                   <td className="p-3 border-r border-gray-100"></td>
                   <td className="p-3 text-center text-blue-700 border-r border-gray-100">{fmt(totalBillAmt)}</td>
-                  <td className="p-3 text-center text-gray-700 border-r border-gray-100">{fmt(totalAdvance)}</td>
-                  <td className="p-3 text-center text-gray-700 border-r border-gray-100">{fmt(totalTds)}</td>
+                  <td className="p-3 text-center text-gray-700 border-r border-gray-100">{fmt(totalAlreadyPaid)}</td>
                   <td className="p-3 text-center text-green-700 border-r border-gray-100">{fmt(totalPaid)}</td>
-                  <td className="p-3 border-r border-gray-100"></td>
                   <td className="p-3 text-center text-red-600 border-r border-gray-100">{fmt(totalBalance)}</td>
                   <td className="p-3 border-r border-gray-100"></td>
                   <td className="p-3 border-r border-gray-100"></td>
@@ -649,7 +676,7 @@ const ReceiptEntry = () => {
                   receiptList.map((r) => (
                     <div
                       key={r.id}
-                      onClick={() => { setLoadReceipt(r.receipt_no); loadReceiptData(r.receipt_no); }}
+                      onClick={() => { setLoadReceipt(r.receipt_no); requirePassword(() => loadReceiptData(r.receipt_no)); }}
                       className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
                     >
                       {r.receipt_no}
@@ -663,6 +690,74 @@ const ReceiptEntry = () => {
           </div>
         </div>
       </div>
+
+      {/* ── Success Modal ── */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-8 shadow-2xl w-full max-w-sm text-center">
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+                <CheckCircle className="w-9 h-9 text-green-500" />
+              </div>
+            </div>
+            <h2 className="text-xl font-black text-gray-800 mb-1">Receipt Bill To Bill Saved Successfully!</h2>
+            <p className="text-sm text-gray-500 mb-1">Receipt has been created.</p>
+            <p className="text-sm font-black text-blue-600 mb-6">Receipt No : {savedReceiptNo}</p>
+            <div className="flex gap-3">
+              <button
+                onClick={handleViewReceipt}
+                className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white py-2.5 rounded-xl font-bold hover:bg-blue-700 transition-colors"
+              >
+                <Eye className="w-4 h-4" /> View
+              </button>
+              <button
+                onClick={handleCloseSuccessModal}
+                className="flex-1 border border-gray-300 py-2.5 rounded-xl font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Receipt View Modal ── */}
+      <SaleswindowModel
+        title="Receipt Voucher"
+        isOpen={showReceiptModal}
+        type="Receipt Format"
+        isMinimized={receiptModalMin}
+        onMinimize={() => setReceiptModalMin(true)}
+        onClose={() => {
+          setShowReceiptModal(false);
+          setReceiptModalMin(false);
+          resetAll();
+        }}
+      >
+        {viewReceiptData && (
+          <div className="flex justify-center p-4 bg-white">
+            <ReceiptVoucher receipt={viewReceiptData} />
+          </div>
+        )}
+      </SaleswindowModel>
+
+      {/* ── Minimized bar ── */}
+      {showReceiptModal && receiptModalMin && (
+        <div className="fixed bottom-0 left-0 right-0 h-10 bg-[#e0e0e0] border-t border-gray-400 flex items-center px-4 z-[99999] shadow-[0_-2px_10px_rgba(0,0,0,0.1)]">
+          <button
+            onClick={() => setReceiptModalMin(false)}
+            className="flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-blue-700 to-blue-500 text-white text-xs font-bold rounded-sm border border-gray-600 shadow-[inset_1px_1px_0px_rgba(255,255,255,0.3)] hover:from-blue-600 hover:to-blue-400 transition-all"
+          >
+            <div className="w-3 h-3 border border-white/50"></div>
+            Receipt Voucher
+          </button>
+        </div>
+      )}
+
+      {showPasswordModal && (
+        <Addpassword onSuccess={handlePasswordSuccess} onClose={handlePasswordCancel} />
+      )}
+
     </div>
   );
 };

@@ -6,6 +6,8 @@ import { SquarePen, Trash2, Printer } from "lucide-react";
 import toast from "react-hot-toast";
 import html2pdf from "html2pdf.js";
 import * as XLSX from "xlsx";
+import Addpassword from "./addeditpassword";
+import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 
 // Debounce helper
 function debounce(func, delay) {
@@ -19,6 +21,7 @@ function debounce(func, delay) {
 const StandbyPCB = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
 
   // Tab State: "form" or "reports"
   const initialTab = location.state?.activeTab || "form";
@@ -282,6 +285,14 @@ const StandbyPCB = () => {
     }
   };
 
+  const handleSaveWithPassword = () => {
+    handleSaveEntry();
+  };
+
+  const handleDeleteWithPassword = () => {
+    handleDeleteEntry();
+  };
+
   // Search existing database
   const handleSearchDb = async (val) => {
     try {
@@ -523,7 +534,7 @@ const StandbyPCB = () => {
                 NEW
               </button>
               <button
-                onClick={handleSaveEntry}
+                onClick={handleSaveWithPassword}
                 className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-green-600 hover:text-white transition-colors"
               >
                 {isEditing ? "UPDATE" : "SAVE"}
@@ -838,7 +849,7 @@ const StandbyPCB = () => {
                       <td className="px-4 py-3 text-center">
                         <div className="flex justify-center gap-3">
                           <button
-                            onClick={() => handleLoadEntry(stby.standby_no)}
+                            onClick={() => requirePassword(() => handleLoadEntry(stby.standby_no))}
                             title="Edit"
                           >
                             <SquarePen
@@ -1160,6 +1171,9 @@ const StandbyPCB = () => {
             </div>
           </div>
         </div>
+      )}
+      {showPasswordModal && (
+        <Addpassword onSuccess={handlePasswordSuccess} onClose={handlePasswordCancel} />
       )}
     </div>
   );

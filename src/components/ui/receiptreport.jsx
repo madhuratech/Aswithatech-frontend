@@ -2,11 +2,10 @@ import React, { useState, useRef, useEffect } from "react";
 import { X, Square, Minus, Printer } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import html2pdf from "html2pdf.js";
-import Logo from "../../asset/Logo.jpeg";
 
 const API = "http://localhost:3000/api/receipts";
 
-const COMPANY = {
+export const COMPANY = {
   name: "ASWITHA TECH",
   addr1: "17, Abirami Nagar, Avarampalayam Road,",
   addr2: "K.R. Puram, Ganapathi,",
@@ -17,7 +16,7 @@ const COMPANY = {
   gstin: "33GYLPS7134C1Z9",
 };
 
-function numberToWords(amount) {
+export function numberToWords(amount) {
   let n = Math.round(Number(amount) || 0);
   if (n === 0) return "ZERO ONLY";
   const ones = [
@@ -36,9 +35,9 @@ function numberToWords(amount) {
   return parts.join(" ") + " ONLY";
 }
 
-const fmt = (val) => Number(val || 0).toFixed(2);
+export const fmt = (val) => Number(val || 0).toFixed(2);
 
-const fmtDate = (d) => {
+export const fmtDate = (d) => {
   if (!d) return "";
   const dt = new Date(d);
   if (isNaN(dt)) return d;
@@ -47,159 +46,153 @@ const fmtDate = (d) => {
 };
 
 /* ─── Single Receipt Voucher ─────────────────────────────────────────────── */
-const ReceiptVoucher = ({ receipt }) => {
+export const ReceiptVoucher = ({ receipt, copyLabel }) => {
   const items = receipt.items || [];
   const netTotal = Number(receipt.grand_total || 0);
-  const otherDed = Number(receipt.other_deductions || 0);
   const emptyRows = Math.max(0, 7 - items.length);
 
-  const paymentType = [receipt.payment_mode, receipt.bank_name, receipt.remarks]
-    .filter(Boolean).join(" ");
-
   return (
-    <div
-      className="voucher-page w-[190mm] border-2 border-black bg-white relative shadow-lg overflow-hidden mb-6"
-      style={{
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      {/* HEADER */}
-      <div className="flex flex-col justify-center items-center text-center border-b-2 border-black p-2 h-[120px]">
-        <h1 className="text-red-600 text-[26px] font-extrabold mb-0.5 leading-tight uppercase tracking-tight">
-          {COMPANY.name}
-        </h1>
-        <div className="text-[11px] font-bold space-y-0.5">
-          <p>{COMPANY.addr1}</p>
-          <p>{COMPANY.addr2} {COMPANY.addr3}</p>
-          <p>{COMPANY.email}</p>
-          <div className="flex justify-center items-center gap-4 mt-0.5 text-[10px]">
-            <span>GSTIN : {COMPANY.gstin}</span>
-            <span>•</span>
-            <div className="flex items-center gap-1">
-              <span>PH : {COMPANY.ph1}, {COMPANY.ph2}</span>
+    <div className="print-copy-wrapper py-4 print:py-0 flex flex-col items-center animate-in fade-in duration-200">
+      {/* TOP BAR / LABEL */}
+      {copyLabel && (
+        <div className="w-[190mm] text-right px-4 pt-1 flex-shrink-0">
+          <span className="text-[13px] font-bold uppercase tracking-wider">
+            {copyLabel}
+          </span>
+        </div>
+      )}
+      <div
+        className="voucher-page w-[190mm] border-2 border-black bg-white relative shadow-lg print:shadow-none overflow-hidden"
+        style={{
+          fontFamily: "Arial, sans-serif",
+        }}
+      >
+        {/* HEADER */}
+        <div className="flex flex-col justify-center items-center text-center border-b-2 border-black p-2 h-[120px]">
+          <h1 className="text-red-600 text-[26px] font-extrabold mb-0.5 leading-tight uppercase tracking-tight">
+            {COMPANY.name}
+          </h1>
+          <div className="text-[11px] font-bold space-y-0.5">
+            <p>{COMPANY.addr1}</p>
+            <p>{COMPANY.addr2} {COMPANY.addr3}</p>
+            <p>{COMPANY.email}</p>
+            <div className="flex justify-center items-center gap-4 mt-0.5 text-[10px]">
+              <span>GSTIN : {COMPANY.gstin}</span>
+              <span>•</span>
+              <div className="flex items-center gap-1">
+                <span>PH : {COMPANY.ph1}, {COMPANY.ph2}</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* DETAILS SECTION */}
-      <div className="flex border-b border-black">
-        {/* Left - To Section */}
-        <div className="w-[60%] p-4 min-h-[140px] border-r-2 border-black">
-          <h2 className="text-[15px] font-bold mb-1">To:</h2>
-          <h2 className="text-[14px] font-bold uppercase mb-1">
-            {receipt?.customer_name}
-          </h2>
-          <div className="text-[12px] leading-5 font-medium max-w-[350px] space-y-1">
-            {receipt?.address && <p>{receipt?.address}</p>}
-            {receipt?.phone && <p className="font-bold">Ph: {receipt?.phone}</p>}
-            {receipt?.gst_number && <p className="font-bold">GSTIN : {receipt?.gst_number}</p>}
+        {/* DETAILS SECTION */}
+        <div className="flex border-b border-black">
+          {/* Left - To Section */}
+          <div className="w-[60%] p-4 min-h-[140px] border-r-2 border-black">
+            <h2 className="text-[15px] font-bold mb-1">To:</h2>
+            <h2 className="text-[14px] font-bold uppercase mb-1">
+              {receipt?.customer_name}
+            </h2>
+            <div className="text-[12px] leading-5 font-medium max-w-[350px] space-y-1">
+              {receipt?.address && <p>{receipt?.address}</p>}
+              {receipt?.phone && <p className="font-bold">Ph: {receipt?.phone}</p>}
+              {receipt?.gst_number && <p className="font-bold">GSTIN : {receipt?.gst_number}</p>}
+            </div>
+          </div>
+
+          {/* Right - Receipt Details */}
+          <div className="w-[40%] flex flex-col">
+            <div className="border-b-2 border-black p-2 text-center">
+              <h2 className="text-[16px] font-bold tracking-widest uppercase">Receipt</h2>
+            </div>
+            <div className="p-4 space-y-3 flex-1 flex flex-col justify-center">
+              <div className="flex text-[13px] font-bold">
+                <div className="w-[80px]">Receipt No</div>
+                <div className="w-[20px] text-center">:</div>
+                <div className="flex-1">{receipt?.receipt_no}</div>
+              </div>
+              <div className="flex text-[13px] font-bold">
+                <div className="w-[80px]">Date</div>
+                <div className="w-[20px] text-center">:</div>
+                <div className="flex-1">{fmtDate(receipt?.receipt_date)}</div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Right - Receipt Details */}
-        <div className="w-[40%] flex flex-col">
-          <div className="border-b-2 border-black p-2 text-center">
-            <h2 className="text-[16px] font-bold tracking-widest uppercase">Receipt</h2>
-          </div>
-          <div className="p-4 space-y-3 flex-1 flex flex-col justify-center">
-            <div className="flex text-[13px] font-bold">
-              <div className="w-[80px]">Receipt No</div>
-              <div className="w-[20px] text-center">:</div>
-              <div className="flex-1">{receipt?.receipt_no}</div>
-            </div>
-            <div className="flex text-[13px] font-bold">
-              <div className="w-[80px]">Date</div>
-              <div className="w-[20px] text-center">:</div>
-              <div className="flex-1">{fmtDate(receipt?.receipt_date)}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* TABLE SECTION */}
-      <div className="flex flex-col overflow-hidden min-h-[245px]">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-gray-50 border-b border-black">
-              <th className="border-r border-black p-2 w-[5%] text-center text-[12px] font-bold">S.No</th>
-              <th className="border-r border-black p-2 w-[15%] text-center text-[12px] font-bold">Bill No</th>
-              <th className="border-r border-black p-2 w-[15%] text-center text-[12px] font-bold">Date</th>
-              <th className="border-r border-black p-2 w-[15%] text-center text-[12px] font-bold">Bill Amount</th>
-              <th className="border-r border-black p-2 w-[10%] text-center text-[12px] font-bold">Advans</th>
-              <th className="border-r border-black p-2 w-[10%] text-center text-[12px] font-bold">Tds Amt</th>
-              <th className="border-r border-black p-2 w-[15%] text-center text-[12px] font-bold">Paid Amt</th>
-              <th className="p-2 w-[15%] border-black text-center text-[12px] font-bold">Net Paid</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item, index) => {
-              const tdsAmt = Math.max(0, Number(item.bill_amount || 0) - Number(item.paid_amount || 0));
-              const netPaid = Number(item.bill_amount || 0);
-              return (
-                <tr key={index} className=" border-black min-h-[35px]">
-                  <td className="border-r border-black p-2 text-center text-[12px]">{index + 1}</td>
-                  <td className="border-r border-black px-3 py-2 text-[12px] font-medium">{item.bill_no}</td>
-                  <td className="border-r border-black p-2 text-center text-[12px]">{fmtDate(item.bill_date)}</td>
-                  <td className="border-r border-black p-2 text-right text-[12px] pr-4">{fmt(item.bill_amount)}</td>
-                  <td className="border-r border-black p-2 text-right text-[12px] pr-4">0.00</td>
-                  <td className="border-r border-black p-2 text-right text-[12px] pr-4">0.00</td>
-                  <td className="border-r border-black p-2 text-right text-[12px] pr-4">{fmt(item.paid_amount)}</td>
-                  <td className="p-2 text-right text-[12px] border-black font-bold pr-4">{fmt(netPaid)}</td>
-                </tr>
-              );
-            })}
-            {/* Filler rows */}
-            {Array.from({ length: emptyRows }).map((_, i) => (
-              <tr key={`filler-${i}`} className=" border-black h-[35px]">
-                <td className="border-r border-black">&nbsp;</td>
-                <td className="border-r border-black">&nbsp;</td>
-                <td className="border-r  border-black">&nbsp;</td>
-                <td className="border-r border-black">&nbsp;</td>
-                <td className="border-r border-black">&nbsp;</td>
-                <td className="border-r border-black">&nbsp;</td>
-                <td className="border-r border-black">&nbsp;</td>
-                <td className="border-black">&nbsp;</td>
+        {/* TABLE SECTION */}
+        <div className="flex flex-col overflow-hidden min-h-[245px]">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-gray-50 border-b border-black">
+                <th className="border-r border-black p-2 w-[5%] text-center text-[12px] font-bold">S.No</th>
+                <th className="border-r border-black p-2 w-[20%] text-center text-[12px] font-bold">Bill No</th>
+                <th className="border-r border-black p-2 w-[20%] text-center text-[12px] font-bold">Date</th>
+                <th className="border-r border-black p-2 w-[20%] text-center text-[12px] font-bold">Bill Amount</th>
+                <th className="border-r border-black p-2 w-[20%] text-center text-[12px] font-bold">Paid Amt</th>
+                <th className="p-2 w-[15%] border-black text-center text-[12px] font-bold">Balance</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* SUMMARY SECTION - Fixed alignment with columns */}
-      <div className="border-t border-black flex">
-        <div className="w-[70%] border-r border-black ml-[10px]  items-center px-4 py-2 text-[13px]">
-              <p><strong>Payment Mode :</strong> {receipt?.payment_mode || "—"}</p>
-              <p><strong>Bank Name :</strong> {receipt?.bank_name || "—"}</p>
-              <p><strong>Reference Number :</strong> {receipt?.reference_number || "—"}</p>
+            </thead>
+            <tbody>
+              {items.map((item, index) => {
+                return (
+                  <tr key={index} className=" border-black min-h-[35px]">
+                    <td className="border-r border-black p-2 text-center text-[12px]">{index + 1}</td>
+                    <td className="border-r border-black px-3 py-2 text-[12px] font-medium">{item.bill_no}</td>
+                    <td className="border-r border-black p-2 text-center text-[12px]">{fmtDate(item.bill_date)}</td>
+                    <td className="border-r border-black p-2 text-right text-[12px] pr-4">{fmt(item.bill_amount)}</td>
+                    <td className="border-r border-black p-2 text-right text-[12px] pr-4">{fmt(item.paid_amount)}</td>
+                    <td className="p-2 text-right text-[12px] border-black font-bold pr-4">{fmt(item.balance)}</td>
+                  </tr>
+                );
+              })}
+              {/* Filler rows */}
+              {Array.from({ length: emptyRows }).map((_, i) => (
+                <tr key={`filler-${i}`} className=" border-black h-[35px]">
+                  <td className="border-r border-black">&nbsp;</td>
+                  <td className="border-r border-black">&nbsp;</td>
+                  <td className="border-r border-black">&nbsp;</td>
+                  <td className="border-r border-black">&nbsp;</td>
+                  <td className="border-r border-black">&nbsp;</td>
+                  <td className="border-black">&nbsp;</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-        <div className="w-[30%] border-black">
-          <div className="flex border-b border-black">
-            <div className="w-[50%] p-2 text-[12px] font-bold border-r h-[38px] border-black">Other Ded </div>
-            <div className="w-[50%] p-2 text-[12px] font-bold text-right pr-4">{fmt(otherDed)}</div>
+
+        {/* SUMMARY SECTION - Fixed alignment with columns */}
+        <div className="border-t border-black flex">
+          <div className="w-[70%] border-r border-black ml-[10px]  items-center px-4 py-2 text-[13px]">
+            <p><strong>Payment Mode :</strong> {receipt?.payment_mode || "—"}</p>
+            <p><strong>Bank Name :</strong> {receipt?.bank_name || "—"}</p>
+            <p><strong>Reference Number :</strong> {receipt?.reference_number || "—"}</p>
           </div>
-          <div className="flex bg-gray-50">
-            <div className="w-[50%] p-2 text-[13px] font-extrabold border-r border-black">NET TOTAL </div>
-            <div className="w-[50%] p-2 text-[13px] font-extrabold text-right pr-4">{fmt(netTotal)}</div>
+          <div className="w-[30%] border-black">
+            <div className="flex bg-gray-50 h-[38px] items-center">
+              <div className="w-[50%] p-2 text-[13px] font-extrabold border-r border-black h-full flex items-center">NET TOTAL </div>
+              <div className="w-[50%] p-2 text-[13px] font-extrabold text-right pr-4 h-full flex items-center justify-end">{fmt(netTotal)}</div>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* RUPEES SECTION */}
-      <div className="border-t-2 border-black p-2 bg-white">
-        <p className="text-[12px] font-bold italic">
-          Rupees : <span className="uppercase">{numberToWords(netTotal)}</span>
-        </p>
-      </div>
-
-      {/* FOOTER SECTION */}
-      <div className="border-t-2 border-black p-4 flex justify-between items-end min-h-[100px]">
-        <div className="text-left">
-          <span className="text-[12px] font-bold border-t border-black pt-1">Receiver's Signature</span>
+        {/* RUPEES SECTION */}
+        <div className="border-t-2 border-black p-2 bg-white">
+          <p className="text-[12px] font-bold italic">
+            Rupees : <span className="uppercase">{numberToWords(netTotal)}</span>
+          </p>
         </div>
-        <div className="text-right">
-          <h2 className="text-[13px] font-bold mb-8">For {COMPANY.name}</h2>
-          <span className="text-[12px] font-bold border-t border-black pt-1 inline-block">Authorised Signatory</span>
+
+        {/* FOOTER SECTION */}
+        <div className="border-t-2 border-black p-4 flex justify-between items-end min-h-[100px]">
+          <div className="text-left">
+            <span className="text-[12px] font-bold border-t border-black pt-1">Receiver's Signature</span>
+          </div>
+          <div className="text-right">
+            <h2 className="text-[13px] font-bold mb-8">For {COMPANY.name}</h2>
+            <span className="text-[12px] font-bold border-t border-black pt-1 inline-block">Authorised Signatory</span>
+          </div>
         </div>
       </div>
     </div>
@@ -215,8 +208,9 @@ const ReceiptReport = ({ onClose, onMinimize, title = "Receipt Voucher" }) => {
   const [isMinimized, setIsMinimized] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const [filters, setFilters] = useState({ fromDate: "", toDate: "", customerName: "" });
+  const [filters, setFilters] = useState({ fromDate: "", toDate: "", customerName: "", receiptNo: "" });
   const [clientList, setClientList] = useState([]);
+  const [receiptNoList, setReceiptNoList] = useState([]);
   const [data, setData] = useState([]);
 
   const fetchClients = async () => {
@@ -227,6 +221,14 @@ const ReceiptReport = ({ onClose, onMinimize, title = "Receipt Voucher" }) => {
     } catch { setClientList([]); }
   };
 
+  const fetchReceiptNos = async () => {
+    try {
+      const res = await fetch(`${API}/report/receipt-nos`);
+      const json = await res.json();
+      setReceiptNoList(Array.isArray(json) ? json : []);
+    } catch { setReceiptNoList([]); }
+  };
+
   const loadReport = async (f) => {
     setLoading(true);
     try {
@@ -234,6 +236,7 @@ const ReceiptReport = ({ onClose, onMinimize, title = "Receipt Voucher" }) => {
       if (f.fromDate) params.set("fromDate", f.fromDate);
       if (f.toDate) params.set("toDate", f.toDate);
       if (f.customerName) params.set("customerName", f.customerName);
+      if (f.receiptNo) params.set("receiptNo", f.receiptNo);
       const res = await fetch(`${API}/report/vouchers?${params}`);
       const json = await res.json();
       setData(Array.isArray(json) ? json : []);
@@ -247,7 +250,8 @@ const ReceiptReport = ({ onClose, onMinimize, title = "Receipt Voucher" }) => {
 
   useEffect(() => {
     fetchClients();
-    loadReport({ fromDate: "", toDate: "", customerName: "" });
+    fetchReceiptNos();
+    loadReport({ fromDate: "", toDate: "", customerName: "", receiptNo: "" });
   }, []);
 
   const handleClose = () => { if (onClose) onClose(); else navigate(-1); };
@@ -262,8 +266,20 @@ const ReceiptReport = ({ onClose, onMinimize, title = "Receipt Voucher" }) => {
         * { box-sizing: border-box; }
         body { margin: 0; padding: 16px; font-family: Arial, sans-serif; font-size: 11px; background: #fff; }
         @page { size: A4 portrait; margin: 8mm; }
-        .voucher-page { width: 190mm; margin: 0 auto 20px; page-break-after: always; }
-        @media print { body { padding: 0; } .voucher-page { margin-bottom: 0; } }
+        .print-copy-wrapper {
+          page-break-after: always !important;
+          break-after: page !important;
+        }
+        .print-copy-wrapper:last-child {
+          page-break-after: auto !important;
+          break-after: auto !important;
+        }
+        @media print {
+          body { padding: 0; }
+          .print-copy-wrapper {
+            padding: 0 !important;
+          }
+        }
       </style>
       </head><body>
         <div class="flex flex-col items-center">
@@ -278,9 +294,10 @@ const ReceiptReport = ({ onClose, onMinimize, title = "Receipt Voucher" }) => {
 
   const exportPDF = () => {
     if (!contentRef.current) return;
+    const namePart = filters.receiptNo || filters.customerName || "All";
     html2pdf().set({
       margin: [5, 10, 5, 10],
-      filename: `ReceiptVoucher_${filters.customerName || "All"}.pdf`,
+      filename: `ReceiptVoucher_${namePart}.pdf`,
       image: { type: "jpeg", quality: 0.98 },
       html2canvas: { scale: 2, useCORS: true },
       jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
@@ -335,6 +352,24 @@ const ReceiptReport = ({ onClose, onMinimize, title = "Receipt Voucher" }) => {
               onChange={(e) => setFilters(p => ({ ...p, toDate: e.target.value }))}
               className="w-[130px] px-2 py-[3px] border border-gray-400 text-[11px] bg-white text-black outline-none focus:border-blue-400"
             />
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <label className="text-[10px] font-bold text-white tracking-widest">RECEIPT NO</label>
+            <select
+              value={filters.receiptNo}
+              onChange={(e) => {
+                const updated = { ...filters, receiptNo: e.target.value };
+                setFilters(updated);
+                loadReport(updated);
+              }}
+              className="w-[180px] px-2 py-[3px] border border-gray-400 text-[11px] bg-white text-black outline-none focus:border-blue-400 font-semibold"
+              style={{ height: "26px" }}
+            >
+              <option value="">-- SELECT RECEIPT --</option>
+              {receiptNoList.map((r, i) => (
+                <option key={i} value={r.receipt_no}>{r.receipt_no}</option>
+              ))}
+            </select>
           </div>
           <div className="flex flex-col gap-0.5">
             <label className="text-[10px] font-bold text-white tracking-widest">CUSTOMER NAME</label>
@@ -400,9 +435,10 @@ const ReceiptReport = ({ onClose, onMinimize, title = "Receipt Voucher" }) => {
                 No receipt records found. Use filters above and click GENERATE REPORT.
               </div>
             ) : (
-              data.map((receipt, i) => (
-                <ReceiptVoucher key={receipt.id ?? i} receipt={receipt} />
-              ))
+              data.flatMap((receipt, i) => [
+                <ReceiptVoucher key={`orig-${receipt.id ?? i}`} receipt={receipt} copyLabel="[ORIGINAL COPY]" />,
+                <ReceiptVoucher key={`dupe-${receipt.id ?? i}`} receipt={receipt} copyLabel="[DUPLICATE COPY]" />
+              ])
             )}
           </div>
         </div>
@@ -412,6 +448,14 @@ const ReceiptReport = ({ onClose, onMinimize, title = "Receipt Voucher" }) => {
         .custom-scrollbar::-webkit-scrollbar { width: 14px; height: 14px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #c0c0c0; box-shadow: inset 1px 1px 2px rgba(0,0,0,0.4); }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #e0e0e0; border: 2px solid #808080; box-shadow: inset 1px 1px 0 white; }
+        .print-copy-wrapper {
+          page-break-after: always;
+          break-after: page;
+        }
+        .print-copy-wrapper:last-child {
+          page-break-after: auto;
+          break-after: auto;
+        }
         @media print {
           .no-print { display: none !important; }
           body { margin: 0; padding: 0; }

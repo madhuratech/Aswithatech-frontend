@@ -238,7 +238,6 @@ const InwardReport = ({ onClose, onMinimize, title = "Inward Details Report" }) 
                       ["ENTRY DATE", "center", "90px"],
                       ["ITEM NAME", "left", "200px"],
                       ["QTY", "right", "60px"],
-                      ["PROBLEMS", "left", "150px"],
                       ["REMARKS", "left", "130px"],
                     ].map(([label, align, width]) => (
                       <th key={label} style={{
@@ -271,7 +270,6 @@ const InwardReport = ({ onClose, onMinimize, title = "Inward Details Report" }) 
                           <td style={{ border: "1px solid #d0d0d0", padding: "3px 5px", textAlign: "center", whiteSpace: "nowrap" }}>{fmtDate(row.entry_date)}</td>
                           <td style={{ border: "1px solid #d0d0d0", padding: "3px 5px" }}>{row.item_name}</td>
                           <td style={{ border: "1px solid #d0d0d0", padding: "3px 5px", textAlign: "right", fontWeight: "600" }}>{row.quantity}</td>
-                          <td style={{ border: "1px solid #d0d0d0", padding: "3px 5px", color: "#8b0000" }}>{row.problems || "—"}</td>
                           <td style={{ border: "1px solid #d0d0d0", padding: "3px 5px" }}>{row.remarks || "—"}</td>
                         </tr>
                       ))}

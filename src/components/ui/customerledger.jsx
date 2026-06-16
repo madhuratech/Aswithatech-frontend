@@ -150,35 +150,37 @@ const CustomerLedger = ({ onClose, onMinimize, title = "Customer Ledger" }) => {
         row.paid_date ? fmtDate(row.paid_date) : "",
         row.receipt_no || "",
         row.payment_mode || "",
+        row.reference_number || "",
       ]);
-      const totalsRow = ["", "", "TOTAL", Number(fmt(totalDebit)), Number(fmt(totalCredit)), "", "", `Closing Balance: ${fmt(Math.abs(closingBalance))} ${closingBalance >= 0 ? "Dr" : "Cr"}`];
+      const totalsRow = ["", "", "TOTAL", Number(fmt(totalDebit)), Number(fmt(totalCredit)), "", "", "", `Closing Balance: ${fmt(Math.abs(closingBalance))} ${closingBalance >= 0 ? "Dr" : "Cr"}`];
       const ws = XLSX.utils.aoa_to_sheet([
-        ["SNO", "BILL NO", "DATE", "DEBIT", "CREDIT", "PAID DATE", "RECEIPT NO", "PAYMENT MODE"],
+        ["SNO", "BILL NO / RECEIPT NO", "DATE", "DEBIT", "CREDIT", "PAID DATE", "RECEIPT NO", "PAYMENT MODE", "REFERENCE NO"],
         ...rows,
         totalsRow,
       ]);
-      ws["!cols"] = [{ wch: 6 }, { wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 28 }];
+      ws["!cols"] = [{ wch: 6 }, { wch: 22 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 28 }, { wch: 20 }];
       XLSX.utils.book_append_sheet(wb, ws, "Ledger");
     } else {
       const rows = outstanding.map((row, i) => [
         i + 1,
+        row.customer_name || "",
         row.bill_no || "",
         fmtDate(row.date),
         Number(fmt(row.bill_amount)),
         Number(fmt(row.paid_amount)),
         Number(fmt(row.balance)),
       ]);
-      const totalsRow = ["", "", "TOTAL",
+      const totalsRow = ["", "", "", "TOTAL",
         Number(fmt(outstanding.reduce((s, r) => s + r.bill_amount, 0))),
         Number(fmt(outstanding.reduce((s, r) => s + r.paid_amount, 0))),
         Number(fmt(outstanding.reduce((s, r) => s + r.balance, 0))),
       ];
       const ws = XLSX.utils.aoa_to_sheet([
-        ["SNO", "BILL NO", "DATE", "BILL AMOUNT", "PAID AMOUNT", "BALANCE DUE"],
+        ["SNO", "CUSTOMER NAME", "BILL NO", "DATE", "BILL AMOUNT", "PAID AMOUNT", "BALANCE DUE"],
         ...rows,
         totalsRow,
       ]);
-      ws["!cols"] = [{ wch: 6 }, { wch: 14 }, { wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 14 }];
+      ws["!cols"] = [{ wch: 6 }, { wch: 25 }, { wch: 14 }, { wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 14 }];
       XLSX.utils.book_append_sheet(wb, ws, "Outstanding");
     }
 
@@ -330,30 +332,32 @@ const CustomerLedger = ({ onClose, onMinimize, title = "Customer Ledger" }) => {
               <table className="w-full border-collapse table-auto" style={{ fontSize: '13px', tableLayout: 'fixed' }}>
                 <colgroup>
                   <col style={{ width: '42px' }} />
-                  <col style={{ width: '110px' }} />
+                  <col style={{ width: '170px' }} />
                   <col style={{ width: '90px' }} />
                   <col style={{ width: '100px' }} />
                   <col style={{ width: '100px' }} />
                   <col style={{ width: '95px' }} />
                   <col style={{ width: '120px' }} />
+                  <col style={{ width: '250px' }} />
                   <col />
                 </colgroup>
                 <thead>
                   <tr style={{ background: '#c5d7e9', color: '#0d2340', position: 'sticky', top: 0, zIndex: 10 }}>
                     <th style={{ border: '1px solid #8ca8c5', padding: '5px 5px', textAlign: 'center', fontWeight: 'bold', whiteSpace: 'nowrap' }}>SNO</th>
-                    <th style={{ border: '1px solid #8ca8c5', padding: '5px 8px', textAlign: 'left', fontWeight: 'bold', whiteSpace: 'nowrap' }}>BILL NO</th>
+                    <th style={{ border: '1px solid #8ca8c5', padding: '5px 8px', textAlign: 'left', fontWeight: 'bold', whiteSpace: 'nowrap' }}>BILL NO / RECEIPT NO</th>
                     <th style={{ border: '1px solid #8ca8c5', padding: '5px 8px', textAlign: 'left', fontWeight: 'bold', whiteSpace: 'nowrap' }}>DATE</th>
                     <th style={{ border: '1px solid #8ca8c5', padding: '5px 8px', textAlign: 'right', fontWeight: 'bold', whiteSpace: 'nowrap' }}>DEBIT</th>
                     <th style={{ border: '1px solid #8ca8c5', padding: '5px 8px', textAlign: 'right', fontWeight: 'bold', whiteSpace: 'nowrap' }}>CREDIT</th>
                     <th style={{ border: '1px solid #8ca8c5', padding: '5px 8px', textAlign: 'left', fontWeight: 'bold', whiteSpace: 'nowrap' }}>PAID DATE</th>
                     <th style={{ border: '1px solid #8ca8c5', padding: '5px 8px', textAlign: 'left', fontWeight: 'bold', whiteSpace: 'nowrap' }}>RECEIPT NO</th>
-                    <th style={{ border: '1px solid #8ca8c5', padding: '5px 8px', textAlign: 'left', fontWeight: 'bold', whiteSpace: 'nowrap', width: '200px' }}>PAYMENT MODE</th>
+                    <th style={{ border: '1px solid #8ca8c5', padding: '5px 8px', textAlign: 'left', fontWeight: 'bold', whiteSpace: 'nowrap' }}>PAYMENT MODE</th>
+                    <th style={{ border: '1px solid #8ca8c5', padding: '5px 8px', textAlign: 'left', fontWeight: 'bold', whiteSpace: 'nowrap' }}>REFERENCE NO</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan="8" style={{ textAlign: 'center', padding: '24px', color: '#666', fontStyle: 'italic', border: '1px solid #ddd' }}>
+                      <td colSpan="9" style={{ textAlign: 'center', padding: '24px', color: '#666', fontStyle: 'italic', border: '1px solid #ddd' }}>
                         Loading...
                       </td>
                     </tr>
@@ -380,11 +384,14 @@ const CustomerLedger = ({ onClose, onMinimize, title = "Customer Ledger" }) => {
                         <td style={{ border: '1px solid #d0d0d0', padding: '4px 8px', color: '#333', whiteSpace: 'nowrap' }}>
                           {row.payment_mode || <span style={{ color: '#bbb' }}>—</span>}
                         </td>
+                        <td style={{ border: '1px solid #d0d0d0', padding: '4px 8px', color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {row.reference_number || <span style={{ color: '#bbb' }}>—</span>}
+                        </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="8" style={{ textAlign: 'center', padding: '24px', color: '#aaa', fontStyle: 'italic', border: '1px solid #ddd' }}>
+                      <td colSpan="9" style={{ textAlign: 'center', padding: '24px', color: '#aaa', fontStyle: 'italic', border: '1px solid #ddd' }}>
                         No transactions found.
                       </td>
                     </tr>
@@ -396,26 +403,35 @@ const CustomerLedger = ({ onClose, onMinimize, title = "Customer Ledger" }) => {
                       <td colSpan="3" style={{ border: '1px solid #a0bbd0', padding: '5px 8px', textAlign: 'right', textTransform: 'uppercase', letterSpacing: '0.4px' }}>TOTAL</td>
                       <td style={{ border: '1px solid #a0bbd0', padding: '5px 8px', textAlign: 'right', color: '#8b0000', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalDebit)}</td>
                       <td style={{ border: '1px solid #a0bbd0', padding: '5px 8px', textAlign: 'right', color: '#006400', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalCredit)}</td>
-                      <td colSpan="3" style={{ border: '1px solid #a0bbd0', padding: '5px 8px', textAlign: 'right' }}>
-                        <span style={{ color: '#444', marginRight: '8px' }}>Closing Balance :</span>
-                        <span style={{ color: closingBalance >= 0 ? '#8b0000' : '#006400', fontWeight: 'bold', fontVariantNumeric: 'tabular-nums' }}>
-                          {fmt(Math.abs(closingBalance))} {closingBalance >= 0 ? "Dr" : "Cr"}
-                        </span>
+                      <td colSpan="4" style={{ border: '1px solid #a0bbd0', padding: '5px 8px', textAlign: 'right' }}>
                       </td>
                     </tr>
                   )}
                 </tbody>
+                 <tbody>
+                   {entries.length > 0 && (
+                   <tr style={{ background: '#d5e3f0', fontWeight: 'bold', borderTop: '2px solid #6a90b5' }}>
+                  <td colSpan="9" style={{ border: '1px solid #a0bbd0', padding: '5px 8px', textAlign: 'center' }}>
+                    <span style={{ color: '#444', marginRight: '8px' }}>Closing Balance :</span>
+                        <span style={{ color: closingBalance >= 0 ? '#8b0000' : '#006400', fontWeight: 'bold', fontVariantNumeric: 'tabular-nums' }}>
+                          {fmt(Math.abs(closingBalance))} {closingBalance >= 0 ? "Dr" : "Cr"}
+                       </span>
+                    </td>
+                  </tr>
+                   )}
+                 </tbody>
               </table>
             </div>
           )}
 
           {/* OUTSTANDING TABLE */}
           {ledgerType === "outstanding" && (
-            <div className="w-full overflow-x-auto">
+            <div className="w-full overflow-x-auto p-3" ref={contentRef}>
               <table className="w-full border border-gray-600 border-collapse" style={{ fontSize: '13px', fontFamily: "'Tahoma','Arial',sans-serif" }}>
                 <thead>
                   <tr style={{ background: '#c5d7e9', color: '#0d2340', position: 'sticky', top: 0, zIndex: 10 }}>
                     <th style={{ border: '1px solid #8ca8c5', padding: '5px 5px', textAlign: 'center', width: '42px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>SNO</th>
+                    <th style={{ border: '1px solid #8ca8c5', padding: '5px 8px', textAlign: 'left', fontWeight: 'bold', whiteSpace: 'nowrap' }}>CUSTOMER NAME</th>
                     <th style={{ border: '1px solid #8ca8c5', padding: '5px 8px', textAlign: 'left', fontWeight: 'bold', whiteSpace: 'nowrap' }}>BILL NO</th>
                     <th style={{ border: '1px solid #8ca8c5', padding: '5px 8px', textAlign: 'left', fontWeight: 'bold', whiteSpace: 'nowrap' }}>DATE</th>
                     <th style={{ border: '1px solid #8ca8c5', padding: '5px 8px', textAlign: 'right', fontWeight: 'bold', whiteSpace: 'nowrap' }}>BILL AMOUNT</th>
@@ -425,11 +441,12 @@ const CustomerLedger = ({ onClose, onMinimize, title = "Customer Ledger" }) => {
                 </thead>
                 <tbody>
                   {loading ? (
-                    <tr><td colSpan="6" className="text-center py-8 text-gray-500 italic">Loading...</td></tr>
+                    <tr><td colSpan="7" className="text-center py-8 text-gray-500 italic">Loading...</td></tr>
                   ) : outstanding.length > 0 ? (
                     outstanding.map((row, i) => (
                       <tr key={i} className={`${i % 2 === 0 ? "bg-white" : "bg-[#f5f5f5]"} hover:bg-yellow-50`}>
                         <td className="border border-gray-300 px-3 py-1.5 text-center">{i + 1}</td>
+                        <td className="border border-gray-300 px-3 py-1.5 text-gray-700">{row.customer_name}</td>
                         <td className="border border-gray-300 px-3 py-1.5 font-semibold text-blue-800">{row.bill_no}</td>
                         <td className="border border-gray-300 px-3 py-1.5 text-gray-700">{fmtDate(row.date)}</td>
                         <td className="border border-gray-300 px-3 py-1.5 text-right text-gray-700">{fmt(row.bill_amount)}</td>
@@ -439,7 +456,7 @@ const CustomerLedger = ({ onClose, onMinimize, title = "Customer Ledger" }) => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="6" className="text-center py-10 text-gray-400 italic">
+                      <td colSpan="7" className="text-center py-10 text-gray-400 italic">
                         No outstanding bills found.
                       </td>
                     </tr>
@@ -447,7 +464,7 @@ const CustomerLedger = ({ onClose, onMinimize, title = "Customer Ledger" }) => {
 
                   {outstanding.length > 0 && (
                     <tr className="bg-[#dde3ec] font-bold border-t-2 border-gray-600">
-                      <td colSpan="3" className="border border-gray-400 px-3 py-2 text-right uppercase">Total</td>
+                      <td colSpan="4" className="border border-gray-400 px-3 py-2 text-right uppercase">Total</td>
                       <td className="border border-gray-400 px-3 py-2 text-right text-gray-700">
                         {fmt(outstanding.reduce((s, r) => s + r.bill_amount, 0))}
                       </td>

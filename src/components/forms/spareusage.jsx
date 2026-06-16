@@ -4,6 +4,8 @@ import { SquarePen, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import { useDropdownKeyNav } from "../../hooks/useDropdownKeyNav";
+import Addpassword from "./addeditpassword";
+import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 
 // Debounce helper for search
 function debounce(func, delay) {
@@ -16,6 +18,7 @@ function debounce(func, delay) {
 
 const SpareUsage = () => {
   const navigate = useNavigate();
+  const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
 
   // Form states
   const [usageNo, setUsageNo] = useState("");
@@ -242,6 +245,14 @@ const SpareUsage = () => {
     }
   };
 
+  const handleSaveWithPassword = () => {
+    handleSaveEntry();
+  };
+
+  const handleDeleteWithPassword = () => {
+    handleDeleteEntry();
+  };
+
   // Load details of an entry for edit
   const handleLoadEntry = async (selectedSno) => {
     try {
@@ -402,13 +413,13 @@ const SpareUsage = () => {
               NEW
             </button>
             <button
-              onClick={handleSaveEntry}
+              onClick={handleSaveWithPassword}
               className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-green-600 hover:text-white transition-colors"
             >
               {isEditing ? "UPDATE" : "SAVE"}
             </button>
             <button
-              onClick={() => handleDeleteEntry()}
+              onClick={handleDeleteWithPassword}
               className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-red-600 hover:text-white transition-colors"
             >
               DELETE
@@ -730,7 +741,7 @@ const SpareUsage = () => {
                     snoList.map((item, i) => (
                       <div
                         key={i}
-                        onClick={() => handleLoadEntry(item.usage_no)}
+                        onClick={() => requirePassword(() => handleLoadEntry(item.usage_no))}
                         className="px-4 py-2.5 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0"
                       >
                         <div className="text-[13px] font-bold text-gray-800">{item.usage_no}</div>
@@ -792,7 +803,7 @@ const SpareUsage = () => {
                       </td>
                       <td className="px-5 py-3 text-center">
                         <div className="flex justify-center gap-3">
-                          <button onClick={() => handleLoadEntry(item.usage_no)} title="Edit">
+                          <button onClick={() => requirePassword(() => handleLoadEntry(item.usage_no))} title="Edit">
                             <SquarePen size={17} className="text-blue-500 hover:text-blue-700 transition-colors" />
                           </button>
                           <button onClick={() => handleDeleteEntry(item.usage_no)} title="Delete">
@@ -808,6 +819,9 @@ const SpareUsage = () => {
           </div>
         </div>
       </div>
+      {showPasswordModal && (
+        <Addpassword onSuccess={handlePasswordSuccess} onClose={handlePasswordCancel} />
+      )}
     </div>
   );
 };

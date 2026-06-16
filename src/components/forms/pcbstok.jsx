@@ -4,6 +4,8 @@ import { useDropdownKeyNav } from "../../hooks/useDropdownKeyNav";
 import { useNavigate } from "react-router-dom";
 import { SquarePen, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
+import Addpassword from "./addeditpassword";
+import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 
 // Debounce helper
 function debounce(func, delay) {
@@ -16,7 +18,7 @@ function debounce(func, delay) {
 
 const PCBStock = () => {
   const navigate = useNavigate();
-
+  const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
 
   const Api_url = "http://localhost:3000/api/pcb-stock";
 
@@ -220,6 +222,14 @@ const PCBStock = () => {
     }
   };
 
+  const handleSaveWithPassword = () => {
+    handleSaveEntry();
+  };
+
+  const handleDeleteWithPassword = () => {
+    handleDeleteEntry();
+  };
+
   // Search Code database
   const handleSearchCode = async (val) => {
     try {
@@ -340,13 +350,13 @@ const PCBStock = () => {
               NEW
             </button>
             <button
-              onClick={handleSaveEntry}
+              onClick={handleSaveWithPassword}
               className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-green-600 hover:text-white transition-colors"
             >
               {isEditing ? "UPDATE" : "SAVE"}
             </button>
             <button
-              onClick={handleDeleteEntry}
+              onClick={handleDeleteWithPassword}
               className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-red-600 hover:text-white transition-colors"
             >
               DELETE
@@ -643,7 +653,7 @@ const PCBStock = () => {
                 {searchList.map((item) => (
                   <div
                     key={item.pcb_code}
-                    onClick={() => handleLoadEntry(item.pcb_code)}
+                    onClick={() => requirePassword(() => handleLoadEntry(item.pcb_code))}
                     className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0"
                   >
                     <span className="text-blue-800 font-bold">{item.pcb_code}</span> — {item.pcb_name}
@@ -677,6 +687,9 @@ const PCBStock = () => {
           </div>
         </div>
       </div>
+      {showPasswordModal && (
+        <Addpassword onSuccess={handlePasswordSuccess} onClose={handlePasswordCancel} />
+      )}
     </div>
   );
 };

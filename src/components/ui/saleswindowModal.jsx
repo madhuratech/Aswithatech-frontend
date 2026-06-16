@@ -12,6 +12,7 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
   const [viewMode, setViewMode] = useState("qt");
   const [clientopen, setclientopen] = useState(false);
   const [clientlist, setclientlist] = useState([]);
+  const [deleteConfirm, setDeleteConfirm] = useState({ open: false, dcNo: null });
   const contentRef = useRef(null);
 
 
@@ -181,42 +182,36 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
 
       if (!contentRef.current) return;
 
-      const element = contentRef.current;
+      const element = contentRef.current.cloneNode(true);
+      element.style.width = "210mm";
+      element.style.background = "#fff";
 
       const opt = {
-
-        margin: [0, 0, 0, 0],
-
-        filename: `${title || "Report"}.pdf`,
-
-        image: {
-          type: "jpeg",
-          quality: 1,
-        },
-
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          scrollY: 0,
-          scrollX: 0,
-          windowWidth: 794,
-          windowHeight: 1123,
-        },
-
-        jsPDF: {
-          unit: "mm",
-          format: "a4",
-          orientation: "portrait",
-        },
-
-        pagebreak: {
-          mode: ["avoid-all", "css", "legacy"],
-        },
-      };
+  margin: 0,
+  filename: `${title || "Report"}.pdf`,
+  image: {
+    type: "jpeg",
+    quality: 1,
+  },
+  html2canvas: {
+    scale: 1,
+    useCORS: true,
+    logging: false,
+  },
+  jsPDF: {
+    unit: "mm",
+    format: "a4",
+    orientation: "portrait",
+  },
+  pagebreak: {
+    mode: ["css"],
+  },
+};
 
       const worker = html2pdf()
-        .set(opt)
-        .from(element);
+      .set(opt)
+     .from(element);
+
 
       const pdfBlob = await worker.outputPdf("blob");
 
@@ -249,55 +244,27 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
 
 
   const handlePrint = () => {
+    window.print();
+  };
 
-    const printContents = contentRef.current;
+  const handleEditDC = (dcNo) => {
+    onClose();
+    navigate('/sales/sales-dc', { state: { loadDcNo: dcNo } });
+  };
 
-    const printWindow = window.open("", "_blank");
-
-    printWindow.document.write(`
-    <html>
-      <head>
-        <title>${title || "Report"}</title>
-        <script src="https://cdn.tailwindcss.com"></script>
-        <style>
-          *{box-sizing:border-box;}
-          body{margin:0;padding:0;background:white;}
-          @page{size:A4;margin:8mm 10mm;}
-          .print-container{
-            width:190mm;
-            margin:0 auto;
-            background:white;
-            padding:0;
-          }
-          /* Remove outer wrapper padding added by the format component */
-          .print-container > div > div:first-child{
-            padding-top:0 !important;
-            padding-bottom:0 !important;
-          }
-          /* Ensure overflow is visible so content isn't clipped */
-          *{overflow:visible !important;}
-          table{width:100%;border-collapse:collapse;}
-          .report-table th, .report-table td{border:1px solid #d1d5db;padding:6px 8px;word-break:break-word;}
-          tr{page-break-inside:avoid;}
-          .no-print{display:none !important;}
-          /* Hide the outer py-6 wrapper's padding */
-          [class*="py-6"]{padding-top:0 !important;padding-bottom:0 !important;}
-        </style>
-      </head>
-      <body>
-        <div class="print-container">
-          ${printContents.outerHTML}
-        </div>
-      </body>
-    </html>
-  `);
-
-    printWindow.document.close();
-
-    setTimeout(() => {
-      printWindow.focus();
-      printWindow.print();
-    }, 1000);
+  const handleDeleteDC = async (dcNo) => {
+    try {
+      const res = await fetch(`http://localhost:3000/api/salesdc/delete/${dcNo}`, { method: 'DELETE' });
+      if (res.ok) {
+        setReportData(prev => prev.filter(r => r.dc_no !== dcNo));
+        setDeleteConfirm({ open: false, dcNo: null });
+      } else {
+        alert('Failed to delete DC.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error deleting DC.');
+    }
   };
 
 
@@ -316,6 +283,7 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
 
   return (
     <div
+      className="service-modal-overlay"
       style={{
         position: "fixed", inset: 0, zIndex: 9999,
         display: "flex",
@@ -326,7 +294,9 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
       }}
     >
       <div
+        className="service-modal-container"
         style={{
+          position: "relative",
           display: "flex",
           flexDirection: "column",
           boxShadow: "0 4px 24px rgba(0,0,0,0.45)",
@@ -593,18 +563,20 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
 
           {/* Action buttons row */}
           <div className="no-print" style={{ display: "flex", gap: "6px", marginBottom: "12px" }}>
-            <button
-              onClick={downloadExcel}
-              style={{
-                background: "#28a745", color: "#fff", border: "1px solid #1e7e34",
-                padding: "6px 14px", fontSize: "12px", fontWeight: "bold",
-                cursor: "pointer", borderRadius: "3px",
-              }}
-              onMouseOver={e => e.currentTarget.style.background = "#218838"}
-              onMouseOut={e => e.currentTarget.style.background = "#28a745"}
-            >
-              MAIN REPORT
-            </button>
+            {type !== "Receipt Format" && (
+              <button
+                onClick={downloadExcel}
+                style={{
+                  background: "#28a745", color: "#fff", border: "1px solid #1e7e34",
+                  padding: "6px 14px", fontSize: "12px", fontWeight: "bold",
+                  cursor: "pointer", borderRadius: "3px",
+                }}
+                onMouseOver={e => e.currentTarget.style.background = "#218838"}
+                onMouseOut={e => e.currentTarget.style.background = "#28a745"}
+              >
+                MAIN REPORT
+              </button>
+            )}
             <button
               onClick={handlePrint}
               style={{
@@ -632,11 +604,12 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
           </div>
 
           {/* Printable / report area */}
-          <div ref={contentRef} style={{ width: "100%" }}>
+          <div ref={contentRef} className="print-area" style={{ width: "100%" }}>
 
             {/* ── REPORT VIEW ── */}
             {viewMode === "report" && type !== "billwise" && (
               <div
+                className="report-sheet"
                 style={{
                   background: "white",
                   border: "1px solid #bbb",
@@ -673,6 +646,7 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
                           { label: "DATE", align: "left" },
                           { label: "CLIENT NAME", align: "left" },
                           { label: "PURCHASE ITEM", align: "left" },
+                          ...(type === "DC Format" ? [{ label: "REMARKS", align: "left" }] : []),
                           { label: "QUANTITY", align: "right" },
                           { label: "PRICE", align: "right" },
                           { label: "SUBTOTAL", align: "right" },
@@ -681,6 +655,7 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
                           { label: "IGST", align: "right" },
                           ...(type === "Credit Note Format" ? [{ label: "DELIVERY CHARGE", align: "right" }] : []),
                           { label: "GRANDTOTAL", align: "right" },
+                          ...(type === "DC Format" ? [{ label: "ACTIONS", align: "center" }] : []),
                         ].map(({ label, align }) => (
                           <th
                             key={label}
@@ -712,6 +687,9 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
                               {row.customer_name || row.client_name}
                             </td>
                             <td style={tdStyle("left")}>{row.item_name || "-"}</td>
+                            {type === "DC Format" && (
+                              <td style={tdStyle("left")}>{row.remarks || "-"}</td>
+                            )}
                             <td style={tdStyle("right")}>{row.quantity ?? 0}</td>
                             <td style={tdStyle("right")}>{row.price ?? 0}</td>
                             <td style={tdStyle("right")}>{row.subtotal ?? 0}</td>
@@ -724,12 +702,28 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
                             <td style={{ ...tdStyle("right"), color: "#1a3f7a", fontWeight: "bold" }}>
                               {row.grandTotal ?? 0}
                             </td>
+                            {type === "DC Format" && (
+                              <td style={{ ...tdStyle("center"), whiteSpace: "nowrap" }} className="no-print">
+                                <button
+                                  onClick={() => handleEditDC(row.dc_no)}
+                                  style={{ background: "#0069d9", color: "#fff", border: "none", padding: "3px 8px", fontSize: "11px", cursor: "pointer", borderRadius: "3px", marginRight: "4px" }}
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => setDeleteConfirm({ open: true, dcNo: row.dc_no })}
+                                  style={{ background: "#dc3545", color: "#fff", border: "none", padding: "3px 8px", fontSize: "11px", cursor: "pointer", borderRadius: "3px" }}
+                                >
+                                  Delete
+                                </button>
+                              </td>
+                            )}
                           </tr>
                         ))
                       ) : (
                         <tr>
                           <td
-                            colSpan={type === "Credit Note Format" ? 13 : 12}
+                            colSpan={(type === "Credit Note Format" || type === "DC Format") ? 13 : 12}
                             style={{ textAlign: "center", padding: "24px", color: "#888", fontSize: "13px" }}
                           >
                             No Data Available
@@ -740,7 +734,7 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
                       {/* Total row */}
                       {reportData.length > 0 && (
                         <tr style={{ background: "#b8cce4", fontWeight: "bold" }}>
-                          <td colSpan="5" style={{ border: "1px solid #9baec8", padding: "6px 10px", textAlign: "right", fontSize: "12px" }}>
+                          <td colSpan={type === "DC Format" ? 6 : 5} style={{ border: "1px solid #9baec8", padding: "6px 10px", textAlign: "right", fontSize: "12px" }}>
                             TOTAL
                           </td>
                           <td style={{ border: "1px solid #9baec8", padding: "6px 10px", textAlign: "right", fontSize: "12px" }}>
@@ -765,6 +759,9 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
                           <td style={{ border: "1px solid #9baec8", padding: "6px 10px", textAlign: "right", fontSize: "12px" }}>
                             {reportData.reduce((s, r) => s + (Number(r.grandTotal) || 0), 0).toFixed(2)}
                           </td>
+                          {type === "DC Format" && (
+                            <td style={{ border: "1px solid #9baec8", padding: "6px 10px" }} className="no-print"></td>
+                          )}
                         </tr>
                       )}
                     </tbody>
@@ -812,16 +809,80 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
 
       </div>
 
+      {/* Delete Confirmation Dialog */}
+      {deleteConfirm.open && (
+        <div style={{
+          position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 99999,
+        }}>
+          <div style={{ background: "white", padding: "28px 32px", borderRadius: "8px", minWidth: "320px", textAlign: "center", boxShadow: "0 4px 16px rgba(0,0,0,0.3)" }}>
+            <p style={{ marginBottom: "8px", fontSize: "15px", fontWeight: "bold", color: "#333" }}>Confirm Delete</p>
+            <p style={{ marginBottom: "20px", fontSize: "13px", color: "#555" }}>
+              Are you sure you want to delete DC <strong>{deleteConfirm.dcNo}</strong>? This action cannot be undone.
+            </p>
+            <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+              <button
+                onClick={() => handleDeleteDC(deleteConfirm.dcNo)}
+                style={{ background: "#dc3545", color: "#fff", border: "none", padding: "8px 22px", cursor: "pointer", borderRadius: "4px", fontWeight: "bold", fontSize: "13px" }}
+              >
+                Yes, Delete
+              </button>
+              <button
+                onClick={() => setDeleteConfirm({ open: false, dcNo: null })}
+                style={{ background: "#6c757d", color: "#fff", border: "none", padding: "8px 22px", cursor: "pointer", borderRadius: "4px", fontWeight: "bold", fontSize: "13px" }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 10px; height: 10px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #d1d5db; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #9ca3af; }
         .printable-area { width: 100% !important; max-width: 100% !important; }
         @media print {
-          body { margin: 0 !important; padding: 0 !important; }
-          .no-print { display: none !important; }
-          .printable-area { width: 100% !important; overflow: visible !important; }
-          tr { page-break-inside: avoid !important; }
+          body { margin: 0 !important; padding: 0 !important; background: white !important; }
+          body * { visibility: hidden; }
+          .print-area, .print-area * { visibility: visible; }
+          .print-area {
+            display: block !important;
+            position: absolute !important;
+            left: 0 !important; top: 0 !important;
+            width: 100% !important;
+            margin: 0 !important; padding: 0 !important;
+            border: none !important; box-shadow: none !important;
+          }
+          #root,
+          #root > div,
+          main,
+          main > div,
+          main > div > div,
+          .service-modal-overlay,
+          .service-modal-container,
+          .custom-scrollbar {
+            display: block !important;
+            position: static !important;
+            height: auto !important;
+            min-height: auto !important;
+            max-height: none !important;
+            overflow: visible !important;
+            float: none !important;
+            box-shadow: none !important;
+            border: none !important;
+            background: transparent !important;
+          }
+          .custom-scrollbar {
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+          .no-print, button { display: none !important; }
+          .report-sheet { min-height: auto !important; border: none !important; }
+          .printable-area { width: 100% !important; min-height: auto !important; overflow: visible !important; }
+          table { border-collapse: collapse !important; }
+          tr, td, th { page-break-inside: avoid !important; }
         }
       `}</style>
     </div>

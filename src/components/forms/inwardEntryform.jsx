@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { SquarePen, Trash2, CheckCircle, Eye } from "lucide-react";
+import { SquarePen, Trash2,UserPlus, PackagePlus } from "lucide-react";
+import CustomerQuickAddModal from "../ui/CustomerQuickAddModal";
+import ProductQuickAddModal from "../ui/ProductQuickAddModal";
+import Addpassword from "./addeditpassword";
+import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import toast from "react-hot-toast";
 
 const TODAY = new Date().toISOString().split("T")[0];
@@ -28,11 +32,12 @@ const INIT_ROW = {
 };
 
 const UOM_LIST = ["NOS", "KG", "MTR", "NO", "SET", "PKT"];
-const TRANSPORT_OPTIONS = ["By Hand", "By Courier", "FedEx", "DHL", "BlueDart", "Delhivery"];
-const REMARKS_OPTIONS = ["Damaged", "Services", "sell", "Under Warranty"];
+const TRANSPORT_OPTIONS = ["Courier", "Transport", "By Hand"];
+const REMARKS_OPTIONS = ["For Service", "For Reservice", "For Testing Purpose"];
 
 const InwardEntry = () => {
     const navigate = useNavigate();
+    const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
 
     // Form & Table States
     const [formData, setFormData] = useState(INIT_FORM);
@@ -44,7 +49,6 @@ const InwardEntry = () => {
     // suggestions / data
     const [clients, setClients] = useState([]);
     const [items, setItems] = useState([]);
-    const [allInwardData, setAllInwardData] = useState([]);
     const [inwardList, setInwardlist] = useState([]);
 
     // search inputs
@@ -60,9 +64,14 @@ const InwardEntry = () => {
     const [openunit, setOpenUnit] = useState(false);
     const [inwardnoOpen, setinwardnoOpen] = useState(false);
 
+    // Quick Add Modals
+    const [showCustomerModal, setShowCustomerModal] = useState(false);
+    const [showProductModal, setShowProductModal] = useState(false);
+    const [clientRefreshKey, setClientRefreshKey] = useState(0);
+    const [itemRefreshKey, setItemRefreshKey] = useState(0);
+
     // Success Modal & View States
     const [savedInwardNo, setSavedInwardNo] = useState("");
-    const [viewInwardNo, setViewInwardNo] = useState("");
 
     // Refs
     const clientRef = useRef(null);
@@ -80,7 +89,6 @@ const InwardEntry = () => {
     // Setup initial data & click outside handler
     useEffect(() => {
         fetchNextSl();
-        fetchAllInward();
 
         const handleClickOutside = (event) => {
             if (clientRef.current && !clientRef.current.contains(event.target)) setclientOpen(false);
@@ -111,7 +119,7 @@ const InwardEntry = () => {
             }
         };
         fetchClients();
-    }, [supplierSearch]);
+    }, [supplierSearch, clientRefreshKey]);
 
     // Fetch Next SL number
     const fetchNextSl = async () => {
@@ -124,17 +132,7 @@ const InwardEntry = () => {
         }
     };
 
-    // Fetch All Inward Entries
-    const fetchAllInward = async () => {
-        try {
-            const res = await fetch(`${Api_url}/all`);
-            const data = await res.json();
-            setAllInwardData(Array.isArray(data) ? data : []);
-        } catch (err) {
-            console.error("Fetch all inward error:", err);
-        }
-    };
-
+   
     // Description type change
     const typechange = (type) => {
         setOrderType(type);
@@ -175,7 +173,7 @@ const InwardEntry = () => {
             }
         };
         fetchItems();
-    }, [orderType, itemsearch, shouldAutoSelect]);
+    }, [orderType, itemsearch, shouldAutoSelect, itemRefreshKey]);
 
     const selectitem = (selectedItem) => {
         setCurrentrow({
@@ -198,6 +196,14 @@ const InwardEntry = () => {
 
     const clearRow = () => {
         setCurrentrow(INIT_ROW);
+    };
+
+    const handleSaveInward = () => {
+        SaveInward();
+    };
+
+    const handleDeleteInward = () => {
+        deleteInward();
     };
 
     // Save/Update Inward
@@ -260,19 +266,10 @@ const InwardEntry = () => {
             }
             toast.success(savedInwardNo ? "Inward Entry Updated Successfully" : "Inward Entry Saved Successfully");
             resetAll();
-            fetchAllInward();
         } catch (error) {
             console.error("Save Error:", error);
             toast.error("Failed to Save Inward");
         }
-    };
-
-    const handleCloseSuccessModal = () => {
-        resetAll();
-    };
-
-    const handleViewInward = () => {
-        setViewInwardNo(savedInwardNo);
     };
 
     const resetAll = () => {
@@ -287,9 +284,9 @@ const InwardEntry = () => {
     };
 
     // Load Inward Entry details for editing
-    const LoadInwardnumber = async (dc_number) => {
+    const LoadInwardnumber = async (sl_no) => {
         try {
-            const res = await fetch(`${Api_url}/edit/${encodeURIComponent(dc_number)}`);
+            const res = await fetch(`${Api_url}/edit/${encodeURIComponent(sl_no)}`);
             const data = await res.json();
             if (!res.ok) {
                 throw new Error(data.message || "Failed to Load");
@@ -316,7 +313,7 @@ const InwardEntry = () => {
                 remarks: item.remarks || ""
             }));
 
-            setSavedInwardNo(dc_number);
+            setSavedInwardNo(sl_no);
             setFormData({
                 supplier_name: data.header.supplier_name || "",
                 sl_no: data.header.sl_no || "",
@@ -368,7 +365,6 @@ const InwardEntry = () => {
             }
             toast.success("Inward Entry Deleted");
             resetAll();
-            fetchAllInward();
         } catch (error) {
             console.error("Delete error", error);
             toast.error("Failed to Delete Inward Entry");
@@ -394,12 +390,30 @@ const InwardEntry = () => {
         settabledata(prev => prev.filter((_, i) => i !== index));
     };
 
-    // Filter bottom table by selected supplier
-    const filteredAllInward = formData.supplier_name
-        ? allInwardData.filter(entry => entry.supplier_name === formData.supplier_name)
-        : allInwardData;
+    // Quick Add handlers
+    const handleCustomerCreated = (newCustomer) => {
+        setClientRefreshKey(k => k + 1);
+        setFormData(p => ({ ...p, supplier_name: newCustomer.customer_name }));
+        setSupplierSearch(newCustomer.customer_name);
+        setclientOpen(false);
+        setShowCustomerModal(false);
+    };
+
+    const handleProductCreated = (newItem) => {
+        const type = newItem.type;
+        setOrderType(type);
+        setFormData(p => ({ ...p, description_type: type }));
+        setItemRefreshKey(k => k + 1);
+        setCurrentrow(p => ({ ...p, item_name: newItem.item_name, hsn: newItem.hsn_number || "" }));
+        setitemsearch("");
+        setitemOpen(false);
+        setShowProductModal(false);
+    };
+
+   
 
     return (
+        <>
         <div className="min-h-screen bg-gray-50 p-6 font-sans">
             <button
                 onClick={() => navigate(-1)}
@@ -418,9 +432,9 @@ const InwardEntry = () => {
                     </div>
                     <div className="flex gap-1.5">
                         <button onClick={resetAll} className="border px-3 py-1.5 rounded-lg text-[13px] font-bold hover:bg-gray-800 hover:text-white transition-colors">NEW</button>
-                        <button onClick={SaveInward} className="border px-3 py-1.5 rounded-lg text-[13px] font-bold hover:bg-green-600 hover:text-white transition-colors">SAVE</button>
-                        <button onClick={SaveInward} className="border px-3 py-1.5 rounded-lg text-[13px] font-bold hover:bg-blue-600 hover:text-white transition-colors">UPDATE</button>
-                        <button onClick={deleteInward} className="border px-3 py-1.5 rounded-lg text-[13px] font-bold hover:bg-red-600 hover:text-white transition-colors">DELETE</button>
+                        <button onClick={handleSaveInward} className="border px-3 py-1.5 rounded-lg text-[13px] font-bold hover:bg-green-600 hover:text-white transition-colors">SAVE</button>
+                        <button onClick={handleSaveInward} className="border px-3 py-1.5 rounded-lg text-[13px] font-bold hover:bg-blue-600 hover:text-white transition-colors">UPDATE</button>
+                        <button onClick={handleDeleteInward} className="border px-3 py-1.5 rounded-lg text-[13px] font-bold hover:bg-red-600 hover:text-white transition-colors">DELETE</button>
                     </div>
                 </div>
 
@@ -430,37 +444,49 @@ const InwardEntry = () => {
                     <div className="grid grid-cols-4 gap-5">
 
                         {/* Supplier Name */}
-                        <div className="relative" ref={clientRef}>
+                        <div ref={clientRef}>
                             <label className={labelCls}>Supplier Name <span className="text-red-500">*</span></label>
-                            <input
-                                type="text"
-                                value={supplierSearch}
-                                onChange={(e) => {
-                                    setSupplierSearch(e.target.value);
-                                    setFormData(p => ({ ...p, supplier_name: e.target.value }));
-                                    setclientOpen(true);
-                                }}
-                                onFocus={() => setclientOpen(true)}
-                                placeholder="Type to search supplier…"
-                                className={inputCls}
-                            />
-                            {clientOpen && clients.length > 0 && (
-                                <div className={dropdownCls}>
-                                    {clients.map((c) => (
-                                        <div
-                                            key={c.id}
-                                            onClick={() => {
-                                                setFormData(prev => ({ ...prev, supplier_name: c.customer_name }));
-                                                setSupplierSearch(c.customer_name);
-                                                setclientOpen(false);
-                                            }}
-                                            className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0"
-                                        >
-                                            {c.customer_name}
+                            <div className="flex items-center gap-1.5">
+                                <div className="relative flex-1">
+                                    <input
+                                        type="text"
+                                        value={supplierSearch}
+                                        onChange={(e) => {
+                                            setSupplierSearch(e.target.value);
+                                            setFormData(p => ({ ...p, supplier_name: e.target.value }));
+                                            setclientOpen(true);
+                                        }}
+                                        onFocus={() => setclientOpen(true)}
+                                        placeholder="Type to search supplier…"
+                                        className={inputCls}
+                                    />
+                                    {clientOpen && clients.length > 0 && (
+                                        <div className={dropdownCls}>
+                                            {clients.map((c) => (
+                                                <div
+                                                    key={c.id}
+                                                    onClick={() => {
+                                                        setFormData(prev => ({ ...prev, supplier_name: c.customer_name }));
+                                                        setSupplierSearch(c.customer_name);
+                                                        setclientOpen(false);
+                                                    }}
+                                                    className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0"
+                                                >
+                                                    {c.customer_name}
+                                                </div>
+                                            ))}
                                         </div>
-                                    ))}
+                                    )}
                                 </div>
-                            )}
+                                <button
+                                    type="button"
+                                    onClick={() => setShowCustomerModal(true)}
+                                    title="Quick Add Customer"
+                                    className="shrink-0 p-2.5 border border-gray-200 rounded-lg bg-white hover:bg-gray-50 shadow-sm transition-colors"
+                                >
+                                    <UserPlus size={15} className="text-gray-500" />
+                                </button>
+                            </div>
                         </div>
 
                         {/* Inward Number */}
@@ -559,6 +585,14 @@ const InwardEntry = () => {
                                         <span className="text-[12px] font-bold text-gray-700">{label}</span>
                                     </label>
                                 ))}
+                                <button
+                                    type="button"
+                                    onClick={() => setShowProductModal(true)}
+                                    title="Quick Add Product / Service"
+                                    className="shrink-0 p-2.5 border border-gray-200 rounded-lg bg-white hover:bg-gray-50 shadow-sm transition-colors"
+                                >
+                                    <PackagePlus size={15} className="text-gray-500" />
+                                </button>
                             </div>
                         </div>
 
@@ -572,6 +606,7 @@ const InwardEntry = () => {
 
                         {/* Item Name */}
                         <div className="col-span-2 relative" ref={itemRef}>
+                            <label className={labelCls}>Item Name</label>
                             <input
                                 type="text"
                                 value={currentrow.item_name}
@@ -607,6 +642,7 @@ const InwardEntry = () => {
 
                         {/* Quantity */}
                         <div>
+                            <label className={labelCls}>Qty</label>
                             <input
                                 type="number"
                                 placeholder="Quantity"
@@ -618,6 +654,7 @@ const InwardEntry = () => {
 
                         {/* Unit */}
                         <div className="relative" ref={unitRef}>
+                            <label className={labelCls}>Unit</label>
                             <input
                                 type="text"
                                 placeholder="Unit"
@@ -643,6 +680,7 @@ const InwardEntry = () => {
 
                         {/* PCB SL NO */}
                         <div>
+                            <label className={labelCls}>PCB SL NO</label>
                             <input
                                 type="text"
                                 placeholder="PCB SL NO"
@@ -654,6 +692,7 @@ const InwardEntry = () => {
 
                         {/* HSN */}
                         <div>
+                            <label className={labelCls}>HSN</label>
                             <input
                                 type="text"
                                 placeholder="HSN"
@@ -664,6 +703,7 @@ const InwardEntry = () => {
                         </div>
                         {/* Item Remarks */}
                         <div className="relative" ref={remarksRef}>
+                            <label className={labelCls}>Remarks</label>
                             <input
                                 type="text"
                                 placeholder="Remarks"
@@ -688,7 +728,7 @@ const InwardEntry = () => {
                         </div>
 
                         {/* Buttons */}
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 mt-5">
                             <button type="button" onClick={addrow} className="flex-1 bg-green-500 text-white py-2 px-3 rounded-lg hover:bg-green-600 text-[13px] font-bold">ADD</button>
                             <button type="button" onClick={clearRow} className="flex-1 bg-gray-100 text-gray-700 py-2 px-3 rounded-lg hover:bg-gray-200 text-[13px] font-bold">CLR</button>
                         </div>
@@ -698,26 +738,26 @@ const InwardEntry = () => {
                 </div>
 
                 {/* Items Table */}
-                <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm mt-4 min-h-[200px]">
+                <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm mt-4">
+                    <div className="h-[250px] overflow-y-auto">
                     <table className="w-full border-collapse">
-                        <thead>
+                        <thead className="sticky top-0 z-10 bg-gray-50">
                             <tr className="bg-gray-50 border-b border-gray-200">
-                                {["SL NO", "Item Name", "Qty", "Unit", "PCB SL NO", "HSN","Remarks", "Actions"].map((h, i) => (
+                                {["SL NO", "Item Name", "Qty", "Unit","HSN","Remarks", "Actions"].map((h, i) => (
                                     <th key={i} className="p-3 text-[11px] font-black text-gray-500 uppercase text-left border-r border-gray-100 last:border-0">{h}</th>
                                 ))}
                             </tr>
                         </thead>
                         <tbody>
                             {tabledata.length === 0 ? (
-                                <tr><td colSpan={9} className="p-8 text-center text-gray-400 text-sm">No items added yet.</td></tr>
+                                <tr><td colSpan={7} className="p-8 text-center text-gray-400 text-sm">No items added yet.</td></tr>
                             ) : (
                                 tabledata.map((item, idx) => (
                                     <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50">
                                         <td className="p-3 text-[12px] text-gray-500 border-r">{idx + 1}</td>
-                                        <td className="p-3 text-[12px] font-semibold border-r">{item.item_name}</td>
+                                        <td className="p-3 text-[12px] border-r">{item.item_name} {item.pcb_sl_no ? `(${item.pcb_sl_no})` : ""}</td>
                                         <td className="p-3 text-[12px] border-r">{item.quantity}</td>
                                         <td className="p-3 text-[12px] border-r">{item.unit}</td>
-                                        <td className="p-3 text-[12px] border-r">{item.pcb_sl_no}</td>
                                         <td className="p-3 text-[12px] border-r">{item.hsn}</td>
                                         <td className="p-3 text-[12px] border-r">{item.remarks}</td>
                                         <td className="p-3">
@@ -730,7 +770,19 @@ const InwardEntry = () => {
                                 ))
                             )}
                         </tbody>
+                        <tfoot className="sticky bottom-0 z-10">
+                            <tr>
+                                <td colSpan={7} className="px-4 py-3">
+                                    <div className="flex items-center ml-[32%] gap-2">
+                                        <span className="text-[13px] font-black text-gray-600 uppercase tracking-wide">TOTAL QTY</span>
+                                        <span className="text-[13px] font-black text-gray-500">:</span>
+                                        <span className="text-[18px] font-black text-blue-700">{tabledata.reduce((s, r) => s + Number(r.quantity || 0), 0)}</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tfoot>
                     </table>
+                    </div>
                 </div>
 
                 {/* Load / Edit existing Inward */}
@@ -749,7 +801,7 @@ const InwardEntry = () => {
                                 searchInward(value);
                                 setinwardnoOpen(true);
                             }}
-                            placeholder="Enter DC Number"
+                            placeholder="Enter Inward Number"
                             className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black outline-none bg-white"
                         />
                         {inwardnoOpen && inwardList.length > 0 && (
@@ -758,13 +810,13 @@ const InwardEntry = () => {
                                     <div
                                         key={i}
                                         onClick={() => {
-                                            setInwardSearch(inward.dc_number);
-                                            LoadInwardnumber(inward.dc_number);
+                                            setInwardSearch(inward.sl_no);
                                             setinwardnoOpen(false);
+                                            requirePassword(() => LoadInwardnumber(inward.sl_no));
                                         }}
                                         className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm font-semibold border-b border-gray-50 last:border-0"
                                     >
-                                        {inward.dc_number}
+                                        {inward.sl_no}
                                     </div>
                                 ))}
                             </div>
@@ -776,6 +828,29 @@ const InwardEntry = () => {
 
             </div>
         </div>
+
+        {/* Customer Quick Add Modal */}
+        {showCustomerModal && (
+            <CustomerQuickAddModal
+                onClose={() => setShowCustomerModal(false)}
+                onSuccess={handleCustomerCreated}
+            />
+        )}
+
+        {/* Product Quick Add Modal */}
+        {showProductModal && (
+            <ProductQuickAddModal
+                onClose={() => setShowProductModal(false)}
+                onSuccess={handleProductCreated}
+                defaultType={orderType === "spare" || orderType === "service" ? orderType : "spare"}
+            />
+        )}
+
+        {/* Password Approval Modal */}
+        {showPasswordModal && (
+            <Addpassword onSuccess={handlePasswordSuccess} onClose={handlePasswordCancel} />
+        )}
+        </>
     );
 };
 

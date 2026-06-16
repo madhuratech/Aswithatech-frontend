@@ -3,10 +3,18 @@ import { useScrollLock } from "../../hooks/useScrollLock";
 import { X } from "lucide-react";
 import { successToast, errorToast, loadingToast } from "../ui/nottifications";
 import toast from "react-hot-toast";
+import Addpassword from "./addeditpassword";
+import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 
 
 
 const AddNewCustomerModal = ({ onClose, customer, refresh }) => {
+  const {
+    showPasswordModal,
+    requirePassword,
+    handlePasswordSuccess,
+    handlePasswordCancel,
+  } = usePasswordProtection();
   const [customerType, selectCustomerType] = useState("new");
   const [filteredCustomers, setFilteredCustomers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -63,6 +71,11 @@ const AddNewCustomerModal = ({ onClose, customer, refresh }) => {
 
   // Save Customer
 
+  const handleSave = (e) => {
+    e.preventDefault();
+    saveCustomer(e);
+  };
+
   const saveCustomer = async (e) => {
   e.preventDefault();
 
@@ -75,10 +88,14 @@ const AddNewCustomerModal = ({ onClose, customer, refresh }) => {
 
     const method = customer ? "PUT" : "POST";
 
+    const payload = Object.fromEntries(
+      Object.entries(form).map(([k, v]) => [k, v === "" ? null : v])
+    );
+
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form), 
+      body: JSON.stringify(payload),
     });
 
     if (!res.ok) {
@@ -256,7 +273,7 @@ useEffect(() => {
         </div>
 
         {/* Form */}
-        <form onSubmit={saveCustomer} className="space-y-4">
+        <form onSubmit={handleSave} className="space-y-4">
           {/* Customer Type */}
           <div>
             <label className="text-sm font-medium">Customer Type</label>
@@ -460,7 +477,9 @@ useEffect(() => {
         {/* Footer */}
 
       </div>
-
+      {showPasswordModal && (
+        <Addpassword onSuccess={handlePasswordSuccess} onClose={handlePasswordCancel} />
+      )}
     </div>
 
   );

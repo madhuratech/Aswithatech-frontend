@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import Addpassword from "./addeditpassword";
+import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 
 const API_URL = "http://localhost:3000/api/pendings";
 
@@ -19,6 +21,7 @@ const EMPTY_FIELDS = {
 
 const PendingForm = () => {
   const navigate = useNavigate();
+  const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
 
   const [clientList,      setClientList]      = useState([]);
   const [clientOpen,      setClientOpen]      = useState(false);
@@ -215,6 +218,10 @@ const PendingForm = () => {
 
 };
 
+  const handleSaveWithPassword = () => {
+    handleSave();
+  };
+
   const handleRowClick = (row, index) => {
     setSelectedRow(index);
     setFields({
@@ -276,7 +283,7 @@ const PendingForm = () => {
               { label: "NEW",   fn: handleNew,                          cls: "hover:bg-gray-700"   },
               { label: "CLEAR", fn: handleClear,                        cls: "hover:bg-yellow-500" },
               { label: saving ? "SAVING…" : "SAVE",
-                fn: handleSave,
+                fn: handleSaveWithPassword,
                 cls: stagedRows.length > 0 ? "hover:bg-green-600 border-green-400 text-green-700 font-bold" : "hover:bg-green-600" },
               { label: "EDIT",   fn: () => {},           cls: "hover:bg-blue-600"  },
               { label: "DELETE", fn: () => {},           cls: "hover:bg-red-600"   },
@@ -585,6 +592,9 @@ const PendingForm = () => {
         </div>
 
       </div>
+      {showPasswordModal && (
+        <Addpassword onSuccess={handlePasswordSuccess} onClose={handlePasswordCancel} />
+      )}
     </div>
   );
 };

@@ -4,6 +4,9 @@ import toast from "react-hot-toast";
 import { SquarePen, Trash2 } from "lucide-react";
 import SaleswindowModel from "../ui/saleswindowModal";
 import POLayout from "../pages/Purchase/purchaseorderview";
+import { isTamilNadu, calcGstAmounts } from "../../utils/gstUtils";
+import Addpassword from "./addeditpassword";
+import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 
 const API = "http://localhost:3000/api/purchaseorders";
 const TODAY = new Date().toISOString().split("T")[0];
@@ -19,6 +22,7 @@ const INIT_FORM = {
 
 const INIT_ITEM = {
   item_name: "",
+  serial_no: "",
   quantity: "",
   price: "",
   hsn_number: "",
@@ -27,6 +31,7 @@ const INIT_ITEM = {
 
 export default function PurchaseOrder() {
   const navigate = useNavigate();
+  const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
 
   // ── core state ────────────────────────────────────────────────────────
   const [poNumber, setPoNumber]           = useState("");
@@ -35,8 +40,10 @@ export default function PurchaseOrder() {
   const [orderType, setOrderType]         = useState("");
   const [tabledata, setTabledata]         = useState([]);
   const [currentItem, setCurrentItem]     = useState(INIT_ITEM);
-  const [cgstPct, setCgstPct]             = useState(9);
-  const [sgstPct, setSgstPct]             = useState(9);
+  const [editIndex, setEditIndex]         = useState(-1);
+  const [gstPct, setGstPct]               = useState(18);
+  const [clientState, setClientState]     = useState("");
+  const [clientGst, setClientGst]         = useState("");
 
   // ── dropdown data ─────────────────────────────────────────────────────
   const [clients, setClients]   = useState([]);
@@ -160,6 +167,7 @@ export default function PurchaseOrder() {
       setTabledata(
         (data.items || []).map((it) => ({
           item_name:  it.item_name,
+          serial_no:  it.serial_no || "",
           quantity:   it.quantity,
           price:      it.price,
           hsn_number: it.hsn_code,
@@ -179,6 +187,8 @@ export default function PurchaseOrder() {
   // Event handlers
   // ════════════════════════════════════════════════════════════════════
   const handleClientSelect = (client) => {
+    setClientState(client.state || "");
+    setClientGst(client.gst_number || "");
     setForm((p) => ({ ...p, client_name: client.customer_name }));
     setClientSearch(client.customer_name);
     closeAll("client");
@@ -199,9 +209,15 @@ export default function PurchaseOrder() {
     if (!currentItem.quantity || parseFloat(currentItem.quantity) <= 0) { toast.error("Quantity must be > 0."); return; }
     if (!currentItem.price    || parseFloat(currentItem.price) <= 0)    { toast.error("Price is required."); return; }
     if (!currentItem.unit)                                { toast.error("Unit is required."); return; }
-    if (tabledata.some((r) => r.item_name === currentItem.item_name))   { toast.error("Duplicate item."); return; }
+    if (editIndex < 0 && tabledata.some((r) => r.item_name === currentItem.item_name)) { toast.error("Duplicate item."); return; }
     const amount = (parseFloat(currentItem.quantity) * parseFloat(currentItem.price)).toFixed(2);
-    setTabledata((p) => [...p, { ...currentItem, amount }]);
+    const newRow = { ...currentItem, amount };
+    if (editIndex >= 0) {
+      setTabledata((p) => { const u = [...p]; u[editIndex] = newRow; return u; });
+      setEditIndex(-1);
+    } else {
+      setTabledata((p) => [...p, newRow]);
+    }
     setCurrentItem(INIT_ITEM);
     setItemSearch("");
   };
@@ -210,7 +226,7 @@ export default function PurchaseOrder() {
     const it = tabledata[idx];
     setCurrentItem(it);
     setItemSearch(it.item_name);
-    setTabledata((p) => p.filter((_, i) => i !== idx));
+    setEditIndex(idx);
   };
 
   const deleteItem = (idx) => setTabledata((p) => p.filter((_, i) => i !== idx));
@@ -221,9 +237,9 @@ export default function PurchaseOrder() {
   const subtotal   = tabledata.reduce((s, it) => s + Number(it.amount || 0), 0);
   const delivery   = Number(form.delivery_charges || 0);
   const tds        = Number(form.tds || 0);
-  const cgst       = subtotal * (cgstPct / 100);
-  const sgst       = subtotal * (sgstPct / 100);
-  const rawTotal   = subtotal + cgst + sgst + delivery - tds;
+  const isIntrastate = isTamilNadu(clientState, clientGst);
+  const { cgst, sgst, igst, cgstPct, sgstPct, igstPct } = calcGstAmounts(subtotal, gstPct, isIntrastate);
+  const rawTotal   = subtotal + cgst + sgst + igst + delivery - tds;
   const roundOff   = Math.round(rawTotal) - rawTotal;
   const grandTotal = Math.round(rawTotal);
 
@@ -241,16 +257,26 @@ export default function PurchaseOrder() {
     subtotal,
     cgst,
     sgst,
+    igst,
     roundOff,
     grandTotal,
     items: tabledata.map((it) => ({
       item_name: it.item_name,
+      serial_no: it.serial_no || "",
       price:     it.price,
       quantity:  it.quantity,
       hsn_code:  it.hsn_number,
       unit:      it.unit,
     })),
   });
+
+  const handleSavePurchaseOrder = () => {
+    savePO();
+  };
+
+  const handleDeletePurchaseOrder = () => {
+    deletePO();
+  };
 
   const savePO = async () => {
     if (!form.client_name?.trim()) { toast.error("Supplier is required.");    return; }
@@ -298,8 +324,9 @@ export default function PurchaseOrder() {
     setPoList([]);
     setLoadedPoNumber("");
     setOrderType("");
-    setCgstPct(9);
-    setSgstPct(9);
+    setGstPct(18);
+    setClientState("");
+    setClientGst("");
     fetchNextPoNumber();
   };
 
@@ -365,11 +392,11 @@ export default function PurchaseOrder() {
               className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-gray-800 hover:text-white transition-colors">
               NEW
             </button>
-            <button onClick={savePO} disabled={busy.save}
+            <button onClick={handleSavePurchaseOrder} disabled={busy.save}
               className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-green-600 hover:text-white transition-colors disabled:opacity-40">
               {busy.save ? "Saving…" : loadedPoNumber ? "UPDATE" : "SAVE"}
             </button>
-            <button onClick={deletePO}
+            <button onClick={handleDeletePurchaseOrder}
               className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-red-600 hover:text-white transition-colors">
               DELETE
             </button>
@@ -477,10 +504,10 @@ export default function PurchaseOrder() {
             Step 2 — Add Items
           </p>
 
-          <div className="grid grid-cols-9 gap-3 items-end">
+          <div className="grid grid-cols-10 gap-3 items-end">
 
             {/* Item Search */}
-            <div className="col-span-3 relative" ref={itemRef}>
+            <div className="col-span-2 relative" ref={itemRef}>
               <label className={labelCls}>Item Name <span className="text-red-500">*</span></label>
               <input
                 type="text"
@@ -512,6 +539,18 @@ export default function PurchaseOrder() {
                   No items found.
                 </div>
               )}
+            </div>
+
+            {/* Serial Number */}
+            <div className="col-span-2">
+              <label className={labelCls}>Serial Number</label>
+              <input
+                type="text"
+                value={currentItem.serial_no || ""}
+                onChange={(e) => setCurrentItem((p) => ({ ...p, serial_no: e.target.value }))}
+                placeholder="Serial Number"
+                className={`${inputCls} bg-gray-50/60`}
+              />
             </div>
 
             {/* Quantity */}
@@ -592,10 +631,10 @@ export default function PurchaseOrder() {
             {/* Buttons */}
             <div className="flex gap-2">
               <button onClick={handleAddItem}
-                className="flex-1 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-[13px] font-bold transition-colors">
-                Add
+                className={`flex-1 py-2.5 text-white rounded-lg text-[13px] font-bold transition-colors ${editIndex >= 0 ? "bg-blue-600 hover:bg-blue-700" : "bg-green-600 hover:bg-green-700"}`}>
+                {editIndex >= 0 ? "Update" : "Add"}
               </button>
-              <button onClick={() => { setCurrentItem(INIT_ITEM); setItemSearch(""); }}
+              <button onClick={() => { setCurrentItem(INIT_ITEM); setItemSearch(""); setEditIndex(-1); }}
                 className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-[13px] font-bold transition-colors">
                 Clear
               </button>
@@ -604,14 +643,15 @@ export default function PurchaseOrder() {
         </div>
 
         {/* ── Items Table ──────────────────────────────────────── */}
-        <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm mt-3 min-h-[220px]">
+        <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm mt-3">
+          <div className="h-[250px] overflow-y-auto">
           <table className="w-full border-collapse">
-            <thead>
+            <thead className="sticky top-0 z-10 bg-gray-50">
               <tr className="bg-gray-50 border-b border-gray-200">
-                {["#", "Item Name", "Qty", "Rate", "Amount", "HSN", "Unit", "Actions"].map((h, i) => (
+                {["#", "Item Name", "Serial Number", "Qty", "Rate", "Amount", "HSN", "Unit", "Actions"].map((h, i) => (
                   <th key={i}
                     className={`px-4 py-3 text-[11px] font-black text-gray-400 uppercase tracking-wide ${
-                      i === 0 ? "w-10 text-center" : i === 1 ? "text-left" : "text-center"
+                      i === 0 ? "w-10 text-center" : i === 1 || i === 2 ? "text-left" : "text-center"
                     }`}>
                     {h}
                   </th>
@@ -621,7 +661,7 @@ export default function PurchaseOrder() {
             <tbody>
               {tabledata.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-14 text-center">
+                  <td colSpan={9} className="py-14 text-center">
                     <div className="text-gray-300 text-4xl mb-3">📦</div>
                     <p className="text-[13px] text-gray-400 font-medium">No items added yet.</p>
                     <p className="text-[12px] text-gray-300 mt-1">Select Order Type → search items to begin.</p>
@@ -629,9 +669,10 @@ export default function PurchaseOrder() {
                 </tr>
               ) : (
                 tabledata.map((it, idx) => (
-                  <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50/70 transition-colors">
+                  <tr key={idx} className={`border-b border-gray-100 transition-colors ${editIndex === idx ? "bg-blue-50" : "hover:bg-gray-50/70"}`}>
                     <td className="px-4 py-3 text-[12px] font-semibold text-gray-400 text-center">{idx + 1}</td>
                     <td className="px-4 py-3 text-[13px] font-semibold text-gray-800 uppercase">{it.item_name}</td>
+                    <td className="px-4 py-3 text-[13px] text-gray-600 text-left">{it.serial_no || "—"}</td>
                     <td className="px-4 py-3 text-[13px] font-semibold text-gray-800 text-center">{it.quantity}</td>
                     <td className="px-4 py-3 text-[13px] font-medium text-gray-700 text-center">₹{it.price}</td>
                     <td className="px-4 py-3 text-[13px] font-bold text-gray-900 text-center">₹{Number(it.amount).toFixed(2)}</td>
@@ -651,7 +692,19 @@ export default function PurchaseOrder() {
                 ))
               )}
             </tbody>
+            <tfoot className="sticky bottom-0 z-10 ">
+              <tr>
+                <td colSpan={9} className="px-4 py-3">
+                  <div className="flex items-center ml-[22%] gap-2">
+                    <span className="text-[13px] font-black text-gray-600 uppercase tracking-wide">TOTAL QTY</span>
+                    <span className="text-[13px] font-black text-gray-500">:</span>
+                    <span className="text-[18px] font-black text-blue-700">{tabledata.reduce((s, r) => s + Number(r.quantity || 0), 0)}</span>
+                  </div>
+                </td>
+              </tr>
+            </tfoot>
           </table>
+          </div>
         </div>
 
         {/* ── Totals + Load PO ─────────────────────────────────── */}
@@ -676,7 +729,7 @@ export default function PurchaseOrder() {
                 <div className={`${dropdownCls} w-64`}>
                   {poList.map((po, i) => (
                     <div key={i}
-                      onClick={() => loadPo(po.po_number)}
+                      onClick={() => requirePassword(() => loadPo(po.po_number))}
                       className="px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0">
                       {po.po_number}
                     </div>
@@ -697,24 +750,29 @@ export default function PurchaseOrder() {
 
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
-                  <span className="text-[12px] font-black text-gray-500 uppercase">CGST</span>
-                  <input type="number" value={cgstPct}
-                    onChange={(e) => setCgstPct(Number(e.target.value))}
-                    className="w-10 p-1 border border-gray-200 rounded text-center text-[11px] font-bold outline-none" />
-                  <span className="text-[11px] text-gray-400">%</span>
+                  <span className="text-[12px] font-black text-gray-500 uppercase">GST %</span>
+                  <input type="number" value={gstPct}
+                    onChange={(e) => setGstPct(Number(e.target.value))}
+                    className="w-12 p-1 border border-gray-200 rounded text-center text-[11px] font-bold outline-none" />
                 </div>
+                <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${isIntrastate ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"}`}>
+                  {isIntrastate ? "TN — CGST+SGST" : "IGST"}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-[12px] font-black text-gray-500 uppercase">CGST @{cgstPct}%</span>
                 <span className="text-[13px] font-bold text-gray-700">₹{cgst.toFixed(2)}</span>
               </div>
 
               <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <span className="text-[12px] font-black text-gray-500 uppercase">SGST</span>
-                  <input type="number" value={sgstPct}
-                    onChange={(e) => setSgstPct(Number(e.target.value))}
-                    className="w-10 p-1 border border-gray-200 rounded text-center text-[11px] font-bold outline-none" />
-                  <span className="text-[11px] text-gray-400">%</span>
-                </div>
+                <span className="text-[12px] font-black text-gray-500 uppercase">SGST @{sgstPct}%</span>
                 <span className="text-[13px] font-bold text-gray-700">₹{sgst.toFixed(2)}</span>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-[12px] font-black text-gray-500 uppercase">IGST @{igstPct}%</span>
+                <span className="text-[13px] font-bold text-gray-700">₹{igst.toFixed(2)}</span>
               </div>
 
               <div className="flex justify-between items-center">
@@ -757,6 +815,10 @@ export default function PurchaseOrder() {
         >
           <POLayout poNumber={savedPo} />
         </SaleswindowModel>
+
+        {showPasswordModal && (
+          <Addpassword onSuccess={handlePasswordSuccess} onClose={handlePasswordCancel} />
+        )}
 
       </div>
     </div>

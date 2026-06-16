@@ -2,9 +2,12 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { SquarePen,Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
-
+import { isTamilNadu, calcGstAmounts } from "../../utils/gstUtils";
+import Addpassword from "./addeditpassword";
+import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 
 const PerformanceInvoiceForm  = () => {
+  const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
   const navigate = useNavigate();
   const [invoiceno , setInvoiceno]=useState("");
   const[tabledata , setTabledata] = useState([]);
@@ -14,8 +17,9 @@ const PerformanceInvoiceForm  = () => {
   const[items , setitems] = useState([]);
   const[itemsearch , setitemsearch] = useState();
   const [loadInvoice , setLoadInvoice] = useState("");
-  const [cgstpercentage , setCgstpercentage] = useState(9);
-  const [sgstpercentage , setSgstpercentage] = useState(9); 
+  const [gstPct, setGstPct] = useState(18);
+  const [customerState, setCustomerState] = useState("");
+  const [customerGst, setCustomerGst] = useState("");
   const [invoiceList, setInvoiceList] = useState([]); 
 
 
@@ -51,6 +55,7 @@ const PerformanceInvoiceForm  = () => {
 
   const [currentrow , setcurrentrow] = useState({
     item_name: "",
+    serial_no: "",
     quantity: "",
     price: "",
     uom:"",
@@ -168,7 +173,7 @@ const PerformanceInvoiceForm  = () => {
 
 
   // Add Rows
-  const addrows = () =>{
+  const addrows = () => {
     if(!currentrow.item_name || !currentrow.quantity || !currentrow.price){
       alert("Please fill all fields");
       return;
@@ -182,6 +187,7 @@ const PerformanceInvoiceForm  = () => {
     setTabledata([...tabledata, newrow]);
     setcurrentrow({
       item_name: "",
+      serial_no: "",
       quantity: "",
       price: "",
       uom:"",
@@ -191,9 +197,10 @@ const PerformanceInvoiceForm  = () => {
 
   // clear Rows
 
-  const clearrows = () =>{
+  const clearrows = () => {
     setcurrentrow({
       item_name: "",
+      serial_no: "",
       quantity: "",
       price: "",
       uom:"",
@@ -203,6 +210,14 @@ const PerformanceInvoiceForm  = () => {
 
 
   // Save Invoice
+
+  const handleSave = () => {
+    SaveInvoice();
+  };
+
+  const handleDelete = () => {
+    deletInvoice();
+  };
 
   const SaveInvoice = async () =>{
     if(tabledata.length === 0){
@@ -225,6 +240,7 @@ const PerformanceInvoiceForm  = () => {
       dispatch_through: formData.dispatch_through,
       items: tabledata.map(item => ({
         item_name: item.item_name,
+        serial_no: item.serial_no || "",
         quantity: item.quantity,
         price: item.price,
         uom: item.uom,
@@ -270,16 +286,15 @@ const PerformanceInvoiceForm  = () => {
   // Calculation
  const subtotal = tabledata.reduce((sum, item) => {
   return sum + Number(item.amount || 0);
-}, 0);  
+}, 0);
 
-  const discount = Number(formData.discount || 0)
- const transport = Number(formData.transport || 0)
- const cgst = subtotal * (cgstpercentage / 100);
- const sgst = subtotal * (sgstpercentage / 100);
- const igst = 0;
- const rawTotal = subtotal - discount + transport + cgst + sgst + igst;
- const round_off = Math.round(rawTotal) - rawTotal;
- const grandtotal = Math.round(rawTotal);
+  const discount = Number(formData.discount || 0);
+  const transport = Number(formData.transport || 0);
+  const isIntrastate = isTamilNadu(customerState, customerGst);
+  const { cgst, sgst, igst, cgstPct, sgstPct, igstPct } = calcGstAmounts(subtotal, gstPct, isIntrastate);
+  const rawTotal = subtotal - discount + transport + cgst + sgst + igst;
+  const round_off = Math.round(rawTotal) - rawTotal;
+  const grandtotal = Math.round(rawTotal);
 
 
 //  LoadInvoice
@@ -303,6 +318,7 @@ const LoadInvoice = async (invoiceNo) => {
 
     const formattedItems = (data.items || []).map(item => ({
       item_name: item.item_name,
+      serial_no: item.serial_no || "",
       quantity: item.quantity,
       price: item.price,
       uom: item.uom,
@@ -318,9 +334,9 @@ const LoadInvoice = async (invoiceNo) => {
       invoice_no: data.header.invoice_no || "",
       invoice_date: formatDate(data.header.invoice_date),
       dc_no: data.header.dc_no || "",
-      dc_date: formatDate(data.header.dc_date),
+      dc_date: data.header.dc_date || "",
       order_no: data.header.order_no || "",
-      order_date: formatDate(data.header.order_date),
+      order_date: data.header.order_date || "",
       discount: data.header.discount || 0,
       payment_terms: data.header.payment_terms || "",
       dispatch_through: data.header.dispatch_through || "",
@@ -356,6 +372,7 @@ const edititem = (index) => {
     const item = tabledata[index];
     setcurrentrow({
       item_name: item.item_name || "",
+      serial_no: item.serial_no || "",
       quantity: item.quantity || "",
       price: item.price || "",
       hsn_number: item.hsn_number || "",
@@ -423,6 +440,7 @@ const edititem = (index) => {
     setopenUom(false);
     setcurrentrow({
       item_name: "",
+      serial_no: "",
       quantity: "",
       price: "",
       uom:"",
@@ -457,8 +475,8 @@ const edititem = (index) => {
           </div>
           <div className="flex gap-2">
             <button onClick={resetall} className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-gray-800 hover:text-white transition-colors">NEW</button>
-            <button onClick={SaveInvoice} className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-green-600 hover:text-white transition-colors">SAVE</button>
-            <button onClick={deletInvoice} className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-red-600 hover:text-white transition-colors">DELETE</button>
+            <button onClick={handleSave} className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-green-600 hover:text-white transition-colors">SAVE</button>
+            <button onClick={handleDelete} className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-red-600 hover:text-white transition-colors">DELETE</button>
           </div>
         </div>
 
@@ -478,7 +496,12 @@ const edititem = (index) => {
                 <div className={dropdownCls}>
                   {Array.isArray(customername) && customername.length > 0 ? customername.slice(0, 5).map((client) => (
                     <div key={client.id}
-                      onClick={() => { setFormdata({...formData, customer_name: client.customer_name}); setclientopen(false); }}
+                      onClick={() => {
+                        setCustomerState(client.state || "");
+                        setCustomerGst(client.gst_number || "");
+                        setFormdata({...formData, customer_name: client.customer_name});
+                        setclientopen(false);
+                      }}
                       className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0">
                       {client.customer_name}
                     </div>
@@ -514,7 +537,7 @@ const edititem = (index) => {
             </div>
             <div>
               <label className={labelCls}>DC Date</label>
-              <input type="date" value={formData.dc_date}
+              <input type="text" placeholder="Enter DC Date(s)" value={formData.dc_date}
                 onChange={(e) => setFormdata({...formData, dc_date: e.target.value})} className={inputCls} />
             </div>
             <div>
@@ -524,7 +547,7 @@ const edititem = (index) => {
             </div>
             <div>
               <label className={labelCls}>Order Date</label>
-              <input type="date" value={formData.order_date}
+              <input type="text" placeholder="Enter Order Date(s)" value={formData.order_date}
                 onChange={(e) => setFormdata({...formData, order_date: e.target.value})} className={inputCls} />
             </div>
             <div>
@@ -553,7 +576,7 @@ const edititem = (index) => {
             ))}
           </div>
 
-          <div className="grid grid-cols-8 gap-3 items-end">
+          <div className="grid grid-cols-9 gap-3 items-end">
             {/* Item Name */}
             <div className="col-span-2 relative">
               <label className={labelCls}>Item Name <span className="text-red-500">*</span></label>
@@ -575,6 +598,13 @@ const edititem = (index) => {
                   )}
                 </div>
               )}
+            </div>
+            {/* Serial Number */}
+            <div>
+              <label className={labelCls}>Serial Number</label>
+              <input type="text" placeholder="Serial Number" value={currentrow.serial_no || ""}
+                onChange={(e) => setcurrentrow({...currentrow, serial_no: e.target.value})}
+                className={`${inputCls} bg-gray-50/60`} />
             </div>
             {/* Qty */}
             <div>
@@ -632,12 +662,13 @@ const edititem = (index) => {
         </div>
 
         {/* Items Table */}
-        <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm mt-3 min-h-[220px]">
+        <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm mt-3">
+          <div className="h-[250px] overflow-y-auto">
           <table className="w-full border-collapse">
-            <thead>
+            <thead className="sticky top-0 z-10 bg-gray-50">
               <tr className="bg-gray-50 border-b border-gray-200">
-                {["#", "Item Name", "Quantity", "Price", "Amount", "UOM", "HSN No", "Actions"].map((h, i) => (
-                  <th key={i} className={`px-4 py-3 text-[11px] font-black text-gray-400 uppercase tracking-wide ${i === 0 ? "w-10 text-center" : i === 1 ? "text-left" : "text-center"}`}>{h}</th>
+                {["#", "Item Name", "Serial Number", "Quantity", "Price", "Amount", "UOM", "HSN No", "Actions"].map((h, i) => (
+                  <th key={i} className={`px-4 py-3 text-[11px] font-black text-gray-400 uppercase tracking-wide ${i === 0 ? "w-10 text-center" : i === 1 || i === 2 ? "text-left" : "text-center"}`}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -646,6 +677,7 @@ const edititem = (index) => {
                 <tr key={`${item.item_name}-${index}`} className="border-b border-gray-100 hover:bg-gray-50/70 transition-colors">
                   <td className="px-4 py-3 text-[12px] font-semibold text-gray-400 text-center">{index + 1}</td>
                   <td className="px-4 py-3 text-[13px] font-semibold text-gray-800 uppercase">{item.item_name}</td>
+                  <td className="px-4 py-3 text-[13px] text-gray-600 text-left">{item.serial_no || "—"}</td>
                   <td className="px-4 py-3 text-[13px] font-semibold text-gray-800 text-center">{item.quantity}</td>
                   <td className="px-4 py-3 text-[13px] font-medium text-gray-700 text-center">₹{item.price}</td>
                   <td className="px-4 py-3 text-[13px] font-bold text-gray-900 text-center">₹{Number(item.amount).toFixed(2)}</td>
@@ -660,7 +692,7 @@ const edititem = (index) => {
                 </tr>
               )) : (
                 <tr>
-                  <td colSpan="8" className="py-14 text-center">
+                  <td colSpan="9" className="py-14 text-center">
                     <div className="text-gray-300 text-4xl mb-3">🧾</div>
                     <p className="text-[13px] text-gray-400 font-medium">No products added yet.</p>
                     <p className="text-[12px] text-gray-300 mt-1">Select customer → products to begin.</p>
@@ -668,7 +700,19 @@ const edititem = (index) => {
                 </tr>
               )}
             </tbody>
+            <tfoot className="sticky bottom-0 z-10 ">
+              <tr>
+                <td colSpan="9" className="px-4 py-3">
+                  <div className="flex items-center ml-[25%] gap-2">
+                    <span className="text-[13px] font-black text-gray-600 uppercase tracking-wide">TOTAL QTY</span>
+                    <span className="text-[13px] font-black text-gray-500">:</span>
+                    <span className="text-[18px] font-black text-blue-700">{tabledata.reduce((s, r) => s + Number(r.quantity || 0), 0)}</span>
+                  </div>
+                </td>
+              </tr>
+            </tfoot>
           </table>
+          </div>
         </div>
 
         {/* Bottom: Load Invoice + Grand Total */}
@@ -687,7 +731,7 @@ const edititem = (index) => {
                 <div className={`${dropdownCls} w-64`}>
                   {Array.isArray(invoiceList) && invoiceList.length > 0 ? invoiceList.map((inv) => (
                     <div key={inv.id}
-                      onClick={(e) => { e.stopPropagation(); setLoadInvoice(inv.invoice_no); setLoadInvoiceOpen(false); LoadInvoice(inv.invoice_no); }}
+                      onClick={(e) => { e.stopPropagation(); setLoadInvoice(inv.invoice_no); setLoadInvoiceOpen(false); requirePassword(() => LoadInvoice(inv.invoice_no)); }}
                       className="px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0">
                       {inv.invoice_no}
                     </div>
@@ -714,24 +758,24 @@ const edititem = (index) => {
               </div>
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
-                  <span className="text-[12px] font-black text-gray-500 uppercase">CGST</span>
-                  <input type="number" value={cgstpercentage} onChange={(e) => setCgstpercentage(e.target.value)}
-                    className="w-10 p-1 border border-gray-200 rounded text-center text-[11px] font-bold outline-none" />
-                  <span className="text-[11px] text-gray-400">%</span>
+                  <span className="text-[12px] font-black text-gray-500 uppercase">GST %</span>
+                  <input type="number" value={gstPct} onChange={(e) => setGstPct(Number(e.target.value))}
+                    className="w-12 p-1 border border-gray-200 rounded text-center text-[11px] font-bold outline-none" />
                 </div>
+                <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${isIntrastate ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"}`}>
+                  {isIntrastate ? "TN — CGST+SGST" : "IGST"}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[12px] font-black text-gray-500 uppercase">CGST @{cgstPct}%</span>
                 <span className="text-[13px] font-bold text-gray-700">₹{cgst.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <span className="text-[12px] font-black text-gray-500 uppercase">SGST</span>
-                  <input type="number" value={sgstpercentage} onChange={(e) => setSgstpercentage(e.target.value)}
-                    className="w-10 p-1 border border-gray-200 rounded text-center text-[11px] font-bold outline-none" />
-                  <span className="text-[11px] text-gray-400">%</span>
-                </div>
+                <span className="text-[12px] font-black text-gray-500 uppercase">SGST @{sgstPct}%</span>
                 <span className="text-[13px] font-bold text-gray-700">₹{sgst.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-[12px] font-black text-gray-500 uppercase">IGST</span>
+                <span className="text-[12px] font-black text-gray-500 uppercase">IGST @{igstPct}%</span>
                 <span className="text-[13px] font-bold text-gray-700">₹{igst.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
@@ -753,6 +797,9 @@ const edititem = (index) => {
         </div>
 
       </div>
+      {showPasswordModal && (
+        <Addpassword onSuccess={handlePasswordSuccess} onClose={handlePasswordCancel} />
+      )}
     </div>
   );
 };

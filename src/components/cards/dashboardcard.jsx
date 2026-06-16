@@ -11,9 +11,14 @@ import {
   IndianRupee,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import ServiceWindowModal from "../ui/servicewindowModal";
 
 const Statcard = () => {
   const navigate = useNavigate();
+
+  const [showDcModal, setShowDcModal] = React.useState(false);
+  const [dcNo, setDcNo] = React.useState("");
+  const [dcMinimized, setDcMinimized] = React.useState(false);
 
   const Card = ({ title, icon, action }) => (
     <div 
@@ -48,7 +53,7 @@ const Statcard = () => {
           <FilePlus size={22} />
         </div>
       ),
-      action: () => navigate("/sales")
+      action: () => navigate("/sales/sales-view-report")
     },
     { 
       title: "Direct Invoice",
@@ -66,7 +71,7 @@ const Statcard = () => {
           <Clock size={22} />
         </div>
       ),
-      action: () => navigate("/sales/customer-Ledger", { state: { ledgerType: "outstanding" } })
+      action: () => navigate("/sales/sales-report", { state: { activeTab: "pending" } })
     },
     { 
       title: "Over Due", 
@@ -93,7 +98,7 @@ const Statcard = () => {
           <FileCheck size={22} />
         </div>
       ),
-      action: () => navigate("/purchase") 
+      action: () => navigate("/purchase/purchase-view-report") 
     },
     { 
       title: "Purchase Bill Pending", 
@@ -120,25 +125,25 @@ const Statcard = () => {
           <Cpu size={22} />
         </div>
       ),
-      action: () => navigate("/services/service-dc")
+      action: () => navigate("/job/job-dc")
     },
     {
-      title: "Return DC Entry",
+      title: "Job Return Entry",
       icon: (
         <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-cyan-50 text-cyan-600 transition-colors group-hover:bg-cyan-100">
           <RotateCw size={22} />
         </div>
       ),
-      action: () => navigate("/services/service-dc")
+      action: () => navigate("/job/job-return-dc")
     },
     {
-      title: "Job Details",
+      title: "Job Pending Details",
       icon: (
         <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-rose-50 text-rose-600 transition-colors group-hover:bg-rose-100">
           <Users size={22} />
         </div>
       ),
-      action: () => navigate("/services")
+      action: () => navigate("/job/job-details")
     },
     {
       title: "Standby DC Entry",
@@ -147,7 +152,7 @@ const Statcard = () => {
           <Cpu size={22} />
         </div>
       ),
-      action: () => navigate("/production/standby-pcb", { state: { activeTab: "form", status: "Allocated" } })
+      action: () => navigate("/standby/standby-dc")
     },
     {
       title: "Standby Return DC",
@@ -156,7 +161,7 @@ const Statcard = () => {
           <RotateCw size={22} />
         </div>
       ),
-      action: () => navigate("/production/standby-pcb", { state: { activeTab: "form", status: "Returned" } })
+      action: () => navigate("/standby/standby-return-dc")
     },
     {
       title: "Standby Pending",
@@ -165,21 +170,61 @@ const Statcard = () => {
           <Clock size={22} />
         </div>
       ),
-      action: () => navigate("/production/standby-pcb", { state: { activeTab: "reports", reportType: "allocated" } })
+      action: () => navigate("/standby/standby-details")
+    },
+    {
+      title: "Format View",
+      icon: (
+        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-purple-50 text-purple-600 transition-colors group-hover:bg-purple-100">
+          <FileCheck size={22} />
+        </div>
+      ),
+      action: () => {
+        setDcNo("");
+        setDcMinimized(false);
+        setShowDcModal(true);
+      }
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      {cards.map((card, index) => (
-        <Card
-          key={index}
-          title={card.title}
-          icon={card.icon}
-          action={card.action}
-        />
-      ))}
-    </div>
+    <>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {cards.map((card, index) => (
+          <Card
+            key={index}
+            title={card.title}
+            icon={card.icon}
+            action={card.action}
+          />
+        ))}
+      </div>
+
+      {/* DC Format View Modal */}
+      <ServiceWindowModal
+        title="DC Format View"
+        isOpen={showDcModal}
+        type="DC Format View"
+        isMinimized={dcMinimized}
+        onMinimize={() => setDcMinimized(true)}
+        onClose={() => { setShowDcModal(false); setDcMinimized(false); }}
+        filters={{ dcNumber: dcNo }}
+        onFilterChange={(f) => setDcNo(f.dcNumber || dcNo)}
+      />
+
+      {/* Minimized DC Bar */}
+      {showDcModal && dcMinimized && (
+        <div className="fixed bottom-0 left-0 right-0 h-10 bg-[#e0e0e0] border-t border-gray-400 flex items-center px-4 z-[99999] shadow-[0_-2px_10px_rgba(0,0,0,0.1)]">
+          <button
+            onClick={() => setDcMinimized(false)}
+            className="flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-blue-700 to-blue-500 text-white text-xs font-bold rounded-sm border border-gray-600 shadow-[inset_1px_1px_0px_rgba(255,255,255,0.3)] hover:from-blue-600 hover:to-blue-400 active:translate-x-[0.5px] active:translate-y-[0.5px] transition-all"
+          >
+            <div className="w-3 h-3 border border-white/50"></div>
+            DC Format View
+          </button>
+        </div>
+      )}
+    </>
   );
 };
 

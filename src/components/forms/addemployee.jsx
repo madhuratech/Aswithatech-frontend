@@ -3,6 +3,8 @@ import { X, Eye, Trash2 } from "lucide-react";
 import { useScrollLock } from "../../hooks/useScrollLock";
 import { toast } from "react-hot-toast";
 import { successToast, errorToast, loadingToast } from "../ui/nottifications";
+import Addpassword from "./addeditpassword";
+import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 
 const MAX_FILES = 5;
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -36,6 +38,7 @@ const AddEmployee = ({ onClose, refreshEmployees, employee }) => {
   const [busy, setBusy] = useState(false);
 
   useScrollLock(true);
+  const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
 
   const [formData, setFormData] = useState({
     emp_id: "",
@@ -154,10 +157,14 @@ const AddEmployee = ({ onClose, refreshEmployees, employee }) => {
 
       const method = employee ? "PUT" : "POST";
 
+      const nullified = Object.fromEntries(
+        Object.entries(formData).map(([k, v]) => [k, v === "" ? null : v])
+      );
+
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...formData, documents }),
+        body: JSON.stringify({ ...nullified, documents }),
       });
 
       if (!res.ok) {
@@ -177,6 +184,11 @@ const AddEmployee = ({ onClose, refreshEmployees, employee }) => {
     }
   };
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    saveCustomer(e);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 overflow-y-auto">
       <div className="bg-white w-[650px] mt-[450px] ml-20 rounded-xl shadow-lg p-6 flex flex-col mb-[80px]">
@@ -191,7 +203,7 @@ const AddEmployee = ({ onClose, refreshEmployees, employee }) => {
           </div>
         </div>
 
-        <form onSubmit={saveCustomer}>
+        <form onSubmit={handleSubmit}>
           <div className="space-y-6">
             <div>
               <label className="text-sm font-medium">Employee ID</label>
@@ -333,6 +345,9 @@ const AddEmployee = ({ onClose, refreshEmployees, employee }) => {
           </div>
         </form>
       </div>
+      {showPasswordModal && (
+        <Addpassword onSuccess={handlePasswordSuccess} onClose={handlePasswordCancel} />
+      )}
     </div>
   );
 };

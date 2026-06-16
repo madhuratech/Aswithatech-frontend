@@ -4,20 +4,21 @@ import { SquarePen, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import SaleswindowModel from"../ui/saleswindowModal";
 import InvoiceFormat from "../pages/Sales/invoiceformat";
+import { isTamilNadu, calcGstAmounts } from "../../utils/gstUtils";
+import Addpassword from "./addeditpassword";
+import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 
 const API = "http://localhost:3000/api/salesinvoices";
 const TODAY = new Date().toISOString().split("T")[0];
 
-const DESPATCH_OPTIONS = ["By Hand", "Courier", "Transport", "Bus", "Lorry", "Parcel Service"];
+const DESPATCH_OPTIONS = [ "Courier", "Transport", "By Hand", "Lorry"];
 const UOM_LIST = ["Nos", "Set", "Pkt", "Kg", "Mtr", "Ltr", "Box", "Unit"];
 
 const INIT_FORM = {
     customer_name: "",
     invoice_date: TODAY,
     dc_no: "",            // Admin DC No — internal identifier
-    client_dc_no: "",     // Client DC No selected from dropdown
     dc_date: "",          // Admin DC date — auto-filled
-    client_dc_date: "",   // Client DC date — auto-filled
     order_no: "",
     order_date: "",
     dispatch_through: "",
@@ -31,12 +32,14 @@ const INIT_ITEM = {
     price: "",      // MANUAL — never auto-filled
     uom: "",
     hsn_number: "",
+    sl_no: "",       // auto-fetched from DC item (display only)
     dc_quantity: "", // reference from DC (max allowed qty)
     amount: 0,
 };
 
 const SalesInvoiceForm = () => {
     const navigate = useNavigate();
+    const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
 
     // ── core state ────────────────────────────────────────────────────────
     const [invoiceNo, setInvoiceNo]   = useState("");
@@ -44,8 +47,10 @@ const SalesInvoiceForm = () => {
     const [form, setForm]             = useState(INIT_FORM);
     const [tableData, setTableData]   = useState([]);
     const [currentItem, setCurrentItem] = useState(INIT_ITEM);
-    const [cgstPct, setCgstPct]       = useState(9);
-    const [sgstPct, setSgstPct]       = useState(9);
+    const [editIndex, setEditIndex]   = useState(-1);
+    const [gstPct, setGstPct]         = useState(18);
+    const [customerState, setCustomerState] = useState("");
+    const [customerGst, setCustomerGst]     = useState("");
 
     // ── dropdown data ─────────────────────────────────────────────────────
     const [customers, setCustomers]   = useState([]);
@@ -145,20 +150,14 @@ const SalesInvoiceForm = () => {
         try {
             const res  = await fetch(`${API}/sales-dc/${encodeURIComponent(dcNo)}`);
             if (!res.ok) throw new Error();
-            const { header, items } = await res.json();
-
-            const clientDcDate = header.Client_dc_date
-                ? new Date(header.Client_dc_date).toISOString().split("T")[0]
-                : TODAY;
+            const { header, items, aggregated_order_no, aggregated_order_date } = await res.json();
 
             setForm((p) => ({
                 ...p,
                 dc_no:           header.dc_no    || "",
-                client_dc_no:    header.payment_terms || "",
+                order_no:        aggregated_order_no || header.order_no || "",
                 dc_date:         header.dc_date   ? new Date(header.dc_date).toISOString().split("T")[0] : "",
-                client_dc_date:  clientDcDate,
-                order_no:        header.order_no  || "",
-                order_date:      header.order_date ? new Date(header.order_date).toISOString().split("T")[0] : "",
+                order_date:      aggregated_order_date || (header.order_date ? new Date(header.order_date).toISOString().split("T")[0] : ""),
                 dispatch_through:  "",
             }));
 
@@ -197,9 +196,7 @@ const SalesInvoiceForm = () => {
                 customer_name:    data.header.customer_name    || "",
                 invoice_date:     fmt(data.header.invoice_date),
                 dc_no:            data.header.dc_no            || "",
-                client_dc_no:     data.header.client_dc_no     || "",
                 dc_date:          fmt(data.header.dc_date),
-                client_dc_date:   fmt(data.header.payment_terms),
                 order_no:         data.header.order_no         || "",
                 order_date:       fmt(data.header.order_date),
                 dispatch_through: data.header.dispatch_through || "",
@@ -215,10 +212,13 @@ const SalesInvoiceForm = () => {
                 hsn_number:  it.hsn_number  || "",
                 dc_quantity: "",
                 amount:      Number(it.quantity || 0) * Number(it.price || 0),
+                order_no:    it.order_no    || "",
+                order_date:  it.order_date  ? it.order_date.split("T")[0] : "",
+                dc_no:       it.dc_no || data.header.dc_no || "",
+                dc_date:     it.dc_date ? it.dc_date.split("T")[0] : (data.header.dc_date ? data.header.dc_date.split("T")[0] : ""),
             }));
             setTableData(items);
-            closeAll("loadInv");
-            setLoadSearch(invNo);
+            closeAll("loadInv");            setLoadSearch(invNo);
             toast.success("Invoice loaded.");
         } catch (err) {
             toast.error(err.message || "Failed to load invoice.");
@@ -230,6 +230,8 @@ const SalesInvoiceForm = () => {
     // ════════════════════════════════════════════════════════════════════
     const handleCustomerSelect = (customer) => {
         const name = customer.customer_name;
+        setCustomerState(customer.state || "");
+        setCustomerGst(customer.gst_number || "");
         setForm({ ...INIT_FORM, invoice_date: form.invoice_date, customer_name: name });
         setCustSearch(name);
         setDcList([]);
@@ -246,7 +248,7 @@ const SalesInvoiceForm = () => {
     };
 
     const handleProductSelect = (prod) => {
-        if (tableData.some((r) => r.item_name === prod.item_name)) {
+        if (tableData.some((r, i) => i !== editIndex && r.item_name === prod.item_name)) {
             toast.error("This product is already added.");
             return;
         }
@@ -256,8 +258,13 @@ const SalesInvoiceForm = () => {
             price:       "",           // MANUAL — left blank intentionally
             uom:         prod.uom      || "Nos",
             hsn_number:  prod.hsn      || "",
+            sl_no:       prod.sl_no    || "",
             dc_quantity: prod.quantity || "",
             amount:      0,
+            order_no:    prod.order_no    || form.order_no || "",
+            order_date:  prod.order_date  || form.order_date || "",
+            dc_no:       prod.dc_no       || form.dc_no || "",
+            dc_date:     prod.dc_date     || form.dc_date || "",
         });
         setProdSearch(prod.item_name);
         closeAll("product");
@@ -275,11 +282,24 @@ const SalesInvoiceForm = () => {
         if (!isNaN(dcQty) && parseFloat(currentItem.quantity) > dcQty) {
             toast.error(`Quantity cannot exceed DC quantity (${dcQty}).`); return;
         }
-        if (tableData.some((r) => r.item_name === currentItem.item_name)) {
+        if (editIndex < 0 && tableData.some((r) => r.item_name === currentItem.item_name)) {
             toast.error("Duplicate product — already in the list."); return;
         }
         const amount = (parseFloat(currentItem.quantity) * parseFloat(currentItem.price)).toFixed(2);
-        setTableData((p) => [...p, { ...currentItem, amount }]);
+        const newRow = { 
+            ...currentItem, 
+            amount, 
+            order_no: currentItem.order_no || form.order_no || "", 
+            order_date: currentItem.order_date || form.order_date || "",
+            dc_no: currentItem.dc_no || form.dc_no || "",
+            dc_date: currentItem.dc_date || form.dc_date || ""
+        };
+        if (editIndex >= 0) {
+            setTableData((p) => { const u = [...p]; u[editIndex] = newRow; return u; });
+            setEditIndex(-1);
+        } else {
+            setTableData((p) => [...p, newRow]);
+        }
         setCurrentItem(INIT_ITEM);
         setProdSearch("");
     };
@@ -292,11 +312,16 @@ const SalesInvoiceForm = () => {
             price:       it.price,
             uom:         it.uom,
             hsn_number:  it.hsn_number,
+            sl_no:       it.sl_no || "",
             dc_quantity: it.dc_quantity,
             amount:      it.amount,
+            order_no:    it.order_no || "",
+            order_date:  it.order_date || "",
+            dc_no:       it.dc_no || "",
+            dc_date:     it.dc_date || "",
         });
         setProdSearch(it.item_name);
-        setTableData((p) => p.filter((_, i) => i !== idx));
+        setEditIndex(idx);
     };
 
     const deleteItem = (idx) => setTableData((p) => p.filter((_, i) => i !== idx));
@@ -305,11 +330,11 @@ const SalesInvoiceForm = () => {
     // Calculations
     // ════════════════════════════════════════════════════════════════════
     const subtotal   = tableData.reduce((s, it) => s + Number(it.amount || 0), 0);
+    const totalQty   = tableData.reduce((s, it) => s + Number(it.quantity || 0), 0);
     const discount   = Number(form.discount  || 0);
     const transport  = Number(form.transport || 0);
-    const cgst       = subtotal * (cgstPct / 100);
-    const sgst       = subtotal * (sgstPct / 100);
-    const igst       = 0;
+    const isIntrastate = isTamilNadu(customerState, customerGst);
+    const { cgst, sgst, igst, cgstPct, sgstPct, igstPct } = calcGstAmounts(subtotal, gstPct, isIntrastate);
     const rawTotal   = subtotal - discount + transport + cgst + sgst + igst;
     const roundOff   = Math.round(rawTotal) - rawTotal;
     const grandTotal = Math.round(rawTotal);
@@ -319,39 +344,62 @@ const SalesInvoiceForm = () => {
     // ════════════════════════════════════════════════════════════════════
     const validate = () => {
         if (!form.customer_name?.trim()) { toast.error("Customer is required.");     return false; }
-        if (!form.client_dc_no?.trim())  { toast.error("Client DC No is required."); return false; }
+        if (!form.order_no?.trim())  { toast.error("Client DC No is required."); return false; }
         if (!form.dc_no?.trim())         { toast.error("Admin DC No is required."); return false; }
         if (!tableData.length)           { toast.error("Add at least one product."); return false; }
         return true;
     };
 
-    const buildPayload = () => ({
-        customer_name:    form.customer_name,
-        invoice_no:       invoiceNo,
-        invoice_date:     form.invoice_date,
-        dc_no:            form.dc_no,
-        dc_date:          form.dc_date          || null,
-        order_no:         form.order_no         || null,
-        order_date:       form.order_date        || null,
-        payment_terms:    form.client_dc_date    || null,  // client DC date
-        dispatch_through: form.dispatch_through  || null,
-        discount:         discount,
-        transport:        transport,
-        subtotal:         subtotal,
-        cgst:             cgst,
-        sgst:             sgst,
-        igst:             igst,
-        round_off:        roundOff,
-        grandtotal:       grandTotal,
-        ordertype:        null,
-        items: tableData.map((it) => ({
-            item_name:  it.item_name,
-            quantity:   it.quantity,
-            price:      it.price,
-            uom:        it.uom,
-            hsn_number: it.hsn_number,
-        })),
-    });
+    const buildPayload = () => {
+        const uniqueDcNos = [...new Set(tableData.map(it => it.dc_no).filter(Boolean))];
+        const uniqueDcDates = [...new Set(tableData.map(it => it.dc_date).filter(Boolean))];
+        const uniqueOrderNos = [...new Set(tableData.map(it => it.order_no).filter(Boolean))];
+        const uniqueOrderDates = [...new Set(tableData.map(it => it.order_date).filter(Boolean))];
+
+        const dcNoStr = uniqueDcNos.length ? uniqueDcNos.join(", ") : (form.dc_no || "");
+        const dcDateStr = uniqueDcDates.length ? uniqueDcDates.join(", ") : (form.dc_date || "");
+        const orderNoStr = uniqueOrderNos.length ? uniqueOrderNos.join(", ") : (form.order_no || "");
+        const orderDateStr = uniqueOrderDates.length ? uniqueOrderDates.join(", ") : (form.order_date || "");
+
+        return {
+            customer_name:    form.customer_name,
+            invoice_no:       invoiceNo,
+            invoice_date:     form.invoice_date,
+            dc_no:            dcNoStr,
+            dc_date:          dcDateStr,
+            order_no:         orderNoStr,
+            order_date:       orderDateStr,
+            dispatch_through: form.dispatch_through  || null,
+            discount:         discount,
+            transport:        transport,
+            subtotal:         subtotal,
+            cgst:             cgst,
+            sgst:             sgst,
+            igst:             igst,
+            round_off:        roundOff,
+            grandtotal:       grandTotal,
+            ordertype:        null,
+            items: tableData.map((it) => ({
+                item_name:    it.item_name,
+                quantity:     it.quantity,
+                price:        it.price,
+                uom:          it.uom,
+                hsn_number:   it.hsn_number,
+                order_no:   it.order_no   || null,
+                order_date: it.order_date || null,
+                dc_no:      it.dc_no      || null,
+                dc_date:    it.dc_date    || null,
+            })),
+        };
+    };
+
+    const handleSaveInvoice = () => {
+        saveInvoice();
+    };
+
+    const handleDeleteInvoice = () => {
+        deleteInvoice();
+    };
 
     const saveInvoice = async () => {
         if (!validate()) return;
@@ -397,12 +445,14 @@ const SalesInvoiceForm = () => {
         setLoadSearch("");
         setTableData([]);
         setCurrentItem(INIT_ITEM);
+        setEditIndex(-1);
         setDcList([]);
         setDcProducts([]);
         setInvoiceList([]);
         setLoadedInvoiceNo("");
-        setCgstPct(9);
-        setSgstPct(9);
+        setGstPct(18);
+        setCustomerState("");
+        setCustomerGst("");
         fetchNextInvoiceNo();
     };
 
@@ -422,6 +472,11 @@ const SalesInvoiceForm = () => {
     const disInputCls = "w-full p-2.5 border border-gray-100 rounded-lg text-[13px] font-semibold text-gray-300 bg-gray-50 cursor-not-allowed focus:outline-none";
     const dropdownCls = "absolute top-full left-0 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 max-h-52 overflow-y-auto";
 
+
+    const formatQty = (qty) => {
+  const num = Number(qty);
+  return num % 1 === 0 ? num : num.toFixed(2);
+};
     // Render
     return (
         <div className="min-h-screen bg-gray-50/70 p-6 font-sans">
@@ -486,11 +541,11 @@ const SalesInvoiceForm = () => {
                             className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-gray-800 hover:text-white transition-colors">
                             NEW
                         </button>
-                        <button onClick={saveInvoice} disabled={busy.save}
+                        <button onClick={handleSaveInvoice} disabled={busy.save}
                             className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-green-600 hover:text-white transition-colors disabled:opacity-40">
                             {busy.save ? "Saving…" : loadedInvoiceNo ? "UPDATE" : "SAVE"}
                         </button>
-                        <button onClick={deleteInvoice}
+                        <button onClick={handleDeleteInvoice}
                             className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-red-600 hover:text-white transition-colors">
                             DELETE
                         </button>
@@ -632,10 +687,7 @@ const SalesInvoiceForm = () => {
                                         dcList.map((dc, i) => (
                                             <div key={i} onClick={() => handleDcSelect(dc)}
                                                 className="px-4 py-3 hover:bg-blue-50 cursor-pointer border-b border-gray-50 last:border-0">
-                                                <div className="text-[14px] font-bold text-gray-900">{dc.dc_no}</div>
-                                                {dc.client_dc_no && (
-                                                    <div className="text-[11px] text-gray-400 mt-0.5">Client DC: {dc.client_dc_no}</div>
-                                                )}
+                                                <div className="text-[14px] font-bold text-gray-900">{dc.dc_no || "—"}</div>
                                             </div>
                                         ))
                                     )}
@@ -649,7 +701,7 @@ const SalesInvoiceForm = () => {
                                 Order No
                                 {dcSelected && <span className="ml-1.5 text-[10px] text-blue-500 font-black normal-case">Auto-filled</span>}
                             </label>
-                            <input type="text" value={form.client_dc_no}
+                            <input type="text" value={form.order_no}
                                 readOnly
                                 className={roInputCls}
                                 placeholder="Auto-filled" />
@@ -661,8 +713,8 @@ const SalesInvoiceForm = () => {
                                 Order Date
                                 {dcSelected && <span className="ml-1.5 text-[10px] text-blue-500 font-black normal-case">Auto-filled</span>}
                             </label>
-                            <input type="date" value={form.client_dc_date}
-                                onChange={(e) => setForm((p) => ({ ...p, client_dc_date: e.target.value }))}
+                            <input type="date" value={form.order_date}
+                                onChange={(e) => setForm((p) => ({ ...p, order_date: e.target.value }))}
                                 className={inputCls} />
                         </div>
 
@@ -713,17 +765,18 @@ const SalesInvoiceForm = () => {
                         Step 3 — Add Products &amp; Price
                     </p>
 
-                    <div className="grid grid-cols-9 gap-3 items-end">
-                        {/* Product Search */}
+                    <div className="grid grid-cols-10 gap-3 items-end">
+                        {/* Product Search — locked once a product is selected */}
                         <div className="col-span-3 relative" ref={prodRef}>
                             <label className={labelCls}>Product <span className="text-red-500">*</span></label>
                             <input
                                 type="text"
                                 value={prodSearch}
+                                readOnly={!!currentItem.item_name}
                                 onChange={(e) => { setProdSearch(e.target.value); openDrop("product"); }}
-                                onFocus={() => openDrop("product")}
+                                onFocus={() => { if (!currentItem.item_name) openDrop("product"); }}
                                 disabled={!dcSelected}
-                                className={dcSelected ? `${inputCls} bg-gray-50/60` : disInputCls}
+                                className={!dcSelected ? disInputCls : currentItem.item_name ? roInputCls : `${inputCls} bg-gray-50/60`}
                                 placeholder="Search DC products…"
                             />
                             {open.product && filteredProducts.length > 0 && (
@@ -733,9 +786,6 @@ const SalesInvoiceForm = () => {
                                             className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer border-b border-gray-50 last:border-0">
                                             <div className="text-[13px] font-bold text-gray-900">{p.item_name}</div>
                                             <div className="flex gap-4 text-[11px] text-gray-400 mt-0.5">
-                                                {p.hsn && <span>HSN: {p.hsn}</span>}
-                                                <span className="text-orange-500 font-semibold">DC Qty: {p.quantity}</span>
-                                                <span>{p.uom}</span>
                                             </div>
                                         </div>
                                     ))}
@@ -752,11 +802,6 @@ const SalesInvoiceForm = () => {
                         <div>
                             <label className={labelCls}>
                                 Qty
-                                {currentItem.dc_quantity && (
-                                    <span className="ml-1.5 text-[10px] text-orange-500 font-black normal-case">
-                                        Max: {(Number(currentItem.dc_quantity) % 1 === 0) ? String(Number(currentItem.dc_quantity)) : currentItem.dc_quantity}
-                                    </span>
-                                )}
                             </label>
                             <input type="number" value={
                                 currentItem.quantity || ""
@@ -784,45 +829,46 @@ const SalesInvoiceForm = () => {
                                 className={`${inputCls} bg-gray-50/60`} />
                         </div>
 
-                        {/* UOM — auto-filled, still editable */}
+                        {/* UOM — auto-fetched, read-only */}
                         <div className="relative" ref={uomRef}>
                             <label className={labelCls}>
                                 UOM
                                 {currentItem.item_name && <span className="ml-1 text-[10px] text-blue-500 font-black normal-case">Auto</span>}
                             </label>
-                            <div
-                                onClick={() => setOpen((p) => ({ ...p, uom: !p.uom }))}
-                                className={`${inputCls} ${currentItem.item_name ? "border-blue-100 bg-blue-50 text-blue-800" : "bg-gray-50/60"} flex justify-between items-center cursor-pointer`}
-                            >
-                                <span>{currentItem.uom || "Select"}</span>
-                                <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </div>
-                            {open.uom && (
-                                <div className={dropdownCls}>
-                                    {UOM_LIST.map((u) => (
-                                        <div key={u}
-                                            onClick={() => { setCurrentItem((p) => ({ ...p, uom: u })); closeAll("uom"); }}
-                                            className="px-4 py-2 hover:bg-gray-50 cursor-pointer text-[13px] font-medium border-b border-gray-50 last:border-0">
-                                            {u}
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                            <input
+                                type="text"
+                                value={currentItem.uom}
+                                readOnly
+                                className={currentItem.item_name ? roInputCls : `${inputCls} bg-gray-50/60 cursor-not-allowed`}
+                                placeholder="Auto"
+                            />
                         </div>
 
-                        {/* HSN — auto-filled */}
+                        {/* Serial No — auto-fetched, read-only */}
+                        <div>
+                            <label className={labelCls}>
+                                Serial No
+                                {currentItem.item_name && <span className="ml-1 text-[10px] text-blue-500 font-black normal-case">Auto</span>}
+                            </label>
+                            <input
+                                type="text"
+                                value={currentItem.sl_no}
+                                readOnly
+                                className={currentItem.item_name ? roInputCls : `${inputCls} bg-gray-50/60 cursor-not-allowed`}
+                                placeholder="Auto"
+                            />
+                        </div>
+
+                        {/* HSN — auto-fetched, read-only */}
                         <div>
                             <label className={labelCls}>
                                 HSN
                                 {currentItem.item_name && <span className="ml-1 text-[10px] text-blue-500 font-black normal-case">Auto</span>}
                             </label>
                             <input type="text" value={currentItem.hsn_number}
-                                readOnly={!!currentItem.item_name}
-                                onChange={(e) => setCurrentItem((p) => ({ ...p, hsn_number: e.target.value }))}
-                                className={currentItem.item_name ? roInputCls : `${inputCls} bg-gray-50/60`}
-                                placeholder="HSN code" />
+                                readOnly
+                                className={currentItem.item_name ? roInputCls : `${inputCls} bg-gray-50/60 cursor-not-allowed`}
+                                placeholder="Auto" />
                         </div>
 
                         {/* Amount (calculated) */}
@@ -840,10 +886,10 @@ const SalesInvoiceForm = () => {
                         {/* Buttons */}
                         <div className="flex gap-2">
                             <button onClick={handleAddItem}
-                                className="flex-1 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-[13px] font-bold transition-colors">
-                                Add
+                                className={`flex-1 py-2.5 text-white rounded-lg text-[13px] font-bold transition-colors ${editIndex >= 0 ? "bg-blue-600 hover:bg-blue-700" : "bg-green-600 hover:bg-green-700"}`}>
+                                {editIndex >= 0 ? "Update" : "Add"}
                             </button>
-                            <button onClick={() => { setCurrentItem(INIT_ITEM); setProdSearch(""); }}
+                            <button onClick={() => { setCurrentItem(INIT_ITEM); setProdSearch(""); setEditIndex(-1); }}
                                 className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-[13px] font-bold transition-colors">
                                 Clear
                             </button>
@@ -852,11 +898,12 @@ const SalesInvoiceForm = () => {
                 </div>
 
                 {/* ── Items Table ──────────────────────────────────────── */}
-                <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm mt-3 min-h-[220px]">
+                <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm mt-3">
+                    <div className="h-[250px] overflow-y-auto">
                     <table className="w-full border-collapse">
-                        <thead>
+                        <thead className="sticky top-0 z-10 bg-gray-50">
                             <tr className="bg-gray-50 border-b border-gray-200">
-                                {["#", "Product", "DC Qty", "Invoice Qty", "Rate", "Amount", "UOM", "HSN", "Actions"].map((h, i) => (
+                                {["#", "Product", " Quantity", "Rate", "Amount", "UOM", "HSN", "Actions"].map((h, i) => (
                                     <th key={i}
                                         className={`px-4 py-3 text-[11px] font-black text-gray-400 uppercase tracking-wide ${
                                             i === 0 ? "w-10 text-center" : i === 1 ? "text-left" : "text-center"
@@ -877,15 +924,10 @@ const SalesInvoiceForm = () => {
                                 </tr>
                             ) : (
                                 tableData.map((it, idx) => (
-                                    <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50/70 transition-colors">
+                                    <tr key={idx} className={`border-b border-gray-100 transition-colors ${editIndex === idx ? "bg-blue-50" : "hover:bg-gray-50/70"}`}>
                                         <td className="px-4 py-3 text-[12px] font-semibold text-gray-400 text-center">{idx + 1}</td>
-                                        <td className="px-4 py-3 text-[13px] font-semibold text-gray-800 uppercase">{it.item_name}</td>
-                                        <td className="px-4 py-3 text-center">
-                                            <span className="text-[12px] font-bold text-orange-500 bg-orange-50 px-2 py-0.5 rounded-full">
-                                                {it.dc_quantity || "—"}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3 text-[13px] font-semibold text-gray-800 text-center">{it.quantity}</td>
+                                        <td className="px-4 py-3 text-[13px] font-semibold text-gray-800 uppercase">{it.item_name}{it.sl_no}</td>
+                                        <td className="px-4 py-3 text-[13px] font-semibold text-gray-800 text-center">{formatQty(it.quantity)}</td>
                                         <td className="px-4 py-3 text-[13px] font-medium text-gray-700 text-center">₹{it.price}</td>
                                         <td className="px-4 py-3 text-[13px] font-bold text-gray-900 text-center">₹{Number(it.amount).toFixed(2)}</td>
                                         <td className="px-4 py-3 text-[13px] text-gray-600 text-center uppercase">{it.uom}</td>
@@ -904,7 +946,19 @@ const SalesInvoiceForm = () => {
                                 ))
                             )}
                         </tbody>
+                        <tfoot className="sticky bottom-0 z-10 ">
+                            <tr>
+                                <td colSpan={9} className="px-4 py-3">
+                                    <div className="flex items-center ml-[23%] gap-2">
+                                        <span className="text-[13px] font-black text-gray-600 uppercase tracking-wide">TOTAL QTY</span>
+                                        <span className="text-[13px] font-black text-gray-500">:</span>
+                                        <span className="text-[18px] font-black text-blue-700">{totalQty}</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tfoot>
                     </table>
+                    </div>
                 </div>
 
                 {/* ── Totals + Load Invoice ─────────────────────────── */}
@@ -929,7 +983,7 @@ const SalesInvoiceForm = () => {
                                 <div className={`${dropdownCls} w-64`}>
                                     {invoiceList.map((inv, i) => (
                                         <div key={i}
-                                            onClick={() => loadInvoice(inv.invoice_no)}
+                                            onClick={() => requirePassword(() => loadInvoice(inv.invoice_no))}
                                             className="px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0">
                                             {inv.invoice_no}
                                         </div>
@@ -948,46 +1002,42 @@ const SalesInvoiceForm = () => {
                                 <span className="text-[13px] font-bold text-gray-900">₹{subtotal.toFixed(2)}</span>
                             </div>
 
-                            <div className="flex justify-between items-center">
-                                <span className="text-[12px] font-black text-gray-500 uppercase">Discount (−)</span>
-                                <input type="number" min="0" value={form.discount}
-                                    onChange={(e) => setForm((p) => ({ ...p, discount: e.target.value }))}
-                                    className="w-28 p-1.5 border-b border-gray-300 bg-transparent text-right font-bold text-black outline-none focus:border-black text-[13px]" />
-                            </div>
-
-                            <div className="flex justify-between items-center">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-[12px] font-black text-gray-500 uppercase">CGST</span>
-                                    <input type="number" value={cgstPct}
-                                        onChange={(e) => setCgstPct(Number(e.target.value))}
-                                        className="w-10 p-1 border border-gray-200 rounded text-center text-[11px] font-bold outline-none" />
-                                    <span className="text-[11px] text-gray-400">%</span>
-                                </div>
-                                <span className="text-[13px] font-bold text-gray-700">₹{cgst.toFixed(2)}</span>
-                            </div>
-
-                            <div className="flex justify-between items-center">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-[12px] font-black text-gray-500 uppercase">SGST</span>
-                                    <input type="number" value={sgstPct}
-                                        onChange={(e) => setSgstPct(Number(e.target.value))}
-                                        className="w-10 p-1 border border-gray-200 rounded text-center text-[11px] font-bold outline-none" />
-                                    <span className="text-[11px] text-gray-400">%</span>
-                                </div>
-                                <span className="text-[13px] font-bold text-gray-700">₹{sgst.toFixed(2)}</span>
-                            </div>
-
-                            <div className="flex justify-between items-center">
-                                <span className="text-[12px] font-black text-gray-500 uppercase">IGST</span>
-                                <span className="text-[13px] font-bold text-gray-700">₹0.00</span>
-                            </div>
-
-                            <div className="flex justify-between items-center">
+                          <div className="flex justify-between items-center">
                                 <span className="text-[12px] font-black text-gray-500 uppercase">Transport (+)</span>
                                 <input type="number" min="0" value={form.transport}
                                     onChange={(e) => setForm((p) => ({ ...p, transport: e.target.value }))}
                                     className="w-28 p-1.5 border-b border-gray-300 bg-transparent text-right font-bold text-black outline-none focus:border-black text-[13px]" />
                             </div>
+
+                            {/* GST % selector + state badge */}
+                            <div className="flex justify-between items-center">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[12px] font-black text-gray-500 uppercase">GST %</span>
+                                    <input type="number" value={gstPct}
+                                        onChange={(e) => setGstPct(Number(e.target.value))}
+                                        className="w-12 p-1 border border-gray-200 rounded text-center text-[11px] font-bold outline-none" />
+                                </div>
+                                <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${isIntrastate ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"}`}>
+                                    {isIntrastate ? "TN — CGST+SGST" : "IGST"}
+                                </span>
+                            </div>
+
+                            <div className="flex justify-between items-center">
+                                <span className="text-[12px] font-black text-gray-500 uppercase">CGST @{cgstPct}%</span>
+                                <span className="text-[13px] font-bold text-gray-700">₹{cgst.toFixed(2)}</span>
+                            </div>
+
+                            <div className="flex justify-between items-center">
+                                <span className="text-[12px] font-black text-gray-500 uppercase">SGST @{sgstPct}%</span>
+                                <span className="text-[13px] font-bold text-gray-700">₹{sgst.toFixed(2)}</span>
+                            </div>
+
+                            <div className="flex justify-between items-center">
+                                <span className="text-[12px] font-black text-gray-500 uppercase">IGST @{igstPct}%</span>
+                                <span className="text-[13px] font-bold text-gray-700">₹{igst.toFixed(2)}</span>
+                            </div>
+
+                            
 
                             <div className="flex justify-between items-center">
                                 <span className="text-[12px] font-black text-gray-500 uppercase">Round Off</span>
@@ -1019,6 +1069,10 @@ const SalesInvoiceForm = () => {
 >
     <InvoiceFormat InvNumber={savedNo} />
 </SaleswindowModel>
+
+{showPasswordModal && (
+    <Addpassword onSuccess={handlePasswordSuccess} onClose={handlePasswordCancel} />
+)}
 
             </div>
         </div>

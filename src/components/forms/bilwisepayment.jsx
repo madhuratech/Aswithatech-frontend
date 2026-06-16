@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { Trash2, SquarePen } from "lucide-react";
 import SaleswindowModel from "../ui/saleswindowModal";
 import Billwiseformat from "../pages/Purchase/bilwisepaymentformat";
+import Addpassword from "./addeditpassword";
+import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 
 const API = "http://localhost:3000/api/billpayment";
 const TODAY = new Date().toISOString().split("T")[0];
@@ -34,6 +36,7 @@ const INIT_FORM = {
 
 const BillwisePayment = () => {
   const navigate = useNavigate();
+  const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
 
   // ── core state ────────────────────────────────────────────────────────
   const [form, setForm] = useState(INIT_FORM);
@@ -300,6 +303,14 @@ const BillwisePayment = () => {
     }
   };
 
+  const handleSave = () => {
+    savePayment();
+  };
+
+  const handleDelete = () => {
+    deletePayment();
+  };
+
   const deletePayment = async () => {
     if (!loadedId) { toast.error("Load a payment first."); return; }
     if (!window.confirm("Delete this payment?")) return;
@@ -396,11 +407,11 @@ const BillwisePayment = () => {
               className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-gray-800 hover:text-white transition-colors">
               NEW
             </button>
-            <button onClick={savePayment} disabled={busy.save}
+            <button onClick={handleSave} disabled={busy.save}
               className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-green-600 hover:text-white transition-colors disabled:opacity-40">
               {busy.save ? "Saving…" : loadedId ? "UPDATE" : "SAVE"}
             </button>
-            <button onClick={deletePayment}
+            <button onClick={handleDelete}
               className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-red-600 hover:text-white transition-colors">
               DELETE
             </button>
@@ -802,7 +813,7 @@ const BillwisePayment = () => {
                 <div className={`${dropdownCls} w-64`}>
                   {allPayments.map((b, i) => (
                     <div key={i}
-                      onClick={() => loadPayment(b.bill_no)}
+                      onClick={() => requirePassword(() => loadPayment(b.bill_no))}
                       className="px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0">
                       {b.bill_no}
                     </div>
@@ -866,6 +877,9 @@ const BillwisePayment = () => {
       >
         <Billwiseformat billNo={savedBillNo} />
       </SaleswindowModel>
+      {showPasswordModal && (
+        <Addpassword onSuccess={handlePasswordSuccess} onClose={handlePasswordCancel} />
+      )}
     </div>
   );
 };
