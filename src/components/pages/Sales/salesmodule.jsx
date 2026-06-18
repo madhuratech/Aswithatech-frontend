@@ -158,6 +158,14 @@ const ShowReport = (item) => {
             action: () => navigate("/sales/performance-invoice"),
         },
         {
+            title: "Performance Invoice 2",
+            subtitle: "Separate PI2 invoicing",
+            icon: Receipt,
+            bgColor: "bg-yellow-50",
+            iconColor: "text-yellow-600",
+            action: () => navigate("/sales/performance-invoice-2"),
+        },
+        {
             title: "Credit Note",
             subtitle: "Issue credit notes",
             icon: FileMinus,
@@ -199,6 +207,7 @@ const ShowReport = (item) => {
         { name: "Credit Note Format", path: "/sales/credit-note-view" },
         { name: "Invoice Format", path: "/sales/tax-report" },
         { name: "Reciept Format", path: "/sales/Reciept-Format" },
+        { name: "PI2 Report", path: "/sales/pi2-report" },
     ];
     return (
          <div className={`min-h-screen overflow-visible transition-all duration-300 ${openDropdown !== null ? "" : ""  }`}>

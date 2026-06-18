@@ -6,6 +6,7 @@ import SaleswindowModel from "../ui/saleswindowModal";
 import { ReceiptVoucher } from "../ui/receiptreport";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
 import flatpickr from "flatpickr";
 import { toDmy, toYmd } from "../../utils/dateFormat";
 
@@ -68,6 +69,11 @@ const ReceiptEntry = () => {
 
   const rcptDateRef = useRef(null);
   const rcptDateFp = useRef(null);
+  const clientRef = useRef(null);
+  const billRef = useRef(null);
+  const modeRef = useRef(null);
+  const bankRef = useRef(null);
+  const loadRef = useRef(null);
 
   // ── init: today + auto receipt no ────────────────────────────
   useEffect(() => {
@@ -122,6 +128,14 @@ const ReceiptEntry = () => {
       rcptDateFp.current.setDate(toDmy(header.receipt_date));
     }
   }, [header.receipt_date]);
+
+  useOutsideClick([
+    { ref: clientRef, onClose: () => setClientOpen(false) },
+    { ref: billRef, onClose: () => setBillOpen(false) },
+    { ref: modeRef, onClose: () => setModeOpen(false) },
+    { ref: bankRef, onClose: () => setBankOpen(false) },
+    { ref: loadRef, onClose: () => setLoadOpen(false) },
+  ]);
 
   // ── load pending bills when customer is selected ──────────────
   const loadPendingBills = async (name) => {
@@ -360,7 +374,7 @@ const ReceiptEntry = () => {
   const fmt = (v) => Number(v || 0).toFixed(2);
 
   return (
-    <div className="p-6 min-h-screen bg-gray-50 font-sans" onClick={() => { setClientOpen(false); setBillOpen(false); setModeOpen(false); setLoadOpen(false); setBankOpen(false); }}>
+    <div className="p-6 min-h-screen bg-gray-50 font-sans">
       <button
         onClick={() => navigate(-1)}
         className="flex items-center gap-2 px-4 py-2 border rounded-xl bg-white hover:bg-gray-50 text-[15px] font-medium w-fit"
@@ -368,7 +382,7 @@ const ReceiptEntry = () => {
         Go Back
       </button>
 
-      <div className="max-w-[1400px] mx-auto bg-white p-8 mt-8 shadow-sm border border-gray-200" onClick={(e) => e.stopPropagation()}>
+      <div className="max-w-[1400px] mx-auto bg-white p-8 mt-8 shadow-sm border border-gray-200">
 
         {/* ── Title + Action Buttons ── */}
         <div className="flex justify-between items-center mb-8">
@@ -384,7 +398,7 @@ const ReceiptEntry = () => {
         {/* ── Row 1: Receipt No | Date | Customer Name ── */}
         <div className="grid grid-cols-12 gap-7   border-b border-gray-100 pb-6 mb-6">
           {/* Customer Name — auto-loads bills on selection */}
-          <div className="col-span-4 flex flex-col relative">
+          <div className="col-span-4 flex flex-col relative" ref={clientRef}>
             <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Customer Name</label>
             <input
               type="text"
@@ -427,9 +441,10 @@ const ReceiptEntry = () => {
           <div className="flex flex-col gap-2">
             <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Date</label>
             <input
-              type="date"
+              ref={rcptDateRef}
+              type="text"
+              readOnly
               value={header.receipt_date}
-              onChange={(e) => setHeader({ ...header, receipt_date: e.target.value })}
               className="w-[180px] p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black outline-none shadow-sm"
             />
           </div>
@@ -440,7 +455,7 @@ const ReceiptEntry = () => {
           <div className="grid grid-cols-3 gap-x-8 gap-y-4">
 
             {/* Bill No — dropdown of pending bills */}
-            <div className="flex flex-col gap-1 relative">
+            <div className="flex flex-col gap-1 relative" ref={billRef}>
               <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Bill Number</label>
               <input
                 type="text"
@@ -522,7 +537,7 @@ const ReceiptEntry = () => {
             </div>
 
             {/* Payment Mode */}
-            <div className="flex flex-col gap-1 relative" onClick={(e) => e.stopPropagation()}>
+            <div className="flex flex-col gap-1 relative" ref={modeRef}>
               <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Payment Mode</label>
               <input
                 type="text"
@@ -548,7 +563,7 @@ const ReceiptEntry = () => {
             </div>
 
             {/* Bank Name (Dropdown) */}
-            <div className="flex flex-col gap-1 relative" onClick={(e) => e.stopPropagation()}>
+            <div className="flex flex-col gap-1 relative" ref={bankRef}>
               <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Bank Name</label>
               <input
                 type="text"
@@ -686,7 +701,7 @@ const ReceiptEntry = () => {
           <label className="text-[11px] font-black text-gray-600 uppercase tracking-[0.2em] italic whitespace-nowrap">
             Select Receipt No To View / Modify :
           </label>
-          <div className="relative">
+          <div className="relative" ref={loadRef}>
             <input
               type="text"
               value={loadReceipt}
