@@ -4,6 +4,9 @@ import { toast } from "react-hot-toast";
 import { errorToast, successToast } from "../ui/nottifications";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
+import flatpickr from "flatpickr";
+import { toDmy, toYmd } from "../../utils/dateFormat";
 
 const Supplieradvance = () => {
 
@@ -28,6 +31,8 @@ const Supplieradvance = () => {
    const modeRef = useRef(null);
    const bankRef = useRef(null);
    const receiptRef = useRef(null);
+   const suppAdvDateRef = useRef(null);
+   const suppAdvDateFp = useRef(null);
 
    //Api
    const Api_urls = "http://localhost:3000/api/suppliers";
@@ -220,6 +225,26 @@ const Supplieradvance = () => {
        setFormData(prev => ({ ...prev, date: today }));
    }, []);
 
+   useEffect(() => {
+    suppAdvDateFp.current = flatpickr(suppAdvDateRef.current, {
+        disableMobile: true,
+        monthSelectorType: "static",
+        dateFormat: "d-m-Y",
+        defaultDate: formData.date ? toDmy(formData.date) : new Date(),
+        onChange: (selectedDates, dateStr) => {
+            setFormData(prev => ({ ...prev, date: toYmd(dateStr) }));
+        },
+    });
+    return () => suppAdvDateFp.current?.destroy();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
+
+   useEffect(() => {
+        if (suppAdvDateFp.current && formData.date) {
+            suppAdvDateFp.current.setDate(toDmy(formData.date));
+        }
+   }, [formData.date]);
+
    // delete recipt number;
    const deleteReceipt = async () => {
      if (!receipt) {
@@ -310,25 +335,12 @@ const Supplieradvance = () => {
      }
    };
 
-   // Click outside handler
-   useEffect(() => {
-     const handleClickOutside = (event) => {
-       if (clientRef.current && !clientRef.current.contains(event.target)) {
-         setClientopen(false);
-       }
-       if (modeRef.current && !modeRef.current.contains(event.target)) {
-         setModeopen(false);
-       }
-       if (bankRef.current && !bankRef.current.contains(event.target)) {
-         setBankOpen(false);
-       }
-       if (receiptRef.current && !receiptRef.current.contains(event.target)) {
-         setreceiptsearch(false);
-       }
-     };
-     document.addEventListener("mousedown", handleClickOutside);
-     return () => document.removeEventListener("mousedown", handleClickOutside);
-   }, []);
+   useOutsideClick([
+     { ref: clientRef,  onClose: () => setClientopen(false) },
+     { ref: modeRef,    onClose: () => setModeopen(false) },
+     { ref: bankRef,    onClose: () => setBankOpen(false) },
+     { ref: receiptRef, onClose: () => setreceiptsearch(false) },
+   ]);
 
    // ── Shared styling classes from Sales Invoice ─────────────────────────
    const labelCls = "block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5";
@@ -407,15 +419,16 @@ const Supplieradvance = () => {
              </div>
 
              {/* Date */}
-             <div>
-               <label className={labelCls}>Date</label>
-               <input
-                 type="date"
-                 value={formData.date}
-                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                 className={inputCls}
-               />
-             </div>
+              <div>
+                <label className={labelCls}>Date</label>
+                <input
+                  ref={suppAdvDateRef}
+                  type="text"
+                  placeholder="Select Date"
+                  className={inputCls}
+                  readOnly
+                />
+              </div>
 
              {/* Supplier Name (Autocomplete) */}
              <div className="relative text-black" ref={clientRef}>

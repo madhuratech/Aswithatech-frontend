@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { X } from 'lucide-react';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { successToast,errorToast, loadingToast } from '../ui/nottifications';
@@ -6,17 +6,12 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
 
 const ExpenseForm = ({onClose,refresh}) => {
 const [openIndex, setOpenIndex] = useState(null);
   useScrollLock(true);
-  const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
-
-  useEffect(() => {
-    const handleClickOutside = () => setOpenIndex(null);
-    window.addEventListener("click", handleClickOutside);
-    return () => window.removeEventListener("click", handleClickOutside);
-  }, []);
+  const { showPasswordModal, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
 
 const [formData, setFormData] = useState([
   {
@@ -26,6 +21,15 @@ const [formData, setFormData] = useState([
     expense_description: ""
   }
 ]);
+
+  const categoryRefs = useRef([]);
+
+  useOutsideClick(
+    formData.map((_, i) => ({
+      ref: { current: categoryRefs.current[i] },
+      onClose: () => setOpenIndex(null),
+    }))
+  );
 
  const Saveexpenses = async(e) =>{
  e.preventDefault();
@@ -88,11 +92,11 @@ const handleChange = (index, field, value) => {
                         placeholder='Select Date' value={form.expense_date} onChange={(e)=> handleChange(index, "expense_date", e.target.value)}/> 
                     </div>
 
-                      <div className="relative">
+                      <div ref={el => { categoryRefs.current[index] = el; }} className="relative">
                         <label htmlFor="">Category</label>
                         <input
                           value={form.category}
-                          onClick={(e) => { e.stopPropagation(); setOpenIndex(index);}}
+                          onClick={() => setOpenIndex(index)}
                           readOnly
                           type="text"
                           placeholder='Select Category'

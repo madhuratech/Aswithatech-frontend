@@ -32,7 +32,7 @@ const SalesModule = () => {
     const [viewtype , setviewtype] = React.useState("");
     const [modalTitle, setModalTitle] = useState("");
     const [isMinimized, setIsMinimized] = useState(false);
-    const [initialView, setInitialView] = useState("qt");
+    const [initialView] = useState("qt");
     
     
 

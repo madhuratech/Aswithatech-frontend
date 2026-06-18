@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { X, Square, Minus, Printer, Eye } from "lucide-react";
+import { X, Square, Minus, Printer } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import html2pdf from "html2pdf.js";
 import * as XLSX from "xlsx";
@@ -17,9 +17,10 @@ const PurchaseViewReport = ({ onClose, onMinimize, title = "Purchase View Report
   const [isMinimized, setIsMinimized] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const TODAY = new Date().toISOString().split("T")[0];
   const [filters, setFilters] = useState({
     fromDate: "",
-    toDate: "",
+    toDate: TODAY,
     supplier_name: "",
     bill_no: "",
     item_name: "",
@@ -29,15 +30,6 @@ const PurchaseViewReport = ({ onClose, onMinimize, title = "Purchase View Report
   const [rows, setRows] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 50;
-
-  useEffect(() => {
-    fetch(`${API_PURCHASE}/suppliers`)
-      .then((r) => r.json())
-      .then((d) => setSupplierList(Array.isArray(d) ? d : []))
-      .catch(() => setSupplierList([]));
-
-    loadReport({});
-  }, []);
 
   const loadReport = useCallback(async (overrides = {}) => {
     const f = { ...filters, ...overrides };
@@ -61,6 +53,15 @@ const PurchaseViewReport = ({ onClose, onMinimize, title = "Purchase View Report
       setLoading(false);
     }
   }, [filters]);
+
+  useEffect(() => {
+    fetch(`${API_PURCHASE}/suppliers`)
+      .then((r) => r.json())
+      .then((d) => setSupplierList(Array.isArray(d) ? d : []))
+      .catch(() => setSupplierList([]));
+
+    loadReport({});
+  }, [loadReport]);
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;

@@ -36,6 +36,15 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
   });
 
 
+  // Today date;
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
+    setFilters(prev => ({
+      ...prev,
+      toDate: today
+    }));
+  }, [])
+
   const qtNumber = externalFilters?.QtNumber || "";
 
   useEffect(() => {

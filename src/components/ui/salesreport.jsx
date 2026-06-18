@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { X, Square, Minus, Printer } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import html2pdf from "html2pdf.js";
@@ -15,7 +15,8 @@ const SalesReport = ({ onClose, onMinimize, title = "Sales Report" }) => {
   const [isMinimized, setIsMinimized] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const [filters, setFilters] = useState({ fromDate: "", toDate: "", clientName: "" });
+  const TODAY = new Date().toISOString().split("T")[0];
+  const [filters, setFilters] = useState({ fromDate: "", toDate: TODAY, clientName: "" });
   const [clientList, setClientList] = useState([]);
   const [data, setData] = useState([]);
 
@@ -42,7 +43,7 @@ const SalesReport = ({ onClose, onMinimize, title = "Sales Report" }) => {
     }
   };
 
-  const loadReport = async (f) => {
+  const loadReport = useCallback(async (f) => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -66,9 +67,9 @@ const SalesReport = ({ onClose, onMinimize, title = "Sales Report" }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const loadPendingReport = async (f) => {
+  const loadPendingReport = useCallback(async (f) => {
     setLoadingPending(true);
     try {
       const params = new URLSearchParams();
@@ -84,17 +85,17 @@ const SalesReport = ({ onClose, onMinimize, title = "Sales Report" }) => {
     } finally {
       setLoadingPending(false);
     }
-  };
+  }, []);
 
-  const generateBoth = (f) => {
+  const generateBoth = useCallback((f) => {
     loadReport(f);
     loadPendingReport(f);
-  };
+  }, [loadReport, loadPendingReport]);
 
   useEffect(() => {
     fetchClients();
     generateBoth({ fromDate: "", toDate: "", clientName: "" });
-  }, []);
+  }, [generateBoth]);
 
   const handleClose = () => { if (onClose) onClose(); else navigate(-1); };
   const handleMinimize = () => { setIsMinimized(true); if (onMinimize) onMinimize(); };

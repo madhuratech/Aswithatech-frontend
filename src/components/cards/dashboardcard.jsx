@@ -8,7 +8,6 @@ import {
   RotateCw,
   Users,
   Clock,
-  IndianRupee,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ServiceWindowModal from "../ui/servicewindowModal";

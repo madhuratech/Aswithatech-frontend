@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import { useDropdownKeyNav } from "../../hooks/useDropdownKeyNav";
@@ -8,15 +8,8 @@ import html2pdf from "html2pdf.js";
 import * as XLSX from "xlsx";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
-
-// Debounce helper
-function debounce(func, delay) {
-  let timeoutId;
-  return function (...args) {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => func.apply(this, args), delay);
-  };
-}
+import flatpickr from "flatpickr";
+import { toDmy, toYmd } from "../../utils/dateFormat";
 
 const StandbyPCB = () => {
   const navigate = useNavigate();
@@ -44,9 +37,8 @@ const StandbyPCB = () => {
 
   // Edit / List / Autocomplete Data states
   const [isEditing, setIsEditing] = useState(false);
-  const [loadNoVal, setLoadNoVal] = useState("");
-  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
-  const [searchList, setSearchList] = useState([]);
+  const [, setLoadNoVal] = useState("");
+  const [, setShowSearchDropdown] = useState(false);
   const [allStandbyList, setAllStandbyList] = useState([]);
 
   // Masters datasets for Autocomplete
@@ -87,12 +79,56 @@ const StandbyPCB = () => {
   const repCustRef = useRef(null);
   const repPcbRef = useRef(null);
   const printAreaRef = useRef(null);
+  const allocDateRef = useRef(null);
+  const allocDateFp = useRef(null);
+  const expRetDateRef = useRef(null);
+  const expRetDateFp = useRef(null);
 
   // Set default date to today
   useEffect(() => {
     const today = new Date().toISOString().split("T")[0];
     setAllocatedDate(today);
   }, []);
+
+  useEffect(() => {
+    allocDateFp.current = flatpickr(allocDateRef.current, {
+      disableMobile: true,
+      monthSelectorType: "static",
+      dateFormat: "d-m-Y",
+      defaultDate: allocatedDate ? toDmy(allocatedDate) : new Date(),
+      onChange: (selectedDates, dateStr) => {
+        setAllocatedDate(toYmd(dateStr));
+      },
+    });
+    return () => allocDateFp.current?.destroy();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (allocDateFp.current && allocatedDate) {
+      allocDateFp.current.setDate(toDmy(allocatedDate));
+    }
+  }, [allocatedDate]);
+
+  useEffect(() => {
+    expRetDateFp.current = flatpickr(expRetDateRef.current, {
+      disableMobile: true,
+      monthSelectorType: "static",
+      dateFormat: "d-m-Y",
+      defaultDate: expectedReturnDate ? toDmy(expectedReturnDate) : new Date(),
+      onChange: (selectedDates, dateStr) => {
+        setExpectedReturnDate(toYmd(dateStr));
+      },
+    });
+    return () => expRetDateFp.current?.destroy();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (expRetDateFp.current && expectedReturnDate) {
+      expRetDateFp.current.setDate(toDmy(expectedReturnDate));
+    }
+  }, [expectedReturnDate]);
 
   // Fetch Next Standby No
   const fetchNextNo = async () => {
@@ -289,25 +325,6 @@ const StandbyPCB = () => {
     handleSaveEntry();
   };
 
-  const handleDeleteWithPassword = () => {
-    handleDeleteEntry();
-  };
-
-  // Search existing database
-  const handleSearchDb = async (val) => {
-    try {
-      const res = await fetch(
-        `http://localhost:3000/api/standby-pcb/search?q=${encodeURIComponent(val)}`
-      );
-      const data = await res.json();
-      setSearchList(data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const debouncedSearch = useRef(debounce(handleSearchDb, 300)).current;
-
   // Filter Autocomplete options
   const filteredCustomers = customers.filter((c) =>
     (c.customer_name || "")
@@ -333,7 +350,7 @@ const StandbyPCB = () => {
   // ════════════════════════════════════════════════════════════════════
   // Reports Logic
   // ════════════════════════════════════════════════════════════════════
-  const generateReport = async () => {
+  const generateReport = useCallback(async () => {
     try {
       const params = new URLSearchParams();
       if (reportFilters.fromDate && reportFilters.toDate) {
@@ -367,13 +384,13 @@ const StandbyPCB = () => {
       console.error(err);
       toast.error("Failed to generate report");
     }
-  };
+  }, [reportFilters, reportType]);
 
   useEffect(() => {
     if (activeTab === "reports") {
       generateReport();
     }
-  }, [activeTab, reportType]);
+  }, [activeTab, generateReport]);
 
   const handlePrint = () => {
     const win = window.open("", "", "width=1200,height=750");
@@ -706,10 +723,11 @@ const StandbyPCB = () => {
                   Allocated Date <span className="text-red-500">*</span>
                 </label>
                 <input
-                  type="date"
-                  value={allocatedDate}
-                  onChange={(e) => setAllocatedDate(e.target.value)}
+                  ref={allocDateRef}
+                  type="text"
+                  placeholder="Select Date"
                   className={inputCls}
+                  readOnly
                 />
               </div>
 
@@ -717,10 +735,11 @@ const StandbyPCB = () => {
               <div>
                 <label className={labelCls}>Expected Return Date</label>
                 <input
-                  type="date"
-                  value={expectedReturnDate}
-                  onChange={(e) => setExpectedReturnDate(e.target.value)}
+                  ref={expRetDateRef}
+                  type="text"
+                  placeholder="Select Date"
                   className={inputCls}
+                  readOnly
                 />
               </div>
 

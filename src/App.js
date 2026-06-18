@@ -59,7 +59,6 @@ import ReceiptReport from "./components/ui/receiptreport";
 import SalesViewReport from "./components/ui/salesviewreport";
 import PurchaseViewReport from "./components/ui/purchaseviewreport";
 import CreditNote from "./components/forms/creditnoteform";
-import creditnoteview from "./components/pages/Sales/creditnote";
 
 // Service
 import ServiceModule from "./components/pages/Services/ServiceModule";
@@ -123,7 +122,7 @@ function App() {
             <Route path="purchase-view-report" element={<PurchaseViewReport />} />
           </Route>
 
-  // Production Modules
+  {/* Production Modules */}
 
           <Route path="production" element={<MainLayout />}>
             <Route index element={<ProductionStock />} />

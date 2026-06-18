@@ -6,6 +6,9 @@ import StandbyDeliveryChallan from "../pages/Services/standbyDcFormat";
 import ServiceWindowModal from "../ui/servicewindowModal";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
+import flatpickr from "flatpickr";
+import { toDmy, toYmd } from "../../utils/dateFormat";
 
 const TODAY = new Date().toISOString().split("T")[0];
 const Api_url = "http://localhost:3000/api/standbydcentry";
@@ -17,7 +20,7 @@ const INIT_FORM = {
     dc_date: TODAY,
     customer_name: "",
     order_no: "",
-    order_date: TODAY,
+            order_date: "",
     payment_terms: "",
     despatch_through: "By Hand",
     order_type: "Service" // Default order type
@@ -77,6 +80,8 @@ const StandbyDcEntryForm = () => {
     const [editSuggestions, setEditSuggestions] = useState([]);
     const [editOpen, setEditOpen] = useState(false);
     const editRef = useRef(null);
+    const stdbyDcDateRef = useRef(null);
+    const stdbyDcDateFp = useRef(null);
 
     const labelCls = "text-[12px] font-bold text-gray-600 uppercase tracking-tight";
     const inputCls = "w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black focus:outline-none bg-white shadow-sm";
@@ -88,16 +93,15 @@ const StandbyDcEntryForm = () => {
         fetchAllDc();
         fetchSpares();
         fetchServices();
-        const handler = (e) => {
-            if (customerRef.current && !customerRef.current.contains(e.target)) setCustomerOpen(false);
-            if (spareRef.current && !spareRef.current.contains(e.target)) setSpareOpen(false);
-            if (despatchRef.current && !despatchRef.current.contains(e.target)) setDespatchOpen(false);
-            if (uomRef.current && !uomRef.current.contains(e.target)) setUomOpen(false);
-            if (editRef.current && !editRef.current.contains(e.target)) setEditOpen(false);
-        };
-        document.addEventListener("mousedown", handler);
-        return () => document.removeEventListener("mousedown", handler);
     }, []);
+
+    useOutsideClick([
+        { ref: customerRef, onClose: () => setCustomerOpen(false) },
+        { ref: spareRef,    onClose: () => setSpareOpen(false) },
+        { ref: despatchRef, onClose: () => setDespatchOpen(false) },
+        { ref: uomRef,      onClose: () => setUomOpen(false) },
+        { ref: editRef,     onClose: () => setEditOpen(false) },
+    ]);
 
     const fetchNextDcNo = async () => {
         try {
@@ -223,7 +227,7 @@ const StandbyDcEntryForm = () => {
             ...p,
             customer_name: "",
             order_no: "",
-            order_date: TODAY,
+    order_date: "",
             payment_terms: "",
             despatch_through: "By Hand",
             order_type: "Service"
@@ -246,6 +250,7 @@ const StandbyDcEntryForm = () => {
         if (!formData.standby_dc_no.trim()) { toast.error("Standby DC Number is required"); return; }
         if (!formData.dc_date) { toast.error("DC Date is required"); return; }
         if (!formData.order_no.trim()) { toast.error("Order Number is required"); return; }
+        if (!formData.despatch_through?.trim()) { toast.error("Despatch Through is required."); return; }
         if (!tabledata.length) { toast.error("Please add at least one item"); return; }
 
         const payload = {
@@ -306,7 +311,7 @@ const StandbyDcEntryForm = () => {
                 dc_date: h.dc_date ? h.dc_date.split("T")[0] : TODAY,
                 customer_name: h.customer_name || "",
                 order_no: h.order_no || "",
-                order_date: h.order_date ? h.order_date.split("T")[0] : TODAY,
+                order_date: h.order_date || "",
                 payment_terms: h.payment_terms || "",
                 despatch_through: h.despatch_through || "By Hand",
                 order_type: h.order_type || "Service"
@@ -364,6 +369,26 @@ const StandbyDcEntryForm = () => {
     const filteredServices = services.filter(s =>
         s.service_name.toLowerCase().includes((currentrow.item_name || "").toLowerCase())
     );
+
+    useEffect(() => {
+        stdbyDcDateFp.current = flatpickr(stdbyDcDateRef.current, {
+            disableMobile: true,
+            monthSelectorType: "static",
+            dateFormat: "d-m-Y",
+            defaultDate: toDmy(formData.dc_date) || new Date(),
+            onChange: (selectedDates, dateStr) => {
+                setFormData(p => ({ ...p, dc_date: toYmd(dateStr) }));
+            },
+        });
+        return () => stdbyDcDateFp.current?.destroy();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useEffect(() => {
+        if (stdbyDcDateFp.current && formData.dc_date) {
+            stdbyDcDateFp.current.setDate(toDmy(formData.dc_date));
+        }
+    }, [formData.dc_date]);
 
     return (
         <><div className="min-h-screen bg-gray-50 p-6 font-sans">
@@ -494,12 +519,7 @@ const StandbyDcEntryForm = () => {
                         {/* DC Date */}
                         <div>
                             <label className={labelCls}>DC Date</label>
-                            <input
-                                type="date"
-                                value={formData.dc_date || TODAY}
-                                onChange={(e) => setFormData(p => ({ ...p, dc_date: e.target.value }))}
-                                className={inputCls}
-                            />
+                            <input ref={stdbyDcDateRef} type="text" readOnly className={inputCls} />
                         </div>
 
                         {/* Despatch Through */}
@@ -553,8 +573,9 @@ const StandbyDcEntryForm = () => {
                         <div>
                             <label className={labelCls}>Order Date</label>
                             <input
-                                type="date"
-                                value={formData.order_date || TODAY}
+                                type="text"
+                                placeholder="Enter Order Date(s)"
+                                value={formData.order_date}
                                 onChange={(e) => setFormData(p => ({ ...p, order_date: e.target.value }))}
                                 className={inputCls}
                             />

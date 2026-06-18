@@ -2,10 +2,11 @@ import React, { useState, useEffect, useRef } from "react";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import { useDropdownKeyNav } from "../../hooks/useDropdownKeyNav";
 import { useNavigate } from "react-router-dom";
-import { SquarePen, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
+import flatpickr from "flatpickr";
+import { toDmy, toYmd } from "../../utils/dateFormat";
 
 // Debounce helper
 function debounce(func, delay) {
@@ -52,6 +53,8 @@ const PCBStock = () => {
   const categoryRef = useRef(null);
   const searchRef = useRef(null);
   const clientRef = useRef(null);
+  const pcbPurchaseDateRef = useRef(null);
+  const pcbPurchaseDateFp = useRef(null);
   // Set default date to today
   useEffect(() => {
     const today = new Date().toISOString().split("T")[0];
@@ -74,6 +77,26 @@ const PCBStock = () => {
   useEffect(() => {
     fetchNextCode();
   }, []);
+
+  useEffect(() => {
+        pcbPurchaseDateFp.current = flatpickr(pcbPurchaseDateRef.current, {
+      disableMobile: true,
+      monthSelectorType: "static",
+      dateFormat: "d-m-Y",
+      defaultDate: purchaseDate ? toDmy(purchaseDate) : new Date(),
+      onChange: (selectedDates, dateStr) => {
+        setPurchaseDate(toYmd(dateStr));
+      },
+    });
+    return () => pcbPurchaseDateFp.current?.destroy();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (pcbPurchaseDateFp.current && purchaseDate) {
+      pcbPurchaseDateFp.current.setDate(toDmy(purchaseDate));
+    }
+  }, [purchaseDate]);
 
   // Auto-calculated variables
   const qty = parseFloat(availableQuantity) || 0;
@@ -385,10 +408,11 @@ const PCBStock = () => {
                 Purchase Date <span className="text-red-500">*</span>
               </label>
               <input
-                type="date"
-                value={purchaseDate}
-                onChange={(e) => setPurchaseDate(e.target.value)}
+                ref={pcbPurchaseDateRef}
+                type="text"
+                placeholder="Select Date"
                 className={inputCls}
+                readOnly
               />
             </div>
 

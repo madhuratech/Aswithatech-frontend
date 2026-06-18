@@ -6,6 +6,9 @@ import SaleswindowModel from "../ui/saleswindowModal";
 import Billwiseformat from "../pages/Purchase/bilwisepaymentformat";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
+import flatpickr from "flatpickr";
+import { toDmy, toYmd } from "../../utils/dateFormat";
 
 const API = "http://localhost:3000/api/billpayment";
 const TODAY = new Date().toISOString().split("T")[0];
@@ -68,6 +71,8 @@ const BillwisePayment = () => {
   const modeRef = useRef(null);
   const bankRef = useRef(null);
   const loadRef = useRef(null);
+  const payEntryDateRef = useRef(null);
+  const payEntryDateFp = useRef(null);
 
   // ── shared CSS (matches Sales Invoice) ───────────────────────────────
   const labelCls = "block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5";
@@ -94,16 +99,35 @@ const BillwisePayment = () => {
     fetchSuppliersWithBills();
     fetchBanks();
     fetchNextReceiptNo();
-    const handler = (e) => {
-      if (supplierRef.current && !supplierRef.current.contains(e.target)) closeAll("supplier");
-      if (billRef.current && !billRef.current.contains(e.target)) closeAll("bill");
-      if (modeRef.current && !modeRef.current.contains(e.target)) closeAll("mode");
-      if (bankRef.current && !bankRef.current.contains(e.target)) closeAll("bank");
-      if (loadRef.current && !loadRef.current.contains(e.target)) closeAll("loadPay");
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  useOutsideClick([
+    { ref: supplierRef, onClose: () => closeAll("supplier") },
+    { ref: billRef,     onClose: () => closeAll("bill") },
+    { ref: modeRef,     onClose: () => closeAll("mode") },
+    { ref: bankRef,     onClose: () => closeAll("bank") },
+    { ref: loadRef,     onClose: () => closeAll("loadPay") },
+  ]);
+
+  useEffect(() => {
+    payEntryDateFp.current = flatpickr(payEntryDateRef.current, {
+      disableMobile: true,
+      monthSelectorType: "static",
+      dateFormat: "d-m-Y",
+      defaultDate: form.entry_date ? toDmy(form.entry_date) : new Date(),
+      onChange: (selectedDates, dateStr) => {
+        setForm(p => ({ ...p, entry_date: toYmd(dateStr) }));
+      },
+    });
+    return () => payEntryDateFp.current?.destroy();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (payEntryDateFp.current && form.entry_date) {
+      payEntryDateFp.current.setDate(toDmy(form.entry_date));
+    }
+  }, [form.entry_date]);
 
   const closeAll = (key) => setOpen((p) => ({ ...p, [key]: false }));
   const openDrop = (key) => setOpen((p) => ({ ...p, [key]: true }));
@@ -481,8 +505,7 @@ const BillwisePayment = () => {
             {/* Entry Date */}
             <div>
               <label className={labelCls}>Entry Date</label>
-              <input type="date" value={form.entry_date}
-                onChange={(e) => setForm((p) => ({ ...p, entry_date: e.target.value }))}
+              <input ref={payEntryDateRef}
                 className={inputCls} />
             </div>
 
@@ -846,13 +869,12 @@ const BillwisePayment = () => {
                 </span>
               </div>
 
-              <div className="flex justify-between items-center">
-                <span className="text-[12px] font-black text-gray-500 uppercase">Remarks</span>
-                <input type="text" value={form.remarks}
-                  onChange={(e) => setForm((p) => ({ ...p, remarks: e.target.value }))}
-                  className="w-36 p-1.5 border-b border-gray-300 bg-transparent text-right font-semibold text-gray-700 outline-none focus:border-gray-600 text-[12px]"
-                  placeholder="Note…" />
-              </div>
+              {form.remarks && (
+                <div className="flex justify-between items-center">
+                  <span className="text-[12px] font-black text-gray-500 uppercase">Remarks</span>
+                  <span className="text-[12px] font-semibold text-gray-700 text-right max-w-[144px] truncate">{form.remarks}</span>
+                </div>
+              )}
 
               <div className="flex justify-between items-center pt-4 border-t-2 border-gray-300 mt-2">
                 <span className="text-[15px] font-black text-black uppercase">Total Paid</span>

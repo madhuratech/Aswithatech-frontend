@@ -4,6 +4,7 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import "./styles/tailwind.css";
+import "flatpickr/dist/flatpickr.min.css";
 
 
 const root = ReactDOM.createRoot(document.getElementById('root'));

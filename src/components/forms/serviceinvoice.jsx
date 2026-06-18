@@ -7,6 +7,9 @@ import ServiceWindowModal from "../ui/servicewindowModal";
 import { isTamilNadu, calcGstAmounts } from "../../utils/gstUtils";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
+import flatpickr from "flatpickr";
+import { toDmy, toYmd } from "../../utils/dateFormat";
 
 const TODAY = new Date().toISOString().split("T")[0];
 const API = "http://localhost:3000/api/serviceinvoice";
@@ -23,7 +26,7 @@ const INIT_FORM = {
     payment_terms: "",
     dispatch_through: "",
     discount: 0,
-    transport: 0
+    transport: 0,
 };
 
 const INIT_ROW = {
@@ -79,8 +82,8 @@ const ServiceInvoiceForm = () => {
 
     // DC dropdown
     const [dcList, setDcList] = useState([]);
-    const [dcSearch, setDcSearch] = useState("");
     const [dcOpen, setDcOpen] = useState(false);
+    const [selectedDcNos, setSelectedDcNos] = useState([]);
     const dcRef = useRef(null);
 
     // Item dropdown
@@ -94,29 +97,30 @@ const ServiceInvoiceForm = () => {
     const [despatchOpen, setDespatchOpen] = useState(false);
     const despatchRef = useRef(null);
 
+    // SHOW display fields (comma-separated, read-only)
+    const [orderNoDisplay, setOrderNoDisplay]   = useState("");
+    const [orderDateDisplay, setOrderDateDisplay] = useState("");
+
     // Load invoice section
     const [loadSearch, setLoadSearch] = useState("");
     const [loadList, setLoadList] = useState([]);
     const [loadOpen, setLoadOpen] = useState(false);
     const loadRef = useRef(null);
+    const invoiceDateRef = useRef(null);
+    const invoiceDateFp = useRef(null);
 
     const labelCls = "text-[12px] font-bold text-gray-600 uppercase tracking-tight";
     const inputCls = "w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black focus:outline-none bg-white shadow-sm";
     const roInputCls = "w-full p-2.5 border border-blue-100 rounded-lg text-[13px] font-semibold text-blue-800 bg-blue-50 cursor-not-allowed focus:outline-none";
     const dropdownCls = "absolute top-full left-0 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-52 overflow-y-auto";
 
-    // Close dropdowns on outside click
-    useEffect(() => {
-        const handler = (e) => {
-            if (clientRef.current && !clientRef.current.contains(e.target)) setClientOpen(false);
-            if (dcRef.current && !dcRef.current.contains(e.target)) setDcOpen(false);
-            if (itemRef.current && !itemRef.current.contains(e.target)) setItemOpen(false);
-            if (despatchRef.current && !despatchRef.current.contains(e.target)) setDespatchOpen(false);
-            if (loadRef.current && !loadRef.current.contains(e.target)) setLoadOpen(false);
-        };
-        document.addEventListener("mousedown", handler);
-        return () => document.removeEventListener("mousedown", handler);
-    }, []);
+    useOutsideClick([
+        { ref: clientRef,   onClose: () => setClientOpen(false) },
+        { ref: dcRef,       onClose: () => setDcOpen(false) },
+        { ref: itemRef,     onClose: () => setItemOpen(false) },
+        { ref: despatchRef, onClose: () => setDespatchOpen(false) },
+        { ref: loadRef,     onClose: () => setLoadOpen(false) },
+    ]);
 
     // Fetch next invoice number on mount
     useEffect(() => {
@@ -151,22 +155,20 @@ const ServiceInvoiceForm = () => {
         const fetchDcList = async () => {
             try {
                 const params = new URLSearchParams({ supplier: formData.customer_name });
-                if (dcSearch) params.set("q", dcSearch);
                 const res = await fetch(`${API}/service-dc/search?${params}`);
                 setDcList(await res.json());
             } catch { setDcList([]); }
         };
         fetchDcList();
-    }, [formData.customer_name, dcSearch]);
+    }, [formData.customer_name]);
 
     // Recalculate totals whenever table or tax inputs change
     useEffect(() => {
         const sub = tabledata.reduce((s, r) => s + (Number(r.amount) || 0), 0);
         setSubtotal(sub);
 
-        const disc = Number(formData.discount) || 0;
         const trans = Number(formData.transport) || 0;
-        const taxable = sub - disc + trans;
+        const taxable = parseFloat((sub + trans).toFixed(2));
 
         const intrastate = isTamilNadu(customerState, customerGst);
         const gst = calcGstAmounts(taxable, Number(gstPct), intrastate);
@@ -175,10 +177,10 @@ const ServiceInvoiceForm = () => {
         setIgst(gst.igst);
 
         const total = taxable + gst.cgst + gst.sgst + gst.igst;
-        const ro = Math.round(total) - total;
+        const ro = parseFloat((Math.round(total) - total).toFixed(2));
         setRoundOff(ro);
         setGrandTotal(Math.round(total));
-    }, [tabledata, formData.discount, formData.transport, gstPct, customerState, customerGst]);
+    }, [tabledata, formData.transport, gstPct, customerState, customerGst]);
 
     // Fetch invoice list for load section
     useEffect(() => {
@@ -199,33 +201,88 @@ const ServiceInvoiceForm = () => {
         setCustomerGst(c.gst_number || "");
         setFormData({ ...INIT_FORM, invoice_no: invoiceNo, invoice_date: invDate, customer_name: c.customer_name });
         setClientSearch(c.customer_name);
-        setDcSearch("");
         setDcItems([]);
+        setOrderNoDisplay("");
+        setOrderDateDisplay("");
+        setSelectedDcNos([]);
         setClientOpen(false);
         setDcOpen(true);
     };
 
     const handleDcSelect = async (dc) => {
         const adminDcNo = dc.inward_dc_no;
-        setDcSearch(adminDcNo);
         setDcOpen(false);
         try {
             const res = await fetch(`${API}/service-dc/by-admin/${encodeURIComponent(adminDcNo)}`);
             const data = await res.json();
             if (!res.ok) { toast.error(data.message); return; }
+            // Do NOT auto-fill order_no/order_date — store them in temp fields for SHOW
             setFormData(p => ({
                 ...p,
                 dc_no: adminDcNo,
                 client_dc_no: data.header?.party_dc_no || "",
                 dc_date: data.header?.dc_date ? data.header.dc_date.split("T")[0] : "",
-                order_no: data.aggregated_order_no || data.header?.party_dc_no || "",
-                order_date: data.aggregated_order_date || (data.header?.dc_date ? data.header.dc_date.split("T")[0] : ""),
+                _selOrderNo: data.aggregated_order_no || data.header?.party_dc_no || "",
+                _selOrderDate: data.aggregated_order_date || (data.header?.dc_date ? data.header.dc_date.split("T")[0] : ""),
+                order_no: "",
+                order_date: "",
                 dispatch_through: p.despatch_through || "",
             }));
             setDcItems(data.items || []);
+            toast.success(`DC ${adminDcNo} loaded — click SHOW to add.`);
         } catch {
             toast.error("Failed to fetch DC data");
         }
+    };
+
+    const handleShowClick = () => {
+        const orderNo = formData._selOrderNo?.trim();
+        const orderDate = formData._selOrderDate?.trim();
+        const currentDcNo = formData.dc_no?.trim();
+        if (!orderNo) { toast.error("Select an Admin DC first."); return; }
+
+        // Check duplicate order number
+        const existing = (orderNoDisplay || "").split(",").map(s => s.trim()).filter(Boolean);
+        const newNos = orderNo.split(",").map(s => s.trim()).filter(Boolean);
+        let hasNew = false;
+        for (const no of newNos) {
+            if (!existing.includes(no)) {
+                existing.push(no);
+                hasNew = true;
+            }
+        }
+        if (!hasNew) { toast.error("Order Number already added."); return; }
+
+        setOrderNoDisplay(prev => {
+            let result = prev || "";
+            for (const no of newNos) {
+                if (!result.split(",").map(s => s.trim()).filter(Boolean).includes(no)) {
+                    result = result ? `${result}, ${no}` : no;
+                }
+            }
+            return result;
+        });
+        setOrderDateDisplay(prev => {
+            const existingDates = (prev || "").split(",").map(s => s.trim()).filter(Boolean);
+            const newDates = orderDate.split(",").map(s => s.trim()).filter(Boolean);
+            let result = prev || "";
+            for (const d of newDates) {
+                if (!existingDates.includes(d)) {
+                    result = result ? `${result}, ${d}` : d;
+                    existingDates.push(d);
+                }
+            }
+            return result;
+        });
+
+        // Mark this DC as selected so it won't appear in dropdown again
+        if (currentDcNo) {
+            setSelectedDcNos(prev => prev.includes(currentDcNo) ? prev : [...prev, currentDcNo]);
+        }
+        // Clear selected DC and reopen dropdown with remaining items
+        setFormData(p => ({ ...p, dc_no: "", _selOrderNo: "", _selOrderDate: "" }));
+        setDcOpen(true);
+        toast.success(`Order ${newNos.join(", ")} added.`);
     };
 
     // Product input is select-only now, so always show every DC item in the dropdown
@@ -243,8 +300,8 @@ const ServiceInvoiceForm = () => {
             hsn_number: item.hsn_number || item.hsn || "",
             uom: item.uom || "",
             amount: qty && price ? (qty * price) - disc : p.amount,
-            order_no:    item.party_dc_no   || formData.order_no || "",
-            order_date:  item.party_dc_date || formData.order_date || "",
+            order_no:    item.party_dc_no   || formData._selOrderNo || "",
+            order_date:  item.party_dc_date || formData._selOrderDate || "",
             dc_no:       formData.dc_no || "",
             dc_date:     formData.dc_date || "",
         }));
@@ -266,8 +323,8 @@ const ServiceInvoiceForm = () => {
         const newRow = {
             ...currentrow,
             amount: calcAmount(currentrow),
-            order_no: currentrow.order_no || formData.order_no || "",
-            order_date: currentrow.order_date || formData.order_date || "",
+            order_no: currentrow.order_no || formData._selOrderNo || "",
+            order_date: currentrow.order_date || formData._selOrderDate || "",
             dc_no: currentrow.dc_no || formData.dc_no || "",
             dc_date: currentrow.dc_date || formData.dc_date || "",
         };
@@ -301,17 +358,16 @@ const ServiceInvoiceForm = () => {
     const saveInvoice = async () => {
         if (!formData.customer_name.trim()) { toast.error("Customer Name is required"); return; }
         if (!formData.invoice_date) { toast.error("Invoice Date is required"); return; }
+        if (!formData.dispatch_through?.trim()) { toast.error("Despatch Through is required."); return; }
         if (!tabledata.length) { toast.error("Please add at least one item"); return; }
 
-        const uniqueDcNos = [...new Set(tabledata.map(it => it.dc_no).filter(Boolean))];
         const uniqueDcDates = [...new Set(tabledata.map(it => it.dc_date).filter(Boolean))];
-        const uniqueOrderNos = [...new Set(tabledata.map(it => it.order_no).filter(Boolean))];
         const uniqueOrderDates = [...new Set(tabledata.map(it => it.order_date).filter(Boolean))];
 
-        const dcNoStr = uniqueDcNos.length ? uniqueDcNos.join(", ") : (formData.dc_no || "");
+        const dcNoStr = formData.dc_no || "";
         const dcDateStr = uniqueDcDates.length ? uniqueDcDates.join(", ") : (formData.dc_date || "");
-        const orderNoStr = uniqueOrderNos.length ? uniqueOrderNos.join(", ") : (formData.order_no || "");
-        const orderDateStr = uniqueOrderDates.length ? uniqueOrderDates.join(", ") : (formData.order_date || "");
+        const orderNoStr = orderNoDisplay || (formData._selOrderNo || "");
+        const orderDateStr = uniqueOrderDates.length ? uniqueOrderDates.join(", ") : (orderDateDisplay || formData._selOrderDate || "");
 
         const payload = {
             ...formData,
@@ -319,6 +375,7 @@ const ServiceInvoiceForm = () => {
             dc_date: dcDateStr,
             order_no: orderNoStr,
             order_date: orderDateStr,
+            taxable_value: taxableValue,
             cgst,
             sgst,
             igst,
@@ -383,16 +440,24 @@ const ServiceInvoiceForm = () => {
                 customer_name: h.customer_name || "",
                 invoice_no: h.invoice_no || "",
                 invoice_date: safeDate(h.invoice_date || TODAY),
-                dc_no: h.dc_no || "",
+                dc_no: "",
                 dc_date: safeDate(h.dc_date),
-                order_no: h.order_no || "",
-                order_date: safeDate(h.order_date),
+                order_no: "",
+                order_date: "",
                 dispatch_through: "",
                 discount: h.discount || 0,
-                transport: h.transport || 0
+                transport: h.transport || 0,
             });
+            setOrderNoDisplay(h.order_no || "");
+            setOrderDateDisplay(safeDate(h.order_date));
             setClientSearch(h.customer_name || "");
-            setDcSearch(h.dc_no || "");  // dc_no holds the admin DC number
+            // Populate selected DCs from loaded invoice so they don't appear in dropdown
+            if (h.dc_no) {
+                const loadedDcs = h.dc_no.split(",").map(s => s.trim()).filter(Boolean);
+                setSelectedDcNos(loadedDcs);
+            } else {
+                setSelectedDcNos([]);
+            }
             setIgst(h.igst || 0);
             settabledata((data.items || []).map(it => ({
                 ...it,
@@ -424,13 +489,15 @@ const ServiceInvoiceForm = () => {
     const resetAll = () => {
         setFormData(INIT_FORM);
         setClientSearch("");
-        setDcSearch("");
         setLoadSearch("");
         setDcItems([]);
         settabledata([]);
         setCurrentrow(INIT_ROW);
         setEditIndex(-1);
         setLoadInvoice("");
+        setSelectedDcNos([]);
+        setOrderNoDisplay("");
+        setOrderDateDisplay("");
         setSubtotal(0);
         setCgst(0);
         setSgst(0);
@@ -445,6 +512,27 @@ const ServiceInvoiceForm = () => {
 
     const isIntrastate = isTamilNadu(customerState, customerGst);
     const gstRates = calcGstAmounts(1, gstPct, isIntrastate);
+    const taxableValue = parseFloat((subtotal + (Number(formData.transport) || 0)).toFixed(2));
+
+    useEffect(() => {
+        invoiceDateFp.current = flatpickr(invoiceDateRef.current, {
+            disableMobile: true,
+            monthSelectorType: "static",
+            dateFormat: "d-m-Y",
+            defaultDate: toDmy(formData.invoice_date) || new Date(),
+            onChange: (selectedDates, dateStr) => {
+                setFormData(p => ({ ...p, invoice_date: toYmd(dateStr) }));
+            },
+        });
+        return () => invoiceDateFp.current?.destroy();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useEffect(() => {
+        if (invoiceDateFp.current && formData.invoice_date) {
+            invoiceDateFp.current.setDate(toDmy(formData.invoice_date));
+        }
+    }, [formData.invoice_date]);
 
     return (
         <><div className="min-h-screen bg-gray-50 p-6 font-sans">
@@ -572,82 +660,10 @@ const ServiceInvoiceForm = () => {
                         {/* Invoice Date */}
                         <div>
                             <label className={labelCls}>Invoice Date <span className="text-red-500">*</span></label>
-                            <input type="date" value={formData.invoice_date}
-                                onChange={(e) => setFormData(p => ({ ...p, invoice_date: e.target.value }))}
-                                className={inputCls} />
+                            <input ref={invoiceDateRef} type="text" readOnly className={inputCls} />
                         </div>
-
-                         {/* Admin DC No — searchable dropdown (mandatory selection, no manual entry) */}
-                        <div className="relative" ref={dcRef}>
-                            <label className={labelCls}>
-                                Admin DC No <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                type="text"
-                                value={dcSearch}
-                                onChange={(e) => {
-                                    setDcSearch(e.target.value);
-                                    setDcOpen(true);
-                                }}
-                                onFocus={() => { if (formData.customer_name) setDcOpen(true); }}
-                                onBlur={() => setTimeout(() => setDcSearch(formData.dc_no || ""), 150)}
-                                placeholder={formData.customer_name ? "Select Admin DC…" : "Select a customer first"}
-                                disabled={!formData.customer_name}
-                                className={`${inputCls} ${!formData.customer_name ? "bg-gray-100 cursor-not-allowed text-gray-400" : "cursor-pointer"}`}
-                            />
-                            {dcOpen && dcList.length > 0 && (
-                                <div className={dropdownCls}>
-                                    {dcList.map((dc, i) => (
-                                        <div key={i} onClick={() => handleDcSelect(dc)}
-                                            className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer border-b border-gray-50 last:border-0">
-                                            <div className="text-[13px] font-bold text-gray-900">{dc.inward_dc_no || "—"}</div>
-                                      </div>
-                                    ))}
-                                </div>
-                            )}
-                            {dcOpen && formData.customer_name && dcList.length === 0 && (
-                                <div className={`${dropdownCls} px-4 py-3 text-[13px] text-gray-400`}>
-                                    No Service DCs found for this customer.
-                                </div>
-                            )}
-                        </div>
-                       
-                    </div>
-                </div>
-
-                {/* ── Step 2 — Service DC Details ── */}
-                <div className="bg-gray-50 rounded-xl p-5 border border-gray-100 mb-5">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Step 2 — Service DC Details</p>
-                    <div className="grid grid-cols-4 gap-8">
-
-                      
-
-                        {/* Order No — auto-filled from client DC (party_dc_no) */}
-                        <div>
-                            <label className={labelCls}>
-                                Order No
-                                {formData.order_no && <span className="ml-1 text-[10px] text-blue-500 font-black normal-case">Auto</span>}
-                            </label>
-                            <input
-                                type="text"
-                                value={formData.order_no}
-                                readOnly
-                                placeholder="Auto-filled from Admin DC"
-                                className={roInputCls}
-                            />
-                        </div>
-
-                        {/* Order Date — auto-filled from DC date */}
-                        <div>
-                            <label className={labelCls}>
-                                Order Date
-                                {formData.order_date && <span className="ml-1 text-[10px] text-blue-500 font-black normal-case">Auto</span>}
-                            </label>
-                            <input type="date" value={formData.order_date}
-                                onChange={(e) => setFormData(p => ({ ...p, order_date: e.target.value }))}
-                                className={inputCls} />
-                        </div>
-                        {/* Despatch Through */}
+                  
+                   {/* Despatch Through */}
                         <div className="relative" ref={despatchRef}>
                             <label className={labelCls}>Despatch Through</label>
                             <div onClick={() => setDespatchOpen(p => !p)}
@@ -671,12 +687,95 @@ const ServiceInvoiceForm = () => {
                                 </div>
                             )}
                         </div>
+                        
+                       
+                    </div>
+                </div>
+
+                {/* ── Step 2 — Service DC Details ── */}
+                <div className="bg-gray-50 rounded-xl p-5 border border-gray-100 mb-5">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Step 2 — Service DC Details</p>
+
+                    <div className="grid grid-cols-5 gap-8">
+
+                         {/* Admin DC No — select-only dropdown (non-searchable) */}
+                        <div className="relative" ref={dcRef}>
+                            <label className={labelCls}>
+                                Admin DC No <span className="text-red-500">*</span>
+                            </label>
+                            <div
+                                onClick={() => { if (formData.customer_name) setDcOpen(p => !p); }}
+                                className={`${inputCls} flex justify-between items-center cursor-pointer min-h-[43px] ${
+                                    !formData.customer_name ? "bg-gray-100 text-gray-400" : ""
+                                }`}
+                            >
+                                <span className={formData.dc_no ? "text-black" : "text-gray-400 font-medium"}>
+                                    {formData.dc_no || (formData.customer_name ? "Select Admin DC…" : "Select a customer first")}
+                                </span>
+                                <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                            {dcOpen && (
+                                <>
+                                    {dcList.filter(dc => !selectedDcNos.includes(dc.inward_dc_no)).length > 0 ? (
+                                        <div className={dropdownCls}>
+                                            {dcList
+                                                .filter(dc => !selectedDcNos.includes(dc.inward_dc_no))
+                                                .map((dc, i) => (
+                                                    <div key={i} onClick={() => handleDcSelect(dc)}
+                                                        className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer border-b border-gray-50 last:border-0">
+                                                        <div className="text-[13px] font-bold text-gray-900">{dc.inward_dc_no || "—"}</div>
+                                                  </div>
+                                                ))
+                                            }
+                                        </div>
+                                    ) : (
+                                        <div className={`${dropdownCls} px-4 py-3 text-[13px] text-gray-400`}>
+                                            {formData.customer_name ? "No remaining DCs available." : "Select a customer first"}
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </div>
+
+                          {/* SHOW Button */}
+                        <div className="flex items-end">
+                            <button type="button" onClick={handleShowClick}
+                                disabled={!formData._selOrderNo}
+                                className={`w-full px-4 py-2.5 max-w-[100px] rounded-lg text-[13px] font-black uppercase tracking-wider transition-all duration-150 ${
+                                    formData._selOrderNo
+                                        ? "bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-200"
+                                        : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                }`}>
+                                SHOW
+                            </button>
+                        </div>
+                            {/* Order No Display — read-only, accumulates from SHOW */}
+                        <div>
+                            <label className={labelCls}>
+                                Order No
+                            </label>
+                            <input type="text" value={orderNoDisplay}
+                                readOnly
+                                placeholder="Click SHOW to add"
+                                className={`${roInputCls}`}/>
+                        </div>
+
+                        {/* Order Date Display — read-only, accumulates from SHOW */}
+                        <div>
+                            <label className={labelCls}>
+                                Order Date
+                            </label>
+                            <input type="text" value={orderDateDisplay}
+                                readOnly
+                                placeholder="Click SHOW to add"
+                                className={roInputCls} />
+                        </div>
+
+                      
                     </div>
 
-                    {/* Order Date + Despatch Through */}
-                    <div className="grid grid-cols-4 gap-5 mt-4">
-                        
-                    </div>
 
                     {/* DC Items chip list */}
                     {dcItems.length > 0 && (
@@ -883,16 +982,21 @@ const ServiceInvoiceForm = () => {
                             <div className="space-y-3">
 
                                 <div className="flex justify-between items-center">
-                                    <label className={labelCls}>Subtotal :</label>
+                                    <label className={labelCls}>Sub Total :</label>
                                     <input type="text" value={subtotal.toFixed(2)} readOnly
                                         className="w-32 p-1.5 border-b border-gray-300 bg-transparent text-right font-black text-black outline-none" />
                                 </div>
 
                                 <div className="flex justify-between items-center">
-                                    <label className={labelCls}>Transport (+):</label>
+                                    <label className={labelCls}>Transport Charges (+):</label>
                                     <input type="number" value={formData.transport}
                                         onChange={(e) => setFormData(p => ({ ...p, transport: e.target.value }))}
                                         className="w-32 p-1.5 border-b border-gray-300 bg-transparent text-right font-black text-black outline-none" />
+                                </div>
+
+                                <div className="flex justify-between items-center bg-blue-50 px-2 py-1 rounded">
+                                    <label className="text-[11px] font-black text-blue-700 uppercase tracking-tight">Taxable Value :</label>
+                                    <span className="text-[13px] font-black text-blue-900">{taxableValue.toFixed(2)}</span>
                                 </div>
 
                                 {/* GST % + state badge */}
@@ -932,7 +1036,7 @@ const ServiceInvoiceForm = () => {
                                 </div>
 
                                 <div className="flex justify-between items-center pt-4 mt-2 border-t-2 border-gray-300">
-                                    <label className="text-[14px] font-black text-black uppercase tracking-tighter">Grand Total :</label>
+                                    <label className="text-[14px] font-black text-black uppercase tracking-tighter">NET TOTAL :</label>
                                     <span className="text-[22px] font-black text-[#311B92] italic tracking-tighter">
                                         {grandTotal || 0}
                                     </span>

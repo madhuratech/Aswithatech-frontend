@@ -30,9 +30,7 @@ const InvoiceLayout = ({ InvNumber }) => {
         .filter(Boolean)
         .join(", ");
     }
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
-    return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.${d.getFullYear()}`;
+    return dateStr;
   };
 
   useEffect(() => {
@@ -233,7 +231,7 @@ const InvoiceLayout = ({ InvNumber }) => {
                   <span className="w-[110px] text-right text-[14px] font-bold">{Number(invoice.subtotal || 0).toFixed(2)}</span>
                 </div>
                 <div className="flex px-3 py-0.5">
-                  <span className="flex-1 text-right text-[13px] font-bold pr-4">Forward & Packing Charges</span>
+                  <span className="flex-1 text-right text-[13px] font-bold pr-4">Forward Packing Charges</span>
                   <span className="w-[110px] text-right text-[14px] font-bold">{Number(invoice.transport || 0).toFixed(2)}</span>
                 </div>
                 {Number(invoice.discount || 0) > 0 && (

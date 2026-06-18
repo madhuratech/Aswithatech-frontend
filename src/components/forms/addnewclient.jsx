@@ -1,17 +1,17 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useScrollLock } from "../../hooks/useScrollLock";
 import { X } from "lucide-react";
 import { successToast, errorToast, loadingToast } from "../ui/nottifications";
 import toast from "react-hot-toast";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
 
 
 
 const AddNewCustomerModal = ({ onClose, customer, refresh }) => {
   const {
     showPasswordModal,
-    requirePassword,
     handlePasswordSuccess,
     handlePasswordCancel,
   } = usePasswordProtection();
@@ -20,8 +20,11 @@ const AddNewCustomerModal = ({ onClose, customer, refresh }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [showDropdown , setDropdown]= useState(false);
+  const searchRef = useRef(null);
 
-
+  useOutsideClick(
+    [{ ref: searchRef, onClose: () => setDropdown(false) }]
+  );
 
   // Background overflow lock
   useScrollLock(true);
@@ -231,18 +234,7 @@ useEffect(() => {
   "37": "Andhra Pradesh (New)"
  };
 
- //Handle Click;
-
- useEffect(() => {
-  const handleClickOutside = (e) => {
-    if (!e.target.closest('.relative')) {
-      setDropdown(false);
-    }
-  };
-
-  document.addEventListener('click', handleClickOutside);
-  return () => document.removeEventListener('click', handleClickOutside);
-}); 
+ 
 
 
 
@@ -286,7 +278,7 @@ useEffect(() => {
           {/* Existing Client */}
           {customerType === "existing" && (
             <div className="p-6 flex flex-col space-y-4 ">
-              <div className="relative right-6">
+              <div ref={searchRef} className="relative right-6">
                 <label className="text-sm font-medium">Search Customer</label>
                 <input
                   type="text"

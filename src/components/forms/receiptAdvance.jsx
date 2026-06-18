@@ -1,8 +1,10 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
+import flatpickr from "flatpickr";
+import { toDmy, toYmd } from "../../utils/dateFormat";
 
 const ReceiptAdvance = () => {
   const navigate = useNavigate();
@@ -31,6 +33,9 @@ const ReceiptAdvance = () => {
   const [clientList, setClientList] = useState([]);
   const [clientOpen, setClientOpen] = useState(false);
 
+  const receiptDateRef = useRef(null);
+  const receiptDateFp = useRef(null);
+
   useEffect(() => {
     const today = new Date().toISOString().split("T")[0];
     setFormData((prev) => ({ ...prev, receipt_date: today }));
@@ -50,6 +55,26 @@ const ReceiptAdvance = () => {
       .then(setClientList)
       .catch(console.error);
   }, [formData.customer_name]);
+
+  useEffect(() => {
+    receiptDateFp.current = flatpickr(receiptDateRef.current, {
+      disableMobile: true,
+      monthSelectorType: "static",
+      dateFormat: "d-m-Y",
+      defaultDate: formData.receipt_date ? toDmy(formData.receipt_date) : new Date(),
+      onChange: (selectedDates, dateStr) => {
+        setFormData(p => ({ ...p, receipt_date: toYmd(dateStr) }));
+      },
+    });
+    return () => receiptDateFp.current?.destroy();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (receiptDateFp.current && formData.receipt_date) {
+      receiptDateFp.current.setDate(toDmy(formData.receipt_date));
+    }
+  }, [formData.receipt_date]);
 
   const grandTotal =
     Number(formData.received_amount || 0) +
@@ -221,10 +246,7 @@ const ReceiptAdvance = () => {
               </div>
               <div>
                 <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Date</label>
-                <input
-                  type="date"
-                  value={formData.receipt_date}
-                  onChange={(e) => setFormData({ ...formData, receipt_date: e.target.value })}
+                <input ref={receiptDateRef}
                   className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-black"
                 />
               </div>

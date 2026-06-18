@@ -17,9 +17,10 @@ const SupplierModel = ({ onMinimize, onClose, title, setIsMinimizedInternal }) =
   const [showSupplierList, setShowSupplierList] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const TODAY = new Date().toISOString().split("T")[0];
   const [filters, setFilters] = useState({
     fromDate: "",
-    toDate: "",
+    toDate: TODAY,
     receipt_no: "",
     supplier_name: ""
   });

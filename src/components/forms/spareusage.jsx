@@ -6,6 +6,8 @@ import { useOutsideClick } from "../../hooks/useOutsideClick";
 import { useDropdownKeyNav } from "../../hooks/useDropdownKeyNav";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
+import flatpickr from "flatpickr";
+import { toDmy, toYmd } from "../../utils/dateFormat";
 
 // Debounce helper for search
 function debounce(func, delay) {
@@ -59,12 +61,34 @@ const SpareUsage = () => {
   const spareRef = useRef(null);
   const typeRef = useRef(null);
   const searchRef = useRef(null);
+  const spareUsageDateRef = useRef(null);
+  const spareUsageDateFp = useRef(null);
 
   // Set default date to today
   useEffect(() => {
     const today = new Date().toISOString().split("T")[0];
     setUsageDate(today);
   }, []);
+
+  useEffect(() => {
+    spareUsageDateFp.current = flatpickr(spareUsageDateRef.current, {
+      disableMobile: true,
+      monthSelectorType: "static",
+      dateFormat: "d-m-Y",
+      defaultDate: usageDate ? toDmy(usageDate) : new Date(),
+      onChange: (selectedDates, dateStr) => {
+        setUsageDate(toYmd(dateStr));
+      },
+    });
+    return () => spareUsageDateFp.current?.destroy();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (spareUsageDateFp.current && usageDate) {
+      spareUsageDateFp.current.setDate(toDmy(usageDate));
+    }
+  }, [usageDate]);
 
   // Fetch next sequential Usage SNO
   const fetchNextSno = async () => {
@@ -448,10 +472,11 @@ const SpareUsage = () => {
                 Usage Date <span className="text-red-500">*</span>
               </label>
               <input
-                type="date"
-                value={usageDate}
-                onChange={(e) => setUsageDate(e.target.value)}
+                ref={spareUsageDateRef}
+                type="text"
+                placeholder="Select Date"
                 className={inputCls}
+                readOnly
               />
             </div>
 

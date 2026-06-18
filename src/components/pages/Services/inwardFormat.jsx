@@ -23,6 +23,8 @@ const InwardFormat = ({ dcNumber }) => {
   const formatDate = (d) =>
     d ? new Date(d).toLocaleDateString("en-GB") : "";
 
+  const safeText = (val) => val || "—";
+
   return (
     <div className="bg-white w-full py-4">
       <div
@@ -75,7 +77,7 @@ const InwardFormat = ({ dcNumber }) => {
               { label: "SL No", value: data.header?.sl_no },
               { label: "Entry Date", value: formatDate(data.header?.entry_date) },
               { label: "DC No", value: data.header?.dc_number },
-              { label: "DC Date", value: formatDate(data.header?.dc_date) },
+              { label: "DC Date", value: safeText(data.header?.dc_date) },
             ].map((row, i) => (
               <div key={i} className="flex text-[13px] mb-2 font-bold">
                 <div className="w-[100px]">{row.label}</div>

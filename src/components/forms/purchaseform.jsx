@@ -1,14 +1,13 @@
 import React,{useEffect}from "react";
 import { Search, X } from "lucide-react";
 import { useState } from "react";
-import { errorToast,loadingToast,successToast } from "../ui/nottifications";
-import toast from "react-hot-toast";
+import { errorToast,successToast } from "../ui/nottifications";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 
 const PurchaseForm = ({ onclose, editItem, purchase, refresh }) => {
 
-      const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
+      const { showPasswordModal, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
 
       const [search, setSearch] = useState("");
       const[result,setResult] = useState([]);

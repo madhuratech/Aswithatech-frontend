@@ -6,6 +6,9 @@ import DeliveryChallan from "../pages/Services/dcFormat";
 import ServiceWindowModal from "../ui/servicewindowModal";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
+import flatpickr from "flatpickr";
+import { toDmy, toYmd } from "../../utils/dateFormat";
 
 const TODAY = new Date().toISOString().split("T")[0];
 const Api_url = "http://localhost:3000/api/servicedcentry";
@@ -45,9 +48,13 @@ const DcEntryForm = () => {
     const [loadDcnumber, setLoadDcnumber] = useState("");
     const [allDcData, setAllDcData] = useState([]);
 
+    // ── Order Number multi-entry display ─────────────────────────────────────
+    const [orderNoDisplay, setOrderNoDisplay] = useState("");
+    const [orderDateDisplay, setOrderDateDisplay] = useState("");
+
     // Inward DC items — populated when a client DC is selected
     const [inwardDcItems, setInwardDcItems] = useState([]);
-    const [inwardDate, setInwardDate] = useState("");
+    const [, setInwardDate] = useState("");
 
     // Success modal state
     const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -64,7 +71,7 @@ const DcEntryForm = () => {
 
     // Client DC list (from inward_entry)
     const [clientDcList, setClientDcList] = useState([]);
-    const [clientDcSearch, setClientDcSearch] = useState("");
+    const [, setClientDcSearch] = useState("");
     const [clientDcOpen, setClientDcOpen] = useState(false);
     const clientDcRef = useRef(null);
 
@@ -84,6 +91,8 @@ const DcEntryForm = () => {
     const [editSuggestions, setEditSuggestions] = useState([]);
     const [editOpen, setEditOpen] = useState(false);
     const editRef = useRef(null);
+    const serviceDcDateRef = useRef(null);
+    const serviceDcDateFp = useRef(null);
 
     const labelCls = "text-[12px] font-bold text-gray-600 uppercase tracking-tight";
     const inputCls = "w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black focus:outline-none bg-white shadow-sm";
@@ -94,17 +103,16 @@ const DcEntryForm = () => {
     useEffect(() => {
         fetchNextDcNo();
         fetchAllDc();
-        const handler = (e) => {
-            if (clientRef.current && !clientRef.current.contains(e.target)) setClientOpen(false);
-            if (clientDcRef.current && !clientDcRef.current.contains(e.target)) setClientDcOpen(false);
-            if (itemRef.current && !itemRef.current.contains(e.target)) setItemOpen(false);
-            if (remarksRef.current && !remarksRef.current.contains(e.target)) setRemarksOpen(false);
-            if (despatchRef.current && !despatchRef.current.contains(e.target)) setDespatchOpen(false);
-            if (editRef.current && !editRef.current.contains(e.target)) setEditOpen(false);
-        };
-        document.addEventListener("mousedown", handler);
-        return () => document.removeEventListener("mousedown", handler);
     }, []);
+
+    useOutsideClick([
+        { ref: clientRef,    onClose: () => setClientOpen(false) },
+        { ref: clientDcRef,  onClose: () => setClientDcOpen(false) },
+        { ref: itemRef,      onClose: () => setItemOpen(false) },
+        { ref: remarksRef,   onClose: () => setRemarksOpen(false) },
+        { ref: despatchRef,  onClose: () => setDespatchOpen(false) },
+        { ref: editRef,      onClose: () => setEditOpen(false) },
+    ]);
 
     const fetchNextDcNo = async () => {
         try {
@@ -134,13 +142,12 @@ const DcEntryForm = () => {
         const fetchClientDcList = async () => {
             try {
                 const params = new URLSearchParams({ client: formData.supplier_name });
-                if (clientDcSearch) params.set("q", clientDcSearch);
                 const res = await fetch(`${Api_url}/client-dc-list?${params}`);
                 setClientDcList(await res.json());
             } catch { setClientDcList([]); }
         };
         fetchClientDcList();
-    }, [formData.supplier_name, clientDcSearch]);
+    }, [formData.supplier_name]);
 
     useEffect(() => {
         const fetchEditDc = async () => {
@@ -167,27 +174,57 @@ const DcEntryForm = () => {
         setClientDcSearch("");
         setInwardDcItems([]);
         setInwardDate("");
+        setOrderNoDisplay("");
+        setOrderDateDisplay("");
         setClientOpen(false);
         setClientDcOpen(true);
     };
 
     const handleClientDcSelect = async (dc) => {
-        setFormData(p => ({ ...p, party_dc_no: dc.dc_number }));
-        setClientDcSearch(dc.dc_number);
+        setFormData(p => ({ ...p, party_dc_no: dc.dc_number, party_dc_date: "" }));
         setClientDcOpen(false);
-        try {
-            const res = await fetch(`${Api_url}/inward/${encodeURIComponent(dc.dc_number)}`);
-            const data = await res.json();
-            if (data.header?.dc_date) {
-                setFormData(p => ({ ...p, party_dc_date: data.header.dc_date.split("T")[0] }));
-            }
-            if (data.header?.inward_date) {
-                setInwardDate(data.header.inward_date.split("T")[0]);
-            }
+    try {
+        const res = await fetch(`${Api_url}/inward/${encodeURIComponent(dc.dc_number)}`);
+        const data = await res.json();
+        if (data.header?.inward_date) {
+            setInwardDate(data.header.inward_date.split("T")[0]);
+        }
             setInwardDcItems(data.items || []);
         } catch {
             setInwardDcItems([]);
         }
+    };
+
+    const handleShowClick = async () => {
+        const orderNo = formData.party_dc_no?.trim();
+        if (!orderNo) { toast.error("Select an Order Number first."); return; }
+        // Check duplicate (paranoid check — dropdown should already filter it out)
+        const existing = orderNoDisplay.split(",").map(s => s.trim()).filter(Boolean);
+        if (existing.includes(orderNo)) { toast.error(`Order Number ${orderNo} already added.`); return; }
+        // Fetch order date from inward entry
+        let orderDate = "";
+        try {
+            const res = await fetch(`${Api_url}/inward/${encodeURIComponent(orderNo)}`);
+            const data = await res.json();
+            if (data.header?.dc_date) {
+                orderDate = data.header.dc_date;
+            }
+        } catch { /* ignore */ }
+        // Append to display
+        setOrderNoDisplay(prev => prev ? `${prev}, ${orderNo}` : orderNo);
+        setOrderDateDisplay(prev => {
+            const dateVal = orderDate || "—";
+            return prev ? `${prev}, ${dateVal}` : dateVal;
+        });
+        // Also update formData.party_dc_date so items added later get the correct accumulated date
+        setFormData(p => {
+            const dateVal = orderDate || "—";
+            const newDate = p.party_dc_date ? `${p.party_dc_date}, ${dateVal}` : dateVal;
+            return { ...p, party_dc_date: newDate };
+        });
+        // Clear the selected value so user can pick the next one; reopen dropdown with remaining items
+        setFormData(p => ({ ...p, party_dc_no: "", party_dc_date: p.party_dc_date }));
+        setClientDcOpen(true);
     };
 
     // Product input is select-only, so always show every inward DC item in the dropdown
@@ -248,10 +285,14 @@ const DcEntryForm = () => {
         if (!formData.supplier_name.trim()) { toast.error("Client Name is required"); return; }
         if (!formData.inward_dc_no.trim()) { toast.error("DC Number is required"); return; }
         if (!formData.dc_date) { toast.error("DC Date is required"); return; }
+        if (!orderNoDisplay.trim()) { toast.error("Add at least one Order Number."); return; }
+        if (!formData.despatch_through?.trim()) { toast.error("Despatch Through is required."); return; }
         if (!tabledata.length) { toast.error("Please add at least one item"); return; }
 
         const payload = {
             ...formData,
+            party_dc_no: orderNoDisplay,
+            party_dc_date: orderDateDisplay,
             items: tabledata.map(item => ({
                 item_name: item.item_name,
                 quantity: item.quantity,
@@ -310,6 +351,8 @@ const DcEntryForm = () => {
         setLoadDcnumber("");
         setInwardDcItems([]);
         setInwardDate("");
+        setOrderNoDisplay("");
+        setOrderDateDisplay("");
         fetchNextDcNo();
     };
 
@@ -322,15 +365,18 @@ const DcEntryForm = () => {
                 supplier_name: h.supplier_name || "",
                 inward_dc_no: h.inward_dc_no || "",
                 dc_date: h.dc_date ? h.dc_date.split("T")[0] : TODAY,
-                party_dc_no: h.party_dc_no || "",
-                party_dc_date: h.party_dc_date ? h.party_dc_date.split("T")[0] : "",
+                party_dc_no: "",
+                party_dc_date: "",
                 payment_terms: h.payment_terms || "",
                 despatch_through: h.despatch_through || ""
             });
             setClientSearch(h.supplier_name || "");
-            setClientDcSearch(h.party_dc_no || "");
+            setClientDcSearch("");
             settabledata(data.items || []);
             setLoadDcnumber(h.id);
+            // Populate display fields from saved comma-separated values
+            setOrderNoDisplay(h.party_dc_no || "");
+            setOrderDateDisplay(h.party_dc_date || "");
             toast.success("DC Loaded");
         } catch {
             toast.error("Failed to Load DC");
@@ -357,6 +403,26 @@ const DcEntryForm = () => {
         : formData.supplier_name
             ? allDcData.filter(dc => dc.supplier_name === formData.supplier_name)
             : allDcData;
+
+    useEffect(() => {
+        serviceDcDateFp.current = flatpickr(serviceDcDateRef.current, {
+            disableMobile: true,
+            monthSelectorType: "static",
+            dateFormat: "d-m-Y",
+            defaultDate: toDmy(formData.dc_date) || new Date(),
+            onChange: (selectedDates, dateStr) => {
+                setFormData(p => ({ ...p, dc_date: toYmd(dateStr) }));
+            },
+        });
+        return () => serviceDcDateFp.current?.destroy();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useEffect(() => {
+        if (serviceDcDateFp.current && formData.dc_date) {
+            serviceDcDateFp.current.setDate(toDmy(formData.dc_date));
+        }
+    }, [formData.dc_date]);
 
     return (
         <div className="min-h-screen bg-gray-50 p-6 font-sans">
@@ -487,12 +553,7 @@ const DcEntryForm = () => {
                         {/* DC Date */}
                         <div>
                             <label className={labelCls}>DC Date</label>
-                            <input
-                                type="date"
-                                value={formData.dc_date || TODAY}
-                                onChange={(e) => setFormData(p => ({ ...p, dc_date: e.target.value }))}
-                                className={inputCls}
-                            />
+                            <input ref={serviceDcDateRef} type="text" readOnly className={inputCls} />
                         </div>
 
                         {/* Despatch Through */}
@@ -531,76 +592,91 @@ const DcEntryForm = () => {
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Step 2 — Client DC Details</p>
                     <div className="grid grid-cols-4 gap-5">
 
-                        {/* Client DC Number dropdown from inward_entry */}
-                        <div className="relative" ref={clientDcRef}>
+                        {/* Order Number — select-only dropdown (non-searchable) + SHOW button */}
+                        <div className="relative col-span-3" ref={clientDcRef}>
                             <label className={labelCls}>
                                 Order Number <span className="text-red-500">*</span>
                             </label>
+                            <div className="flex gap-2">
+                                <div
+                                    onClick={() => { if (formData.supplier_name) setClientDcOpen(p => !p); }}
+                                    className={`${inputCls} flex-1 flex justify-between items-center cursor-pointer min-h-[43px] max-w-[200px] ${
+                                        !formData.supplier_name ? "bg-gray-100 text-gray-400" : ""
+                                    }`}
+                                >
+                                    <span className={formData.party_dc_no ? "text-black" : "text-gray-400 font-medium"}>
+                                        {formData.party_dc_no || (formData.supplier_name ? "Select Order Number…" : "Select a client first")}
+                                    </span>
+                                    <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </div>
+                                <button
+                                    onClick={handleShowClick}
+                                    disabled={!formData.party_dc_no}
+                                    className="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-[13px] font-bold hover:bg-blue-700 transition-colors whitespace-nowrap disabled:opacity-40"
+                                >
+                                    SHOW
+                                </button>
+                            </div>
+                            {clientDcOpen && (
+                                <>
+                                    {clientDcList.filter(dc => {
+                                        const selected = orderNoDisplay.split(",").map(s => s.trim()).filter(Boolean);
+                                        return !selected.includes(dc.dc_number);
+                                    }).length > 0 ? (
+                                        <div className={`${dropdownCls} max-w-[200px]`} >
+                                            {clientDcList
+                                                .filter(dc => {
+                                                    const selected = orderNoDisplay.split(",").map(s => s.trim()).filter(Boolean);
+                                                    return !selected.includes(dc.dc_number);
+                                                })
+                                                .map((dc, i) => (
+                                                    <div
+                                                        key={i}
+                                                        onClick={() => handleClientDcSelect(dc)}
+                                                        className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer border-b border-gray-50 last:border-0"
+                                                    >
+                                                        <div className="text-[13px] font-bold text-gray-900">{dc.dc_number}</div>
+                                                    </div>
+                                                ))
+                                            }
+                                        </div>
+                                    ) : (
+                                        <div className={`${dropdownCls} px-4 py-3 text-[13px] text-gray-400`}>
+                                            No remaining order numbers.
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </div>
+
+                        {/* Empty placeholder for remaining grid column */}
+                        <div></div>
+                    </div>
+
+                    {/* Display Fields */}
+                    <div className="grid grid-cols-4 gap-5 mt-4 pt-4 border-t border-gray-100">
+                        <div>
+                            <label className={labelCls}>Order Number Display</label>
                             <input
                                 type="text"
-                                value={clientDcSearch}
-                                onChange={(e) => {
-                                    setClientDcSearch(e.target.value);
-                                    setFormData(p => ({ ...p, party_dc_no: e.target.value }));
-                                    setClientDcOpen(true);
-                                }}
-                                onFocus={() => { if (formData.supplier_name) setClientDcOpen(true); }}
-                                placeholder={formData.supplier_name ? "Select client DC number…" : "Select a client first"}
-                                disabled={!formData.supplier_name}
-                                className={`${inputCls} ${!formData.supplier_name ? "bg-gray-100 cursor-not-allowed text-gray-400" : "cursor-pointer"}`}
-                            />
-                            {clientDcOpen && clientDcList.length > 0 && (
-                                <div className={dropdownCls}>
-                                    {clientDcList.map((dc, i) => (
-                                        <div
-                                            key={i}
-                                            onClick={() => handleClientDcSelect(dc)}
-                                            className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer border-b border-gray-50 last:border-0"
-                                        >
-                                            <div className="text-[13px] font-bold text-gray-900">{dc.dc_number}</div>
-                                            {dc.dc_date && (
-                                                <div className="text-[11px] text-gray-400 mt-0.5">
-                                                    {new Date(dc.dc_date).toLocaleDateString("en-GB")}
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                            {clientDcOpen && formData.supplier_name && clientDcList.length === 0 && (
-                                <div className={`${dropdownCls} px-4 py-3 text-[13px] text-gray-400`}>
-                                    No inward DCs found for this client.
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Client DC Date */}
-                        <div>
-                            <label className={labelCls}>
-                                Order Date
-                                {formData.party_dc_date && (
-                                    <span className="ml-1 text-[10px] text-blue-500 font-black normal-case">Auto</span>
-                                )}
-                            </label>
-                            <input
-                                type="date"
+                                value={orderNoDisplay}
                                 readOnly
-                                value={formData.party_dc_date}
-                                onChange={(e) => setFormData(p => ({ ...p, party_dc_date: e.target.value }))}
-                                className={roInputCls} 
+                                className={roInputCls}
+                                placeholder="No order numbers added yet"
                             />
                         </div>
-
-                        {/* Inward Date (read-only, auto-filled) */}
-                        {inwardDate && (
-                            <div>
-                                <label className={labelCls}>
-                                    Inward Date <span className="ml-1 text-[10px] text-blue-500 font-black normal-case">Auto</span>
-                                </label>
-                                <input type="date" value={inwardDate} readOnly className={roInputCls} />
-                            </div>
-                        )}
-
+                        <div>
+                            <label className={labelCls}>Order Date Display</label>
+                            <input
+                                type="text"
+                                value={orderDateDisplay}
+                                readOnly
+                                className={roInputCls}
+                                placeholder="No dates added yet"
+                            />
+                        </div>
                     </div>
 
                     {/* Inward DC items chip list */}

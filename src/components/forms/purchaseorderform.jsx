@@ -7,6 +7,9 @@ import POLayout from "../pages/Purchase/purchaseorderview";
 import { isTamilNadu, calcGstAmounts } from "../../utils/gstUtils";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
+import flatpickr from "flatpickr";
+import { toDmy, toYmd } from "../../utils/dateFormat";
 
 const API = "http://localhost:3000/api/purchaseorders";
 const TODAY = new Date().toISOString().split("T")[0];
@@ -72,6 +75,8 @@ export default function PurchaseOrder() {
   const itemRef   = useRef(null);
   const unitRef   = useRef(null);
   const loadRef   = useRef(null);
+  const poDateRef = useRef(null);
+  const poDateFp  = useRef(null);
 
   // ── shared CSS ────────────────────────────────────────────────────────
   const labelCls    = "block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5";
@@ -85,15 +90,34 @@ export default function PurchaseOrder() {
   // ════════════════════════════════════════════════════════════════════
   useEffect(() => {
     fetchNextPoNumber();
-    const handler = (e) => {
-      if (clientRef.current && !clientRef.current.contains(e.target)) closeAll("client");
-      if (itemRef.current   && !itemRef.current.contains(e.target))   closeAll("item");
-      if (unitRef.current   && !unitRef.current.contains(e.target))   closeAll("unit");
-      if (loadRef.current   && !loadRef.current.contains(e.target))   closeAll("loadPo");
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  useEffect(() => {
+    poDateFp.current = flatpickr(poDateRef.current, {
+      disableMobile: true,
+      monthSelectorType: "static",
+      dateFormat: "d-m-Y",
+      defaultDate: form.po_date ? toDmy(form.po_date) : new Date(),
+      onChange: (selectedDates, dateStr) => {
+        setForm(p => ({ ...p, po_date: toYmd(dateStr) }));
+      },
+    });
+    return () => poDateFp.current?.destroy();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (poDateFp.current && form.po_date) {
+      poDateFp.current.setDate(toDmy(form.po_date));
+    }
+  }, [form.po_date]);
+
+  useOutsideClick([
+    { ref: clientRef, onClose: () => closeAll("client") },
+    { ref: itemRef,   onClose: () => closeAll("item") },
+    { ref: unitRef,   onClose: () => closeAll("unit") },
+    { ref: loadRef,   onClose: () => closeAll("loadPo") },
+  ]);
 
   const closeAll = (key) => setOpen((p) => ({ ...p, [key]: false }));
   const openDrop = (key) => setOpen((p) => ({ ...p, [key]: true }));
@@ -457,8 +481,7 @@ export default function PurchaseOrder() {
             {/* PO Date */}
             <div>
               <label className={labelCls}>PO Date</label>
-              <input type="date" value={form.po_date}
-                onChange={(e) => setForm((p) => ({ ...p, po_date: e.target.value }))}
+              <input ref={poDateRef}
                 className={inputCls} />
             </div>
 

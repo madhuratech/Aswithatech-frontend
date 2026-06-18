@@ -38,7 +38,7 @@ const AddEmployee = ({ onClose, refreshEmployees, employee }) => {
   const [busy, setBusy] = useState(false);
 
   useScrollLock(true);
-  const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
+  const { showPasswordModal, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
 
   const [formData, setFormData] = useState({
     emp_id: "",

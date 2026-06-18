@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { errorToast } from '../ui/nottifications';
@@ -10,6 +10,9 @@ import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import SaleswindowModel from '../ui/saleswindowModal';
 import QuotationFormat from '../pages/Sales/quotationoverview'
+import { useOutsideClick } from "../../hooks/useOutsideClick";
+import flatpickr from "flatpickr";
+import { toDmy, toYmd } from "../../utils/dateFormat";
 
 const Quotation = () => {
   const [tableItems, setTableItems] = useState([]);
@@ -36,6 +39,12 @@ const Quotation = () => {
   const[itemopen , setitemopen] = useState(false);
   const [shouldAutoSelect, setShouldAutoSelect] = useState(false);
   const [loadqtopen , setloadqtopen] = useState(false);
+  const clientRef = useRef(null);
+  const itemRef = useRef(null);
+  const uomRef = useRef(null);
+  const loadQtRef = useRef(null);
+  const quoteDateRef = useRef(null);
+  const quoteDateFp = useRef(null);
   const navigate = useNavigate();
   const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
 
@@ -53,8 +62,7 @@ const Api_url = "http://localhost:3000/api/quotations"
    customer_name: "",
    quotation_date: "",
    reference: "",
-   discount: "",
-   transport: "0.00",
+    transport: "0.00",
    tax_text: "GST 18 % extra. In case of any variation in statutory levies the same will be charged extra at the time of supply.",
    transport_terms: "For Destination.",
    delivery_period: "3-4 DAYS from the date of Firm order",
@@ -129,6 +137,25 @@ useEffect(() => {
     }));
 },[]);
 
+  useEffect(() => {
+    quoteDateFp.current = flatpickr(quoteDateRef.current, {
+      disableMobile: true,
+      monthSelectorType: "static",
+      dateFormat: "d-m-Y",
+      defaultDate: formdata.quotation_date ? toDmy(formdata.quotation_date) : new Date(),
+      onChange: (selectedDates, dateStr) => {
+        setformdata(p => ({ ...p, quotation_date: toYmd(dateStr) }));
+      },
+    });
+    return () => quoteDateFp.current?.destroy();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (quoteDateFp.current && formdata.quotation_date) {
+      quoteDateFp.current.setDate(toDmy(formdata.quotation_date));
+    }
+  }, [formdata.quotation_date]);
 
 // Item Type
 
@@ -172,8 +199,8 @@ useEffect(() => {
     }
   };
 
-  fetchItems();
-},[ordertype, itemsearch, shouldAutoSelect, itemRefreshKey]);
+    fetchItems();
+  },[ordertype, itemsearch, itemRefreshKey, shouldAutoSelect]);
 
 // Select items
 const selectitem = (selectedItem) => {
@@ -220,8 +247,7 @@ const resetall = async () =>{
     quotation_date: "",
     quotation_no: "",
     reference: "",
-    discount: "",
-    transport:"",
+    transport: "",
   });
   setTableItems([]);
   setcurrentrow({
@@ -278,7 +304,6 @@ const SaveQuotation = async () =>{
     order_type: ordertype,
     quotation_date: formdata.quotation_date,
     reference: formdata.reference,
-    discount: formdata.discount,
     transport: formdata.transport,
     tax_text: formdata.tax_text,
     transport_terms: formdata.transport_terms,
@@ -298,6 +323,7 @@ const SaveQuotation = async () =>{
     uom: item.uom
 })),
   subtotal: subtotal,
+  taxable_value: taxableValue,
   cgst: cgst,
   sgst: sgst,
   igst: igst,
@@ -374,20 +400,14 @@ const clearrow = () =>{
     
  //Calculations
 
- const subtotal = tableItems.reduce((sum,items) =>{
-  return sum + Number(items.amount || 0);
- },0);
-
- const discount = Number(formdata.discount || 0);
+ const subtotal = tableItems.reduce((sum, items) => sum + Number(items.amount || 0), 0);
  const transport = Number(formdata.transport || 0);
+ const taxableValue = parseFloat((subtotal + transport).toFixed(2));
  const isIntrastate = isTamilNadu(customerState, customerGst);
- const { cgst, sgst, igst, cgstPct, sgstPct, igstPct } = calcGstAmounts(subtotal, gstPct, isIntrastate);
-
- const rawTotal = subtotal - discount + transport + cgst + sgst + igst;
- const roundedTotal = Math.round(rawTotal);
- const roundOff = roundedTotal - rawTotal;
-
- const grandtotal = roundedTotal;
+ const { cgst, sgst, igst, cgstPct, sgstPct, igstPct } = calcGstAmounts(taxableValue, gstPct, isIntrastate);
+ const rawTotal = taxableValue + cgst + sgst + igst;
+ const roundOff = parseFloat((Math.round(rawTotal) - rawTotal).toFixed(2));
+ const grandtotal = Math.round(rawTotal);
 
 
 //  Load quotation
@@ -413,7 +433,6 @@ const loadQuotation = async (qtNo) => {
       customer_name: data.header.customer_name || "",
       quotation_date: data.header.quotation_date || "",
       reference: data.header.reference || "",
-      discount: data.header.discount || 0,
       transport: data.header.transport || 0,
       tax_text: data.header.tax_text || "",
       transport_terms: data.header.transport_terms || "",
@@ -511,6 +530,13 @@ const deleteitem = (index) => {
     errorToast(error.message || "Failed to delete quotation");
   }
 };
+  useOutsideClick([
+    { ref: clientRef, onClose: () => setclientopen(false) },
+    { ref: itemRef,   onClose: () => setitemopen(false) },
+    { ref: uomRef,    onClose: () => setopenUom(false) },
+    { ref: loadQtRef, onClose: () => setloadqtopen(false) },
+  ]);
+
   const labelCls = "block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5";
   const inputCls = "w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black focus:outline-none focus:border-blue-400 bg-white shadow-sm";
   const roInputCls = "w-full p-2.5 border border-blue-100 rounded-lg text-[13px] font-semibold text-blue-800 bg-blue-50 cursor-not-allowed focus:outline-none";
@@ -625,7 +651,7 @@ const deleteitem = (index) => {
             <div className="col-span-2">
               <label className={labelCls}>Customer / Company <span className="text-red-500">*</span></label>
               <div className="flex items-center gap-1.5">
-                <div className="relative flex-1">
+                <div className="relative flex-1" ref={clientRef}>
                   <input type="text"
                     value={formdata.customer_name}
                     onFocus={() => setclientopen(true)}
@@ -669,8 +695,7 @@ const deleteitem = (index) => {
             {/* Date */}
             <div>
               <label className={labelCls}>Date</label>
-              <input type="date" value={formdata.quotation_date || ""}
-                onChange={(e) => setformdata({...formdata, quotation_date: e.target.value})}
+              <input ref={quoteDateRef}
                 className={inputCls} />
             </div>
           </div>
@@ -707,7 +732,7 @@ const deleteitem = (index) => {
               <label className={labelCls}>Item Name <span className="text-red-500">*</span></label>
               <div className="flex items-center gap-1.5">
                 
-                <div className="relative flex-1">
+                  <div className="relative flex-1" ref={itemRef}>
                   <input type="text" placeholder="Search item…"
                     value={currentrow.item_name}
                     onFocus={() => setitemopen(true)}
@@ -769,7 +794,7 @@ const deleteitem = (index) => {
                 className={`${inputCls} bg-gray-50/60`} />
             </div>
             {/* UOM */}
-            <div className="relative">
+            <div className="relative" ref={uomRef}>
               <label className={labelCls}>UOM</label>
               <input type="text" placeholder="UOM"
                 onFocus={() => setopenUom(true)}
@@ -856,7 +881,7 @@ const deleteitem = (index) => {
           {/* Left: Load + Reference */}
           <div className="pt-6 border-t border-gray-100 space-y-4">
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Load / Edit Existing Quotation</p>
-            <div className="relative w-64">
+            <div className="relative w-64" ref={loadQtRef}>
               <label className={labelCls}>Quotation No</label>
               <input type="text" value={loadquotation}
                 onFocus={() => { setloadqtopen(true); searchQt(loadquotation || ""); }}
@@ -889,14 +914,18 @@ const deleteitem = (index) => {
           <div className="pt-6 border-t border-gray-100">
             <div className="bg-gray-50/50 rounded-xl border border-gray-200 p-6 space-y-3 max-w-sm ml-auto">
               <div className="flex justify-between items-center">
-                <span className="text-[12px] font-black text-gray-500 uppercase">Subtotal</span>
+                <span className="text-[12px] font-black text-gray-500 uppercase">Sub Total</span>
                 <span className="text-[13px] font-bold text-gray-900">₹{subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-[12px] font-black text-gray-500 uppercase">Discount (−)</span>
-                <input type="number" min="0" value={formdata.discount}
-                  onChange={(e) => setformdata({...formdata, discount: e.target.value})}
+                <span className="text-[12px] font-black text-gray-500 uppercase">Transport Charges (+)</span>
+                <input type="number" min="0" value={formdata.transport}
+                  onChange={(e) => setformdata({...formdata, transport: e.target.value})}
                   className="w-28 p-1.5 border-b border-gray-300 bg-transparent text-right font-bold text-black outline-none focus:border-black text-[13px]" />
+              </div>
+              <div className="flex justify-between items-center bg-blue-50 px-2 py-1 rounded">
+                <span className="text-[12px] font-black text-blue-700 uppercase">Taxable Value</span>
+                <span className="text-[13px] font-black text-blue-900">₹{taxableValue.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
@@ -921,17 +950,11 @@ const deleteitem = (index) => {
                 <span className="text-[13px] font-bold text-gray-700">₹{igst.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-[12px] font-black text-gray-500 uppercase">Transport (+)</span>
-                <input type="number" min="0" value={formdata.transport}
-                  onChange={(e) => setformdata({...formdata, transport: e.target.value})}
-                  className="w-28 p-1.5 border-b border-gray-300 bg-transparent text-right font-bold text-black outline-none focus:border-black text-[13px]" />
-              </div>
-              <div className="flex justify-between items-center">
                 <span className="text-[12px] font-black text-gray-500 uppercase">Round Off</span>
                 <span className="text-[13px] font-bold text-gray-700">{roundOff.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center pt-4 border-t-2 border-gray-300 mt-2">
-                <span className="text-[15px] font-black text-black uppercase">Grand Total</span>
+                <span className="text-[15px] font-black text-black uppercase">NET TOTAL</span>
                 <span className="text-[24px] font-black text-indigo-700">₹{grandtotal || 0}</span>
               </div>
             </div>

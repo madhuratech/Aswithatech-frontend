@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { SquarePen,Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { isTamilNadu, calcGstAmounts } from "../../utils/gstUtils";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
+import flatpickr from "flatpickr";
+import { toDmy, toYmd } from "../../utils/dateFormat";
 
 const PerformanceInvoiceForm  = () => {
   const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
@@ -16,6 +18,11 @@ const PerformanceInvoiceForm  = () => {
   const [search , setsearch] = useState();
   const[items , setitems] = useState([]);
   const[itemsearch , setitemsearch] = useState();
+  // SHOW display fields (comma-separated, read-only)
+  const [dcNoDisplay, setDcNoDisplay]         = useState("");
+  const [orderNoDisplay, setOrderNoDisplay]   = useState("");
+  const [orderDateDisplay, setOrderDateDisplay] = useState("");
+
   const [loadInvoice , setLoadInvoice] = useState("");
   const [gstPct, setGstPct] = useState(18);
   const [customerState, setCustomerState] = useState("");
@@ -50,7 +57,7 @@ const PerformanceInvoiceForm  = () => {
     discount:"",
     payment_terms:"",
     dispatch_through:"",
-    transport: ""
+    transport: "",
   });
 
   const [currentrow , setcurrentrow] = useState({
@@ -61,6 +68,9 @@ const PerformanceInvoiceForm  = () => {
     uom:"",
     hsn_number:""
   });
+
+
+
 
   // Get All Clients And Search
 
@@ -113,6 +123,92 @@ const PerformanceInvoiceForm  = () => {
     }));
   },[]);
 
+  const perfInvoiceDateRef = useRef(null);
+  const perfInvoiceDateFp = useRef(null);
+
+  const dcDateRef = useRef(null);
+  const dcDateFp = useRef(null);
+
+  const orderDateRef = useRef(null);
+  const orderDateFp = useRef(null);
+
+  useEffect(() => {
+    perfInvoiceDateFp.current = flatpickr(perfInvoiceDateRef.current, {
+      disableMobile: true,
+      monthSelectorType: "static",
+      dateFormat: "d-m-Y",
+      defaultDate: formData.invoice_date ? toDmy(formData.invoice_date) : new Date(),
+      onChange: (selectedDates, dateStr) => {
+        setFormdata(p => ({ ...p, invoice_date: toYmd(dateStr) }));
+      },
+    });
+    return () => perfInvoiceDateFp.current?.destroy();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (perfInvoiceDateFp.current && formData.invoice_date) {
+      perfInvoiceDateFp.current.setDate(toDmy(formData.invoice_date));
+    }
+  }, [formData.invoice_date]);
+
+
+  // Dc Dates
+
+  useEffect(() => {
+  dcDateFp.current = flatpickr(dcDateRef.current, {
+    disableMobile: true,
+    monthSelectorType: "static",
+    dateFormat: "d-m-Y",
+    defaultDate: formData.dc_date || new Date(),
+    allowInput: false,
+    onChange: (selectedDates, dateStr) => {
+      setFormdata((prev) => ({
+        ...prev,
+        dc_date: dateStr,
+      }));
+    },
+  });
+
+  return () => dcDateFp.current?.destroy();
+  // eslint-disable-next-line
+}, []);
+
+useEffect(() => {
+  if (dcDateFp.current && formData.dc_date) {
+    dcDateFp.current.setDate(formData.dc_date, false);
+  }
+}, [formData.dc_date]);
+
+
+// Order Dates
+
+useEffect(() => {
+  orderDateFp.current = flatpickr(orderDateRef.current, {
+    disableMobile: true,
+    monthSelectorType: "static",
+    dateFormat: "d-m-Y",
+    allowInput: false,
+    onChange: (selectedDates, dateStr) => {
+      setFormdata((prev) => ({
+        ...prev,
+        order_date: dateStr,
+      }));
+    },
+  });
+
+  return () => orderDateFp.current?.destroy();
+  // eslint-disable-next-line
+}, []);
+
+useEffect(() => {
+  if (orderDateFp.current && formData.order_date) {
+    orderDateFp.current.setDate(
+      formData.order_date.split(",").map((d) => d.trim()),
+      false
+    );
+  }
+}, [formData.order_date]);
 
   // Item Type
 
@@ -219,7 +315,43 @@ const PerformanceInvoiceForm  = () => {
     deletInvoice();
   };
 
+  const handleShowClick = () => {
+    const dcNo = formData.dc_no?.trim();
+    const orderNo = formData.order_no?.trim();
+    const orderDate = formData.order_date?.trim();
+    if (!dcNo && !orderNo) { toast.error("Enter DC No or Order No first."); return; }
+
+    // Append DC No
+    if (dcNo) {
+      const existingDcs = (dcNoDisplay || "").split(",").map(s => s.trim()).filter(Boolean);
+      if (!existingDcs.includes(dcNo)) {
+        setDcNoDisplay(prev => prev ? `${prev}, ${dcNo}` : dcNo);
+      } else {
+        toast.error(`DC No ${dcNo} already added.`);
+      }
+    }
+
+    // Append Order No
+    if (orderNo) {
+      const existing = (orderNoDisplay || "").split(",").map(s => s.trim()).filter(Boolean);
+      if (!existing.includes(orderNo)) {
+        setOrderNoDisplay(prev => prev ? `${prev}, ${orderNo}` : orderNo);
+      }
+    }
+
+    // Append Order Date
+    if (orderDate) {
+      const existingDates = (orderDateDisplay || "").split(",").map(s => s.trim()).filter(Boolean);
+      if (!existingDates.includes(orderDate)) {
+        setOrderDateDisplay(prev => prev ? `${prev}, ${orderDate}` : orderDate);
+      }
+    }
+
+    toast.success("Values added to invoice.");
+  };
+
   const SaveInvoice = async () =>{
+    if (!formData.dispatch_through?.trim()) { toast.error("Despatch Through is required."); return; }
     if(tabledata.length === 0){
       alert("Please Add Items");
       return;
@@ -231,10 +363,10 @@ const PerformanceInvoiceForm  = () => {
       ordertype: ordertype,
       invoice_no: invoiceno,
       invoice_date: formData.invoice_date,
-      dc_no: formData.dc_no,
+      dc_no: dcNoDisplay || formData.dc_no,
       dc_date: formData.dc_date,
-      order_no: formData.order_no,
-      order_date: formData.order_date,
+      order_no: orderNoDisplay || formData.order_no,
+      order_date: orderDateDisplay || formData.order_date,
       discount: formData.discount,
       payment_terms: formData.payment_terms,
       dispatch_through: formData.dispatch_through,
@@ -248,6 +380,8 @@ const PerformanceInvoiceForm  = () => {
       })),
 
       subtotal: subtotal,
+      transport: transport,
+      taxable_value: taxableValue,
       cgst: cgst,
       sgst: sgst,
       igst: igst,
@@ -284,16 +418,13 @@ const PerformanceInvoiceForm  = () => {
   }
 
   // Calculation
- const subtotal = tabledata.reduce((sum, item) => {
-  return sum + Number(item.amount || 0);
-}, 0);
-
-  const discount = Number(formData.discount || 0);
+ const subtotal = tabledata.reduce((sum, item) => sum + Number(item.amount || 0), 0);
   const transport = Number(formData.transport || 0);
+  const taxableValue = parseFloat((subtotal + transport).toFixed(2));
   const isIntrastate = isTamilNadu(customerState, customerGst);
-  const { cgst, sgst, igst, cgstPct, sgstPct, igstPct } = calcGstAmounts(subtotal, gstPct, isIntrastate);
-  const rawTotal = subtotal - discount + transport + cgst + sgst + igst;
-  const round_off = Math.round(rawTotal) - rawTotal;
+  const { cgst, sgst, igst, cgstPct, sgstPct, igstPct } = calcGstAmounts(taxableValue, gstPct, isIntrastate);
+  const rawTotal = taxableValue + cgst + sgst + igst;
+  const round_off = parseFloat((Math.round(rawTotal) - rawTotal).toFixed(2));
   const grandtotal = Math.round(rawTotal);
 
 
@@ -333,15 +464,17 @@ const LoadInvoice = async (invoiceNo) => {
       customer_name: data.header.customer_name || "",
       invoice_no: data.header.invoice_no || "",
       invoice_date: formatDate(data.header.invoice_date),
-      dc_no: data.header.dc_no || "",
+      dc_no: "",
       dc_date: data.header.dc_date || "",
-      order_no: data.header.order_no || "",
-      order_date: data.header.order_date || "",
-      discount: data.header.discount || 0,
+      order_no: "",
+      order_date: "",
       payment_terms: data.header.payment_terms || "",
       dispatch_through: data.header.dispatch_through || "",
       transport: data.header.transport || 0,
     });
+    setDcNoDisplay(data.header.dc_no || "");
+    setOrderNoDisplay(data.header.order_no || "");
+    setOrderDateDisplay(data.header.order_date || "");
 
     setTabledata(formattedItems);
     setOrdertype(data.header.ordertype || "");
@@ -432,6 +565,9 @@ const edititem = (index) => {
       dispatch_through:"",
       transport: ""
     });
+    setDcNoDisplay("");
+    setOrderNoDisplay("");
+    setOrderDateDisplay("");
     setTabledata([]);
     setLoadInvoice("");
     setOrdertype("");
@@ -519,8 +655,7 @@ const edititem = (index) => {
             {/* Invoice Date */}
             <div>
               <label className={labelCls}>Invoice Date</label>
-              <input type="date" value={formData.invoice_date}
-                onChange={(e) => setFormdata({...formData, invoice_date: e.target.value})}
+              <input ref={perfInvoiceDateRef}
                 className={inputCls} />
             </div>
           </div>
@@ -529,7 +664,7 @@ const edititem = (index) => {
         {/* Step 2 — DC & Order Details */}
         <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-5 border border-gray-100 mb-5">
           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Step 2 — DC &amp; Order Details</p>
-          <div className="grid grid-cols-6 gap-5">
+          <div className="grid grid-cols-7 gap-5">
             <div>
               <label className={labelCls}>DC No</label>
               <input type="text" placeholder="Enter DC No" value={formData.dc_no}
@@ -537,8 +672,13 @@ const edititem = (index) => {
             </div>
             <div>
               <label className={labelCls}>DC Date</label>
-              <input type="text" placeholder="Enter DC Date(s)" value={formData.dc_date}
-                onChange={(e) => setFormdata({...formData, dc_date: e.target.value})} className={inputCls} />
+              <input
+               ref={dcDateRef}
+               value={formData.dc_date}
+               readOnly
+               placeholder="Select DC Date"
+               className={inputCls}
+                />
             </div>
             <div>
               <label className={labelCls}>Order No</label>
@@ -547,18 +687,45 @@ const edititem = (index) => {
             </div>
             <div>
               <label className={labelCls}>Order Date</label>
-              <input type="text" placeholder="Enter Order Date(s)" value={formData.order_date}
-                onChange={(e) => setFormdata({...formData, order_date: e.target.value})} className={inputCls} />
-            </div>
-            <div>
-              <label className={labelCls}>Payment Terms</label>
-              <input type="text" placeholder="Payment terms" value={formData.payment_terms}
-                onChange={(e) => setFormdata({...formData, payment_terms: e.target.value})} className={inputCls} />
+             <input
+             ref={orderDateRef}
+               value={formData.order_date}
+               readOnly
+               placeholder="Select Order Date(s)"
+                 className={inputCls}
+               />
             </div>
             <div>
               <label className={labelCls}>Despatch Through</label>
               <input type="text" placeholder="Dispatch through" value={formData.dispatch_through}
                 onChange={(e) => setFormdata({...formData, dispatch_through: e.target.value})} className={inputCls} />
+            </div>
+            <div className="flex items-end">
+              <button type="button" onClick={handleShowClick}
+                disabled={!formData.dc_no && !formData.order_no}
+                className={`w-full px-4 py-2.5 rounded-lg text-[13px] font-black uppercase tracking-wider transition-all duration-150 ${
+                  formData.dc_no || formData.order_no
+                    ? "bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-200"
+                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                }`}>
+                SHOW
+              </button>
+            </div>
+          </div>
+
+          {/* Display fields (accumulated values) */}
+          <div className="grid grid-cols-3 gap-5 mt-4">
+            <div>
+              <label className={labelCls}>DC No (Added)</label>
+              <input type="text" value={dcNoDisplay} readOnly className={roInputCls} placeholder="Click SHOW to add" />
+            </div>
+            <div>
+              <label className={labelCls}>Order No (Added)</label>
+              <input type="text" value={orderNoDisplay} readOnly className={roInputCls} placeholder="Click SHOW to add" />
+            </div>
+            <div>
+              <label className={labelCls}>Order Date (Added)</label>
+              <input type="text" value={orderDateDisplay} readOnly className={roInputCls} placeholder="Click SHOW to add" />
             </div>
           </div>
         </div>
@@ -747,14 +914,18 @@ const edititem = (index) => {
           <div className="pt-6 border-t border-gray-100">
             <div className="bg-gray-50/50 rounded-xl border border-gray-200 p-6 space-y-3 max-w-sm ml-auto">
               <div className="flex justify-between items-center">
-                <span className="text-[12px] font-black text-gray-500 uppercase">Subtotal</span>
+                <span className="text-[12px] font-black text-gray-500 uppercase">Sub Total</span>
                 <span className="text-[13px] font-bold text-gray-900">₹{subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-[12px] font-black text-gray-500 uppercase">Discount (−)</span>
-                <input type="number" min="0" value={formData.discount}
-                  onChange={(e) => setFormdata({...formData, discount: e.target.value})}
+                <span className="text-[12px] font-black text-gray-500 uppercase">Transport Charges (+)</span>
+                <input type="number" min="0" value={formData.transport || 0}
+                  onChange={(e) => setFormdata({...formData, transport: e.target.value})}
                   className="w-28 p-1.5 border-b border-gray-300 bg-transparent text-right font-bold text-black outline-none focus:border-black text-[13px]" />
+              </div>
+              <div className="flex justify-between items-center bg-blue-50 px-2 py-1 rounded">
+                <span className="text-[12px] font-black text-blue-700 uppercase">Taxable Value</span>
+                <span className="text-[13px] font-black text-blue-900">₹{taxableValue.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
@@ -779,17 +950,11 @@ const edititem = (index) => {
                 <span className="text-[13px] font-bold text-gray-700">₹{igst.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-[12px] font-black text-gray-500 uppercase">Transport (+)</span>
-                <input type="number" min="0" value={formData.transport || 0}
-                  onChange={(e) => setFormdata({...formData, transport: e.target.value})}
-                  className="w-28 p-1.5 border-b border-gray-300 bg-transparent text-right font-bold text-black outline-none focus:border-black text-[13px]" />
-              </div>
-              <div className="flex justify-between items-center">
                 <span className="text-[12px] font-black text-gray-500 uppercase">Round Off</span>
                 <span className="text-[13px] font-bold text-gray-700">{round_off.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center pt-4 border-t-2 border-gray-300 mt-2">
-                <span className="text-[15px] font-black text-black uppercase">Grand Total</span>
+                <span className="text-[15px] font-black text-black uppercase">NET TOTAL</span>
                 <span className="text-[24px] font-black text-indigo-700">₹{grandtotal || 0}</span>
               </div>
             </div>

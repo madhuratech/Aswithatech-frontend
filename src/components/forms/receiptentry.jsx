@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Trash2, CheckCircle, Eye } from "lucide-react";
 import toast from "react-hot-toast";
@@ -6,6 +6,8 @@ import SaleswindowModel from "../ui/saleswindowModal";
 import { ReceiptVoucher } from "../ui/receiptreport";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
+import flatpickr from "flatpickr";
+import { toDmy, toYmd } from "../../utils/dateFormat";
 
 const ReceiptEntry = () => {
   const navigate = useNavigate();
@@ -61,8 +63,11 @@ const ReceiptEntry = () => {
   const [savedReceiptNo, setSavedReceiptNo] = useState("");
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [receiptModalMin, setReceiptModalMin] = useState(false);
-  const [viewReceiptNo, setViewReceiptNo] = useState("");
+  const [, setViewReceiptNo] = useState("");
   const [viewReceiptData, setViewReceiptData] = useState(null);
+
+  const rcptDateRef = useRef(null);
+  const rcptDateFp = useRef(null);
 
   // ── init: today + auto receipt no ────────────────────────────
   useEffect(() => {
@@ -97,6 +102,26 @@ const ReceiptEntry = () => {
       : `${Api_url}/clients`;
     fetch(url).then((r) => r.json()).then(setClientList).catch(console.error);
   }, [header.customer_name]);
+
+  useEffect(() => {
+    rcptDateFp.current = flatpickr(rcptDateRef.current, {
+      disableMobile: true,
+      monthSelectorType: "static",
+      dateFormat: "d-m-Y",
+      defaultDate: header.receipt_date ? toDmy(header.receipt_date) : new Date(),
+      onChange: (selectedDates, dateStr) => {
+        setHeader(p => ({ ...p, receipt_date: toYmd(dateStr) }));
+      },
+    });
+    return () => rcptDateFp.current?.destroy();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (rcptDateFp.current && header.receipt_date) {
+      rcptDateFp.current.setDate(toDmy(header.receipt_date));
+    }
+  }, [header.receipt_date]);
 
   // ── load pending bills when customer is selected ──────────────
   const loadPendingBills = async (name) => {

@@ -33,7 +33,7 @@ const DeliveryChallan = ({ dcNumber }) => {
     ? [...new Set(
         data.party_dc_date
           .split(",")
-          .map(date => new Date(date.trim()).toLocaleDateString("en-GB"))
+          .map(date => date.trim())
           .filter(Boolean)
       )].join(", ")
     : "";

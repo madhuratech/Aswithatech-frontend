@@ -32,7 +32,7 @@ const SalesDCFormat = ({ dcNumber }) => {
     ? [...new Set(
         data.aggregated_order_date
           .split(",")
-          .map(date => new Date(date.trim()).toLocaleDateString("en-GB"))
+          .map(date => date.trim())
           .filter(Boolean)
       )].join(", ")
     : "";

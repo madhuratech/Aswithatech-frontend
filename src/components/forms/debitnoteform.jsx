@@ -5,6 +5,10 @@ import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import { errorToast } from "../ui/nottifications";
 import { SquarePen, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
+import { isTamilNadu, calcGstAmounts } from "../../utils/gstUtils";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
+import flatpickr from "flatpickr";
+import { toDmy, toYmd } from "../../utils/dateFormat";
 
 // Debounse function;
 function debounce(func, delay) {
@@ -22,6 +26,9 @@ const Debitnote = () => {
   const [loadDnnumber , setloadDnnumber] = useState("");
   const [ordertype , setordertype] = useState("");
   const [dnNumber , setdnNumber] = useState("");
+  const [customerState, setCustomerState] = useState("");
+  const [customerGst, setCustomerGst] = useState("");
+  const [gstPct, setGstPct] = useState(18);
   const [tabledata , settabledata] = useState([]);
   const [editIndex, setEditIndex] = useState(-1);
   const [Dnlist , setDnlist] = useState([]); 
@@ -41,6 +48,10 @@ const Debitnote = () => {
     const itemRef = useRef(null);
     const unitRef = useRef(null);
     const dnRef = useRef(null);
+    const dnDateRef = useRef(null);
+    const dnDateFp = useRef(null);
+    const debitBillDateRef = useRef(null);
+    const debitBillDateFp = useRef(null);
  
 
   const Api_urls = "http://localhost:3000/api/debitnotes";
@@ -277,35 +288,34 @@ const clearRow = () => {
   const [deliveryCharge, setDeliveryCharge] = useState(0);
   const [totals, setTotals] = useState({
     subtotal: 0,
-    cgst: 0,
-    sgst: 0,
-    igst: 0,
+    taxableValue: 0,
+    cgst: 0, cgstPct: 0,
+    sgst: 0, sgstPct: 0,
+    igst: 0, igstPct: 0,
     roundOff: 0,
     grandTotal: 0
   });
 
 
   useEffect(() => {
-    const subtotal = tabledata.reduce((sum, item) => sum + item.net_amount, 0);
-
-    const cgst = subtotal * 0.09;
-    const sgst = subtotal * 0.09;
-    const igst = 0;
-   
-    const total = subtotal + cgst + sgst + Number(deliveryCharge || 0);
-    const rounded = Math.round(total);
-    const roundOff = rounded - total
+    const subtotal = tabledata.reduce((sum, item) => sum + (item.net_amount || 0), 0);
+    const taxableValue = parseFloat((subtotal + Number(deliveryCharge || 0)).toFixed(2));
+    const isIntrastate = isTamilNadu(customerState, customerGst);
+    const { cgst, sgst, igst, cgstPct, sgstPct, igstPct } = calcGstAmounts(taxableValue, gstPct, isIntrastate);
+    const rawTotal = taxableValue + cgst + sgst + igst;
+    const roundOff = parseFloat((Math.round(rawTotal) - rawTotal).toFixed(2));
 
     setTotals({
       subtotal,
-      cgst,
-      sgst,
-      igst,
+      taxableValue,
+      cgst, cgstPct,
+      sgst, sgstPct,
+      igst, igstPct,
       roundOff,
-      grandTotal: rounded,
+      grandTotal: Math.round(rawTotal),
     });
 
-  }, [tabledata, deliveryCharge]);
+  }, [tabledata, deliveryCharge, customerState, customerGst, gstPct]);
 
 
 // Clear reset Form;
@@ -375,10 +385,11 @@ const payload = {
   })),
 
   subtotal: totals.subtotal,
+  taxable_value: totals.taxableValue,
   cgst: totals.cgst,
   sgst: totals.sgst,
   igst: totals.igst,
-  grandTotal: totals.grandTotal,
+  grand_total: totals.grandTotal,
   delivery_charge: Number(deliveryCharge || 0),
   narration: Formdata.remarks || "",
   dn_number: dnNumber,
@@ -453,26 +464,12 @@ const ItemSearch = async (value, currentOrderType) => {
  const[debounceSearch] = useState(() => debounce(clientsearch,300));
 const debouncedItemSearch = useRef(debounce(ItemSearch, 300)).current;
 
-// handleclick function;
-  useEffect(() => {
-  const handleClickOutside = (event) => {
-    if (clientRef.current && !clientRef.current.contains(event.target)) {
-      setShowClientDropdown(false);
-    }
-    if (itemRef.current && !itemRef.current.contains(event.target)) {
-      setShowItemDropdown(false);
-    }
-    if (unitRef.current && !unitRef.current.contains(event.target)) {
-      setShowunitDropdown(false);
-    }
-    if(dnRef.current && !dnRef.current.contains(event.target)){
-      setshowdnNumber(false);
-    }
-  };
-
-  document.addEventListener("mousedown", handleClickOutside);
-  return () => document.removeEventListener("mousedown", handleClickOutside);
-}, []);
+useOutsideClick([
+  { ref: clientRef, onClose: () => setShowClientDropdown(false) },
+  { ref: itemRef,   onClose: () => setShowItemDropdown(false) },
+  { ref: unitRef,   onClose: () => setShowunitDropdown(false) },
+  { ref: dnRef,     onClose: () => setshowdnNumber(false) },
+]);
 
 // Auto fetch today Date;
 
@@ -480,6 +477,46 @@ useEffect(() =>{
   const today = new Date().toISOString().split('T')[0];
   setFormData(prev => ({...prev,dn_date:today}));
 },[]);
+
+useEffect(() => {
+  dnDateFp.current = flatpickr(dnDateRef.current, {
+    disableMobile: true,
+    monthSelectorType: "static",
+    dateFormat: "d-m-Y",
+    defaultDate: Formdata.dn_date ? toDmy(Formdata.dn_date) : new Date(),
+    onChange: (selectedDates, dateStr) => {
+      setFormData(p => ({ ...p, dn_date: toYmd(dateStr) }));
+    },
+  });
+  return () => dnDateFp.current?.destroy();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
+
+useEffect(() => {
+  if (dnDateFp.current && Formdata.dn_date) {
+    dnDateFp.current.setDate(toDmy(Formdata.dn_date));
+  }
+}, [Formdata.dn_date]);
+
+useEffect(() => {
+  debitBillDateFp.current = flatpickr(debitBillDateRef.current, {
+    disableMobile: true,
+    monthSelectorType: "static",
+    dateFormat: "d-m-Y",
+    defaultDate: Formdata.bill_date ? toDmy(Formdata.bill_date) : new Date(),
+    onChange: (selectedDates, dateStr) => {
+      setFormData(p => ({ ...p, bill_date: toYmd(dateStr) }));
+    },
+  });
+  return () => debitBillDateFp.current?.destroy();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
+
+useEffect(() => {
+  if (debitBillDateFp.current && Formdata.bill_date) {
+    debitBillDateFp.current.setDate(toDmy(Formdata.bill_date));
+  }
+}, [Formdata.bill_date]);
 
 
 
@@ -612,6 +649,8 @@ const deleteItem = (index) =>{
                         onClick={(e) => {
                           e.stopPropagation();
                           setFormData({ ...Formdata, client_name: client.customer_name });
+                          setCustomerState(client.state || "");
+                          setCustomerGst(client.gst_number || "");
                           setShowClientDropdown(false);
                         }}
                         className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0"
@@ -643,9 +682,7 @@ const deleteItem = (index) =>{
             <div>
               <label className={labelCls}>DN Date</label>
               <input
-                type="date"
-                value={Formdata.dn_date}
-                onChange={(e) => setFormData({ ...Formdata, dn_date: e.target.value })}
+                ref={dnDateRef}
                 className={inputCls}
               />
             </div>
@@ -674,9 +711,7 @@ const deleteItem = (index) =>{
             <div>
               <label className={labelCls}>Bill Date</label>
               <input
-                type="date"
-                value={Formdata.bill_date}
-                onChange={(e) => setFormData({ ...Formdata, bill_date: e.target.value })}
+                ref={debitBillDateRef}
                 className={inputCls}
               />
             </div>
@@ -1013,20 +1048,8 @@ const deleteItem = (index) =>{
           <div className="pt-6 border-t border-gray-100">
             <div className="bg-gray-50/50 rounded-xl border border-gray-200 p-6 space-y-3 max-w-sm ml-auto">
               <div className="flex justify-between items-center">
-                <span className="text-[12px] font-black text-gray-500 uppercase">Subtotal</span>
+                <span className="text-[12px] font-black text-gray-500 uppercase">Sub Total</span>
                 <span className="text-[13px] font-bold text-gray-900">₹{totals.subtotal.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[12px] font-black text-gray-500 uppercase">CGST (9%)</span>
-                <span className="text-[13px] font-bold text-gray-700">₹{totals.cgst.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[12px] font-black text-gray-500 uppercase">SGST (9%)</span>
-                <span className="text-[13px] font-bold text-gray-700">₹{totals.sgst.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[12px] font-black text-gray-500 uppercase">IGST (18%)</span>
-                <span className="text-[13px] font-bold text-gray-700">₹{totals.igst.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-[12px] font-black text-gray-500 uppercase">Delivery Charge (+)</span>
@@ -1039,12 +1062,38 @@ const deleteItem = (index) =>{
                   className="w-28 p-1.5 border-b border-gray-300 bg-transparent text-right font-bold text-black outline-none focus:border-black text-[13px]"
                 />
               </div>
+              <div className="flex justify-between items-center bg-blue-50 px-2 py-1 rounded">
+                <span className="text-[12px] font-black text-blue-700 uppercase">Taxable Value</span>
+                <span className="text-[13px] font-black text-blue-900">₹{totals.taxableValue.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <span className="text-[12px] font-black text-gray-500 uppercase">GST %</span>
+                  <input type="number" value={gstPct} onChange={(e) => setGstPct(Number(e.target.value))}
+                    className="w-12 p-1 border border-gray-200 rounded text-center text-[11px] font-bold outline-none" />
+                </div>
+                <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${isTamilNadu(customerState, customerGst) ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"}`}>
+                  {isTamilNadu(customerState, customerGst) ? "TN — CGST+SGST" : "IGST"}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[12px] font-black text-gray-500 uppercase">CGST @{totals.cgstPct}%</span>
+                <span className="text-[13px] font-bold text-gray-700">₹{totals.cgst.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[12px] font-black text-gray-500 uppercase">SGST @{totals.sgstPct}%</span>
+                <span className="text-[13px] font-bold text-gray-700">₹{totals.sgst.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[12px] font-black text-gray-500 uppercase">IGST @{totals.igstPct}%</span>
+                <span className="text-[13px] font-bold text-gray-700">₹{totals.igst.toFixed(2)}</span>
+              </div>
               <div className="flex justify-between items-center">
                 <span className="text-[12px] font-black text-gray-500 uppercase">Round Off</span>
                 <span className="text-[13px] font-bold text-gray-700">₹{totals.roundOff.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center pt-4 border-t-2 border-gray-300 mt-2">
-                <span className="text-[15px] font-black text-black uppercase">Grand Total</span>
+                <span className="text-[15px] font-black text-black uppercase">NET TOTAL</span>
                 <span className="text-[24px] font-black text-indigo-700">₹{totals.grandTotal}</span>
               </div>
             </div>

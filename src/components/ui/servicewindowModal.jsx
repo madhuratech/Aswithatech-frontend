@@ -52,6 +52,14 @@ const ServiceWindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinim
         dcNumber: externalFilters?.dcNumber || ""
     });
 
+    // Today date
+
+    useEffect(() => {
+        setFilters(prev => ({ ...prev, toDate: new Date().toISOString().split("T")[0] }));
+    }, []);
+
+
+
     useEffect(() => {
         const fetchDCs = async () => {
             if (externalFilters?.dcNumber) {

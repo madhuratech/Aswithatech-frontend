@@ -7,6 +7,9 @@ import TaxPurchaseFormat from "../pages/Purchase/taxpurchaseformat";
 import { isTamilNadu, calcGstAmounts } from "../../utils/gstUtils";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
+import flatpickr from "flatpickr";
+import { toDmy, toYmd } from "../../utils/dateFormat";
 
 const API = "http://localhost:3000/api/taxpurchases";
 const TODAY = new Date().toISOString().split("T")[0];
@@ -81,6 +84,10 @@ const PurchaseEntry = () => {
   const despRef     = useRef(null);
   const otherRef    = useRef(null);
   const loadRef     = useRef(null);
+  const billDateRef = useRef(null);
+  const billDateFp  = useRef(null);
+  const dueDateRef  = useRef(null);
+  const dueDateFp   = useRef(null);
 
   // ── shared CSS (matches Sales Invoice exactly) ────────────────────────
   const labelCls    = "block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5";
@@ -94,17 +101,56 @@ const PurchaseEntry = () => {
   // ════════════════════════════════════════════════════════════════════
   useEffect(() => {
     fetchNextBillNo();
-    const handler = (e) => {
-      if (supplierRef.current && !supplierRef.current.contains(e.target)) closeAll("supplier");
-      if (itemRef.current     && !itemRef.current.contains(e.target))     closeAll("item");
-      if (uomRef.current      && !uomRef.current.contains(e.target))      closeAll("uom");
-      if (despRef.current     && !despRef.current.contains(e.target))     closeAll("despatch");
-      if (otherRef.current    && !otherRef.current.contains(e.target))    closeAll("other");
-      if (loadRef.current     && !loadRef.current.contains(e.target))     closeAll("loadBill");
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  useOutsideClick([
+    { ref: supplierRef, onClose: () => closeAll("supplier") },
+    { ref: itemRef,     onClose: () => closeAll("item") },
+    { ref: uomRef,      onClose: () => closeAll("uom") },
+    { ref: despRef,     onClose: () => closeAll("despatch") },
+    { ref: otherRef,    onClose: () => closeAll("other") },
+    { ref: loadRef,     onClose: () => closeAll("loadBill") },
+  ]);
+
+  useEffect(() => {
+    billDateFp.current = flatpickr(billDateRef.current, {
+      disableMobile: true,
+      monthSelectorType: "static",
+      dateFormat: "d-m-Y",
+      defaultDate: form.bill_date ? toDmy(form.bill_date) : new Date(),
+      onChange: (selectedDates, dateStr) => {
+        setForm(p => ({ ...p, bill_date: toYmd(dateStr) }));
+      },
+    });
+    return () => billDateFp.current?.destroy();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (billDateFp.current && form.bill_date) {
+      billDateFp.current.setDate(toDmy(form.bill_date));
+    }
+  }, [form.bill_date]);
+
+  useEffect(() => {
+    dueDateFp.current = flatpickr(dueDateRef.current, {
+      disableMobile: true,
+      monthSelectorType: "static",
+      dateFormat: "d-m-Y",
+      defaultDate: form.due_date ? toDmy(form.due_date) : new Date(),
+      onChange: (selectedDates, dateStr) => {
+        setForm(p => ({ ...p, due_date: toYmd(dateStr) }));
+      },
+    });
+    return () => dueDateFp.current?.destroy();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (dueDateFp.current && form.due_date) {
+      dueDateFp.current.setDate(toDmy(form.due_date));
+    }
+  }, [form.due_date]);
 
   const closeAll = (key) => setOpen((p) => ({ ...p, [key]: false }));
   const openDrop = (key) => setOpen((p) => ({ ...p, [key]: true }));
@@ -250,13 +296,13 @@ const PurchaseEntry = () => {
   // Calculations
   // ════════════════════════════════════════════════════════════════════
   const subtotal      = tabledata.reduce((s, it) => s + Number(it.quantity) * Number(it.price), 0);
-  const isIntrastate  = isTamilNadu(supplierState, supplierGst);
-  const { cgst, sgst, igst, cgstPct, sgstPct, igstPct } = calcGstAmounts(subtotal, gstPct, isIntrastate);
   const otherCharges  = Number(form.other_charges || 0);
-  const discount      = Number(form.discount || 0);
-  const rawTotal      = subtotal + cgst + sgst + igst + otherCharges - discount;
-  const roundOff      = parseFloat((rawTotal - Math.floor(rawTotal)).toFixed(2));
-  const grandTotal    = parseFloat(rawTotal.toFixed(2));
+  const taxableValue  = parseFloat((subtotal + otherCharges).toFixed(2));
+  const isIntrastate  = isTamilNadu(supplierState, supplierGst);
+  const { cgst, sgst, igst, cgstPct, sgstPct, igstPct } = calcGstAmounts(taxableValue, gstPct, isIntrastate);
+  const rawTotal      = taxableValue + cgst + sgst + igst;
+  const roundOff      = parseFloat((Math.round(rawTotal) - rawTotal).toFixed(2));
+  const grandTotal    = Math.round(rawTotal);
 
   // ════════════════════════════════════════════════════════════════════
   // CRUD
@@ -265,9 +311,9 @@ const PurchaseEntry = () => {
     ...form,
     bill_no:       billNo,
     order_type:    orderType,
-    discount:      discount,
     other_charges: otherCharges,
     subtotal:      parseFloat(subtotal.toFixed(2)),
+    taxable_value: taxableValue,
     cgst:          parseFloat(cgst.toFixed(2)),
     sgst:          parseFloat(sgst.toFixed(2)),
     igst:          parseFloat(igst.toFixed(2)),
@@ -294,6 +340,7 @@ const PurchaseEntry = () => {
   const saveTaxEntry = async () => {
     if (!form.supplier_name?.trim()) { toast.error("Supplier Name is required.");  return; }
     if (!form.bill_date)              { toast.error("Bill Date is required.");      return; }
+    if (!form.despatch?.trim())       { toast.error("Despatch Through is required."); return; }
     if (!tabledata.length)            { toast.error("Add at least one item.");      return; }
 
     setBusy((p) => ({ ...p, save: true }));
@@ -471,8 +518,7 @@ const PurchaseEntry = () => {
             {/* Bill Date */}
             <div>
               <label className={labelCls}>Bill Date <span className="text-red-500">*</span></label>
-              <input type="date" value={form.bill_date}
-                onChange={(e) => setForm((p) => ({ ...p, bill_date: e.target.value }))}
+              <input ref={billDateRef}
                 className={inputCls} />
             </div>
 
@@ -523,15 +569,14 @@ const PurchaseEntry = () => {
 
             <div>
               <label className={labelCls}>Order Date</label>
-              <input type="date" value={form.order_date}
+              <input type="text" placeholder="Enter Order Date(s)" value={form.order_date}
                 onChange={(e) => setForm((p) => ({ ...p, order_date: e.target.value }))}
                 className={inputCls} />
             </div>
 
             <div>
               <label className={labelCls}>Due Date</label>
-              <input type="date" value={form.due_date}
-                onChange={(e) => setForm((p) => ({ ...p, due_date: e.target.value }))}
+              <input ref={dueDateRef}
                 className={inputCls} />
             </div>
 
@@ -810,45 +855,11 @@ const PurchaseEntry = () => {
             <div className="bg-gray-50/50 rounded-xl border border-gray-200 p-6 space-y-3 max-w-sm ml-auto">
 
               <div className="flex justify-between items-center">
-                <span className="text-[12px] font-black text-gray-500 uppercase">Subtotal</span>
+                <span className="text-[12px] font-black text-gray-500 uppercase">Sub Total</span>
                 <span className="text-[13px] font-bold text-gray-900">₹{subtotal.toFixed(2)}</span>
               </div>
 
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <span className="text-[12px] font-black text-gray-500 uppercase">GST %</span>
-                  <input type="number" value={gstPct}
-                    onChange={(e) => setGstPct(Number(e.target.value))}
-                    className="w-12 p-1 border border-gray-200 rounded text-center text-[11px] font-bold outline-none" />
-                </div>
-                <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${isIntrastate ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"}`}>
-                  {isIntrastate ? "TN — CGST+SGST" : "IGST"}
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <span className="text-[12px] font-black text-gray-500 uppercase">CGST @{cgstPct}%</span>
-                <span className="text-[13px] font-bold text-gray-700">₹{cgst.toFixed(2)}</span>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <span className="text-[12px] font-black text-gray-500 uppercase">SGST @{sgstPct}%</span>
-                <span className="text-[13px] font-bold text-gray-700">₹{sgst.toFixed(2)}</span>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <span className="text-[12px] font-black text-gray-500 uppercase">IGST @{igstPct}%</span>
-                <span className="text-[13px] font-bold text-gray-700">₹{igst.toFixed(2)}</span>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <span className="text-[12px] font-black text-gray-500 uppercase">Discount (−)</span>
-                <input type="number" min="0" value={form.discount}
-                  onChange={(e) => setForm((p) => ({ ...p, discount: e.target.value }))}
-                  className="w-28 p-1.5 border-b border-gray-300 bg-transparent text-right font-bold text-black outline-none focus:border-black text-[13px]" />
-              </div>
-
-              {/* Other Charges */}
+              {/* Other Charges (acts as transport/packing) */}
               <div className="flex justify-between items-center gap-2">
                 <div className="relative flex-1" ref={otherRef}>
                   <div
@@ -879,14 +890,46 @@ const PurchaseEntry = () => {
                   className="w-28 p-1.5 border-b border-gray-300 bg-transparent text-right font-bold text-black outline-none focus:border-black text-[13px]" />
               </div>
 
+              <div className="flex justify-between items-center bg-blue-50 px-2 py-1 rounded">
+                <span className="text-[12px] font-black text-blue-700 uppercase">Taxable Value</span>
+                <span className="text-[13px] font-black text-blue-900">₹{taxableValue.toFixed(2)}</span>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <span className="text-[12px] font-black text-gray-500 uppercase">GST %</span>
+                  <input type="number" value={gstPct}
+                    onChange={(e) => setGstPct(Number(e.target.value))}
+                    className="w-12 p-1 border border-gray-200 rounded text-center text-[11px] font-bold outline-none" />
+                </div>
+                <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${isIntrastate ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"}`}>
+                  {isIntrastate ? "TN — CGST+SGST" : "IGST"}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-[12px] font-black text-gray-500 uppercase">CGST @{cgstPct}%</span>
+                <span className="text-[13px] font-bold text-gray-700">₹{cgst.toFixed(2)}</span>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-[12px] font-black text-gray-500 uppercase">SGST @{sgstPct}%</span>
+                <span className="text-[13px] font-bold text-gray-700">₹{sgst.toFixed(2)}</span>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-[12px] font-black text-gray-500 uppercase">IGST @{igstPct}%</span>
+                <span className="text-[13px] font-bold text-gray-700">₹{igst.toFixed(2)}</span>
+              </div>
+
               <div className="flex justify-between items-center">
                 <span className="text-[12px] font-black text-gray-500 uppercase">Round Off</span>
                 <span className="text-[13px] font-bold text-gray-700">{roundOff.toFixed(2)}</span>
               </div>
 
               <div className="flex justify-between items-center pt-4 border-t-2 border-gray-300 mt-2">
-                <span className="text-[15px] font-black text-black uppercase">Grand Total</span>
-                <span className="text-[24px] font-black text-indigo-700">₹{grandTotal.toFixed(2)}</span>
+                <span className="text-[15px] font-black text-black uppercase">NET TOTAL</span>
+                <span className="text-[24px] font-black text-indigo-700">₹{grandTotal || 0}</span>
               </div>
             </div>
           </div>

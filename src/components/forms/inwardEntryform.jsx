@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { SquarePen, Trash2,UserPlus, PackagePlus } from "lucide-react";
+import toast from "react-hot-toast";
+import flatpickr from "flatpickr";
+import { toDmy, toYmd } from "../../utils/dateFormat";
 import CustomerQuickAddModal from "../ui/CustomerQuickAddModal";
 import ProductQuickAddModal from "../ui/ProductQuickAddModal";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
-import toast from "react-hot-toast";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
 
 const TODAY = new Date().toISOString().split("T")[0];
 const Api_url = "http://localhost:3000/api/Inwardentries";
@@ -15,7 +18,7 @@ const INIT_FORM = {
     sl_no: "",
     entry_date: TODAY,
     dc_number: "",
-    dc_date: TODAY,
+    dc_date: "",
     transport: "",
     description_type: "",
     remarks: ""
@@ -80,28 +83,69 @@ const InwardEntry = () => {
     const inwardRef = useRef(null);
     const transportRef = useRef(null);
     const remarksRef = useRef(null);
+    const dcDateRef = useRef(null);
+    const dcDateFp = useRef(null);
+    const entryDateRef = useRef(null);
+    const entryDateFp = useRef(null);
+
+    // ── Flatpickr for DC Date (mode: multiple, d-m-Y) ──────────────────────
+    useEffect(() => {
+        dcDateFp.current = flatpickr(dcDateRef.current, {
+            dateFormat: "d-m-Y",
+            monthSelectorType: "static",
+            onChange: (selectedDates, dateStr) => {
+                setFormData((p) => ({ ...p, dc_date: dateStr }));
+            },
+        });
+        return () => dcDateFp.current?.destroy();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useEffect(() => {
+        if (dcDateFp.current && formData.dc_date) {
+            dcDateFp.current.setDate(formData.dc_date);
+        }
+    }, [formData.dc_date]);
+
+    // ── Flatpickr for Entry Date ─────────────────────────────────────────
+    useEffect(() => {
+        entryDateFp.current = flatpickr(entryDateRef.current, {
+            disableMobile: true,
+            monthSelectorType: "static",
+            dateFormat: "d-m-Y",
+            defaultDate: toDmy(formData.entry_date) || new Date(),
+            onChange: (selectedDates, dateStr) => {
+                setFormData((p) => ({ ...p, entry_date: toYmd(dateStr) }));
+            },
+        });
+        return () => entryDateFp.current?.destroy();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useEffect(() => {
+        if (entryDateFp.current && formData.entry_date) {
+            entryDateFp.current.setDate(toDmy(formData.entry_date));
+        }
+    }, [formData.entry_date]);
 
     const labelCls = "text-[12px] font-bold text-gray-600 uppercase tracking-tight";
     const inputCls = "w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black focus:outline-none bg-white shadow-sm";
     const roInputCls = "w-full p-2.5 border border-blue-100 rounded-lg text-[13px] font-semibold text-blue-800 bg-blue-50 cursor-not-allowed focus:outline-none";
     const dropdownCls = "absolute top-full left-0 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-52 overflow-y-auto";
 
-    // Setup initial data & click outside handler
+    // Setup initial data
     useEffect(() => {
         fetchNextSl();
-
-        const handleClickOutside = (event) => {
-            if (clientRef.current && !clientRef.current.contains(event.target)) setclientOpen(false);
-            if (itemRef.current && !itemRef.current.contains(event.target)) setitemOpen(false);
-            if (unitRef.current && !unitRef.current.contains(event.target)) setOpenUnit(false);
-            if (inwardRef.current && !inwardRef.current.contains(event.target)) setinwardnoOpen(false);
-            if (transportRef.current && !transportRef.current.contains(event.target)) setTransportOpen(false);
-            if (remarksRef.current && !remarksRef.current.contains(event.target)) setRemarksOpen(false);
-        };
-
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
+
+    useOutsideClick([
+        { ref: clientRef,    onClose: () => setclientOpen(false) },
+        { ref: itemRef,      onClose: () => setitemOpen(false) },
+        { ref: unitRef,      onClose: () => setOpenUnit(false) },
+        { ref: inwardRef,    onClose: () => setinwardnoOpen(false) },
+        { ref: transportRef, onClose: () => setTransportOpen(false) },
+        { ref: remarksRef,   onClose: () => setRemarksOpen(false) },
+    ]);
 
     // Fetch Clients for Dropdowns
     useEffect(() => {
@@ -173,7 +217,7 @@ const InwardEntry = () => {
             }
         };
         fetchItems();
-    }, [orderType, itemsearch, shouldAutoSelect, itemRefreshKey]);
+    }, [orderType, itemsearch, itemRefreshKey, shouldAutoSelect]);
 
     const selectitem = (selectedItem) => {
         setCurrentrow({
@@ -319,7 +363,7 @@ const InwardEntry = () => {
                 sl_no: data.header.sl_no || "",
                 entry_date: formatDate(data.header.entry_date) || TODAY,
                 dc_number: data.header.dc_number || "",
-                dc_date: formatDate(data.header.dc_date) || TODAY,
+                dc_date: data.header.dc_date || "",
                 transport: data.header.transport || "",
                 description_type: data.header.description_type || "",
                 remarks: data.header.remarks || ""
@@ -501,10 +545,11 @@ const InwardEntry = () => {
                         <div>
                             <label className={labelCls}>Date</label>
                             <input
-                                type="date"
-                                value={formData.entry_date || TODAY}
-                                onChange={(e) => setFormData(p => ({ ...p, entry_date: e.target.value }))}
+                                ref={entryDateRef}
+                                type="text"
+                                placeholder="Select Date"
                                 className={inputCls}
+                                readOnly
                             />
                         </div>
 
@@ -557,14 +602,15 @@ const InwardEntry = () => {
                             />
                         </div>
 
-                        {/* DC Date */}
+                        {/* DC Date (Flatpickr multiple) */}
                         <div>
                             <label className={labelCls}>DC Date <span className="text-red-500">*</span></label>
                             <input
-                                type="date"
-                                value={formData.dc_date || TODAY}
-                                onChange={(e) => setFormData(p => ({ ...p, dc_date: e.target.value }))}
+                                ref={dcDateRef}
+                                type="text"
+                                placeholder="Select DC Date(s)"
                                 className={inputCls}
+                                readOnly
                             />
                         </div>
 

@@ -43,9 +43,7 @@ const InvoiceFormat = ({ dcNumber }) => {
         .filter(Boolean)
         .join(", ");
     }
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
-    return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.${d.getFullYear()}`;
+    return dateStr;
   };
 
   const subtotal = invoice.items.reduce((acc, item) => acc + (Number(item.amount) || 0), 0);
@@ -214,7 +212,7 @@ const InvoiceFormat = ({ dcNumber }) => {
                 <span className="w-[110px] text-right text-[14px] font-bold">{subtotal.toFixed(2)}</span>
               </div>
               <div className="flex px-3 py-0.5">
-                <span className="flex-1 text-right text-[13px] font-bold pr-4">Forward & Packing Charges</span>
+                <span className="flex-1 text-right text-[13px] font-bold pr-4">Forward Packing Charges</span>
                 <span className="w-[110px] text-right text-[14px] font-bold">{transport.toFixed(2)}</span>
               </div>
               {discount > 0 && (

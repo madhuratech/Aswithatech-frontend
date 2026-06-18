@@ -8,7 +8,6 @@ import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 const Spare = ({onClose , refreshSpare,editMode,service }) => {
   const {
     showPasswordModal,
-    requirePassword,
     handlePasswordSuccess,
     handlePasswordCancel,
   } = usePasswordProtection();

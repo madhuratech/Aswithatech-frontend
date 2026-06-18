@@ -4,6 +4,9 @@ import { SquarePen, Trash2} from "lucide-react";
 import toast from "react-hot-toast";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
+import flatpickr from "flatpickr";
+import { toDmy, toYmd } from "../../utils/dateFormat";
 
 const TODAY = new Date().toISOString().split("T")[0];
 const Api_url = "http://localhost:3000/api/standbyreturndc";
@@ -68,6 +71,8 @@ const StandbyReturnDcEntryForm = () => {
     const despatchRef = useRef(null);
     const uomRef = useRef(null);
     const remarksRef = useRef(null);
+    const stdbyRetDateRef = useRef(null);
+    const stdbyRetDateFp = useRef(null);
 
     // Search suggestions
     const [editSearch, setEditSearch] = useState("");
@@ -83,17 +88,35 @@ const StandbyReturnDcEntryForm = () => {
     useEffect(() => {
         fetchPendingJobs();
         fetchAllReturnDc();
-
-        const handler = (e) => {
-            if (customerRef.current && !customerRef.current.contains(e.target)) setCustomerOpen(false);
-            if (jobRef.current && !jobRef.current.contains(e.target)) setJobOpen(false);
-            if (itemRef.current && !itemRef.current.contains(e.target)) setItemOpen(false);
-            if (despatchRef.current && !despatchRef.current.contains(e.target)) setDespatchOpen(false);
-            if (editRef.current && !editRef.current.contains(e.target)) setEditOpen(false);
-        };
-        document.addEventListener("mousedown", handler);
-        return () => document.removeEventListener("mousedown", handler);
     }, []);
+
+    useEffect(() => {
+        stdbyRetDateFp.current = flatpickr(stdbyRetDateRef.current, {
+            disableMobile: true,
+            monthSelectorType: "static",
+            dateFormat: "d-m-Y",
+            defaultDate: formData.return_date ? toDmy(formData.return_date) : new Date(),
+            onChange: (selectedDates, dateStr) => {
+                setFormData(p => ({ ...p, return_date: toYmd(dateStr) }));
+            },
+        });
+        return () => stdbyRetDateFp.current?.destroy();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useEffect(() => {
+        if (stdbyRetDateFp.current && formData.return_date) {
+            stdbyRetDateFp.current.setDate(toDmy(formData.return_date));
+        }
+    }, [formData.return_date]);
+
+    useOutsideClick([
+        { ref: customerRef, onClose: () => setCustomerOpen(false) },
+        { ref: jobRef,      onClose: () => setJobOpen(false) },
+        { ref: itemRef,     onClose: () => setItemOpen(false) },
+        { ref: despatchRef, onClose: () => setDespatchOpen(false) },
+        { ref: editRef,     onClose: () => setEditOpen(false) },
+    ]);
 
  
     const fetchPendingJobs = async () => {
@@ -237,6 +260,7 @@ const StandbyReturnDcEntryForm = () => {
         if (!formData.return_dc_no) { toast.error("Return DC number is required"); return; }
         if (!formData.standby_dc_no) { toast.error("Please select a Standby DC"); return; }
         if (!formData.customer_name) { toast.error("Customer Name is required"); return; }
+        if (!formData.despatch_through?.trim()) { toast.error("Despatch Through is required."); return; }
         if (!tabledata.length) { toast.error("Please add at least one returned item to the grid"); return; }
 
         const payload = {
@@ -496,10 +520,11 @@ const StandbyReturnDcEntryForm = () => {
                                 <div>
                                     <label className={labelCls}>Date</label>
                                     <input
-                                        type="date"
-                                        value={formData.return_date || TODAY}
-                                        onChange={(e) => setFormData(p => ({ ...p, return_date: e.target.value }))}
+                                        ref={stdbyRetDateRef}
+                                        type="text"
+                                        placeholder="Select Date"
                                         className={inputCls}
+                                        readOnly
                                     />
                                 </div>
 

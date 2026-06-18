@@ -2,14 +2,16 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { SquarePen, Trash2, Eye, CheckCircle } from "lucide-react";
 import toast from "react-hot-toast";
+import flatpickr from "flatpickr";
+import { toDmy, toYmd } from "../../utils/dateFormat";
 import SaleswindowModel from "../ui/saleswindowModal";
 import DeliveryChallan from "../pages/Sales/salesdcformat";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
 
 const API = "http://localhost:3000/api/salesdc";
 const TODAY = new Date().toISOString().split("T")[0];
-const UOM_LIST = ["Nos", "Set", "Pkt", "Kg", "Mtr", "Ltr", "Box", "Unit"];
 const DESPATCH_OPTIONS = ["Courier", "Transport", "By Hand"];
 const REMARKS_OPTIONS = ["Serviced", "Re Serviced", "For Sale", "Beyond", "For Testing Purpose"];
 
@@ -46,6 +48,10 @@ const SalesDCEntry = () => {
     const [item, setItem] = useState(INIT_ITEM);
     const [editRowIndex, setEditRowIndex] = useState(-1);
 
+    // ── Order Number multi-entry display ─────────────────────────────────────
+    const [orderNoDisplay, setOrderNoDisplay] = useState("");
+    const [orderDateDisplay, setOrderDateDisplay] = useState("");
+
     //Success Model state
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [savedDcNo, setSavedDcNo] = useState("");
@@ -81,11 +87,51 @@ const SalesDCEntry = () => {
     const loadDcRef = useRef(null);
     const despatchRef = useRef(null);
     const remarksRef = useRef(null);
+    const orderDateRef = useRef(null);
+    const orderDateFp = useRef(null);
+    const salesDcDateRef = useRef(null);
+    const salesDcDateFp = useRef(null);
 
-    // ── derived flags ────────────────────────────────────────────────────────
-    const customerSelected = !!form.customer_name;
-    const clientDcSelected = !!form.client_dc_no;
+    // ── Flatpickr for Order Date (single date per SHOW click) ───────────────
+    useEffect(() => {
+        orderDateFp.current = flatpickr(orderDateRef.current, {
+            dateFormat: "d/m/Y",
+            monthSelectorType: "static",
+            onChange: (selectedDates, dateStr) => {
+                setForm((p) => ({ ...p, order_date: dateStr }));
+            },
+        });
+        return () => orderDateFp.current?.destroy();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
+    // Update Flatpickr when form.order_date changes (e.g. after SHOW clears it)
+    useEffect(() => {
+        if (orderDateFp.current && form.order_date) {
+            orderDateFp.current.setDate(form.order_date);
+        }
+    }, [form.order_date]);
+
+    // ── Flatpickr for DC Date ────────────────────────────────────────────
+    useEffect(() => {
+        salesDcDateFp.current = flatpickr(salesDcDateRef.current, {
+            disableMobile: true,
+            monthSelectorType: "static",
+            dateFormat: "d-m-Y",
+            defaultDate: toDmy(form.dc_date) || new Date(),
+            onChange: (selectedDates, dateStr) => {
+                setForm((p) => ({ ...p, dc_date: toYmd(dateStr) }));
+            },
+        });
+        return () => salesDcDateFp.current?.destroy();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useEffect(() => {
+        if (salesDcDateFp.current && form.dc_date) {
+            salesDcDateFp.current.setDate(toDmy(form.dc_date));
+        }
+    }, [form.dc_date]);
 
     // ── auto-load DC from navigation state (e.g. from report view Edit) ──────
     useEffect(() => {
@@ -97,21 +143,20 @@ const SalesDCEntry = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // ── outside-click + initial DC no ────────────────────────────────────────
+    // ── initial DC no ────────────────────────────────────────────────────────
     useEffect(() => {
         fetchNextDcNo();
-        const handler = (e) => {
-            if (custRef.current && !custRef.current.contains(e.target)) closeAll("customer");
-            if (clientDcRef.current && !clientDcRef.current.contains(e.target)) closeAll("clientDc");
-            if (prodRef.current && !prodRef.current.contains(e.target)) closeAll("product");
-            if (uomRef.current && !uomRef.current.contains(e.target)) closeAll("uom");
-            if (loadDcRef.current && !loadDcRef.current.contains(e.target)) closeAll("loadDc");
-            if (despatchRef.current && !despatchRef.current.contains(e.target)) closeAll("despatch");
-            if (remarksRef.current && !remarksRef.current.contains(e.target)) setRemarksOpen(false);
-        };
-        document.addEventListener("mousedown", handler);
-        return () => document.removeEventListener("mousedown", handler);
     }, []);
+
+    useOutsideClick([
+        { ref: custRef,     onClose: () => closeAll("customer") },
+        { ref: clientDcRef, onClose: () => closeAll("clientDc") },
+        { ref: prodRef,     onClose: () => closeAll("product") },
+        { ref: uomRef,      onClose: () => closeAll("uom") },
+        { ref: loadDcRef,   onClose: () => closeAll("loadDc") },
+        { ref: despatchRef, onClose: () => closeAll("despatch") },
+        { ref: remarksRef,  onClose: () => setRemarksOpen(false) },
+    ]);
 
     const closeAll = (key) => setOpen((p) => ({ ...p, [key]: false }));
     const openDrop = (key) => setOpen((p) => ({ ...p, [key]: true }));
@@ -183,15 +228,16 @@ const SalesDCEntry = () => {
                 customer_name: header.customer_name || "",
                 dc_no: header.dc_no || "",
                 dc_date: header.dc_date ? new Date(header.dc_date).toISOString().split("T")[0] : TODAY,
-                order_no: header.order_no || "",
-                order_date: header.order_date
-                    ? new Date(header.order_date).toISOString().split("T")[0]
-                    : "",
+                order_no: "",
+                order_date: "",
                 despatch_through: header.despatch_through || "",
                 ordertype: header.ordertype || "Service",
             });
             setCustSearch(header.customer_name || "");
             setRows(items || []);
+            // Populate display fields from saved comma-separated values
+            setOrderNoDisplay(header.order_no || "");
+            setOrderDateDisplay(header.order_date || "");
             toast.success("DC loaded for editing.");
         } catch (e) {
             toast.error(e.message || "Failed to load DC.");
@@ -199,6 +245,32 @@ const SalesDCEntry = () => {
     };
 
     // Event handlers
+
+    const handleShowClick = async () => {
+        const orderNo = form.order_no?.trim();
+        if (!orderNo) { toast.error("Type an Order Number first."); return; }
+        // Check duplicate
+        const existing = orderNoDisplay.split(",").map(s => s.trim()).filter(Boolean);
+        if (existing.includes(orderNo)) { toast.error(`Order Number ${orderNo} already added.`); return; }
+        // Fetch order date
+        let orderDate = form.order_date?.trim() || "";
+        if (!orderDate) {
+            try {
+                const res = await fetch(`${API}/order-date?order_no=${encodeURIComponent(orderNo)}`);
+                const data = await res.json();
+                orderDate = data.order_date || "";
+            } catch { /* ignore */ }
+        }
+        // Append
+        setOrderNoDisplay(prev => prev ? `${prev}, ${orderNo}` : orderNo);
+        setOrderDateDisplay(prev => {
+            const dateVal = orderDate || "—";
+            return prev ? `${prev}, ${dateVal}` : dateVal;
+        });
+        // Clear inputs
+        setForm((p) => ({ ...p, order_no: "", order_date: "" }));
+        if (orderDateFp.current) orderDateFp.current.clear();
+    };
 
     const handleCustomerSelect = (c) => {
         // Reset everything downstream
@@ -213,6 +285,8 @@ const SalesDCEntry = () => {
         setRows([]);
         setItem(INIT_ITEM);
         setProducts([]);
+        setOrderNoDisplay("");
+        setOrderDateDisplay("");
         closeAll("customer");
     };
 
@@ -288,8 +362,8 @@ const SalesDCEntry = () => {
         customer_name: form.customer_name,
         dc_no: form.dc_no,
         dc_date: form.dc_date,
-        order_no: form.order_no || null,
-        order_date: form.order_date || null,
+        order_no: orderNoDisplay || null,
+        order_date: orderDateDisplay || null,
         despatch_through: form.despatch_through || null,
         ordertype: form.ordertype,
         items: rows.map((r) => ({
@@ -306,7 +380,8 @@ const SalesDCEntry = () => {
 
     const validateHeader = () => {
         if (!form.customer_name?.trim()) { toast.error("Customer is required."); return false; }
-        if (!form.order_no?.trim()) { toast.error("Client DC Number is required."); return false; }
+        if (!orderNoDisplay?.trim()) { toast.error("Add at least one Order Number."); return false; }
+        if (!form.despatch_through?.trim()) { toast.error("Despatch Through is required."); return false; }
         if (!rows.length) { toast.error("Add at least one product."); return false; }
         return true;
     };
@@ -398,6 +473,8 @@ const SalesDCEntry = () => {
         setEditRowIndex(-1);
         setProducts([]);
         setDcSearchList([]);
+        setOrderNoDisplay("");
+        setOrderDateDisplay("");
         fetchNextDcNo();
     };
 
@@ -410,7 +487,6 @@ const SalesDCEntry = () => {
     const labelCls = "block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5";
     const inputCls = "w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black focus:outline-none focus:border-blue-400 bg-white shadow-sm";
     const roInputCls = "w-full p-2.5 border border-blue-100 rounded-lg text-[13px] font-semibold text-blue-800 bg-blue-50 cursor-not-allowed focus:outline-none";
-    const disInputCls = "w-full p-2.5 border border-gray-100 rounded-lg text-[13px] font-semibold text-gray-400 bg-gray-50 cursor-not-allowed focus:outline-none";
     const dropdownCls = "absolute top-full left-0 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 max-h-52 overflow-y-auto";
 
     // Close Successmodel
@@ -596,10 +672,11 @@ const SalesDCEntry = () => {
                         <div>
                             <label className={labelCls}>DC Date <span className="ml-1 text-[10px] text-blue-500 font-black normal-case">Auto</span></label>
                             <input
-                                type="date"
-                                value={form.dc_date || TODAY}
-                                onChange={(e) => setForm((p) => ({ ...p, dc_date: e.target.value }))}
+                                ref={salesDcDateRef}
+                                type="text"
+                                placeholder="Select Date"
                                 className={inputCls}
+                                readOnly
                             />
                         </div>
 
@@ -608,29 +685,42 @@ const SalesDCEntry = () => {
                 </div>
 
                 {/* 
-                    STEP 2 — Client DC Selection + Auto-fill
+                    STEP 2 — Order Number Selection → SHOW → Display Fields
                  */}
                 <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-5 border border-gray-100 mb-5">
-                    <div className="grid grid-cols-4 gap-8">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">
+                        Step 2 — Order Number Details
+                    </p>
+                    <div className="grid grid-cols-4 gap-7 mb-4">
+                        {/* Order Number Input + SHOW Button */}
                         <div className="relative" ref={clientDcRef}>
                             <label className={labelCls}>Order Number <span className="text-red-500">*</span></label>
-                            <input
-                                type="text"
-                                value={form.order_no}
-                                onChange={(e) => setForm((p) => ({ ...p, order_no: e.target.value }))}
-                                className={`${inputCls} flex justify-between items-center cursor-pointer select-none min-h-[43px]`}
-                                placeholder="Enter client DC number"
-                            />
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={form.order_no}
+                                    onChange={(e) => setForm((p) => ({ ...p, order_no: e.target.value, order_date: "" }))}
+                                    className={`${inputCls} flex-1 min-h-[43px]`}
+                                    placeholder="Type order number"
+                                />
+                                <button
+                                    onClick={handleShowClick}
+                                    className="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-[13px] font-bold hover:bg-blue-700 transition-colors whitespace-nowrap"
+                                >
+                                    SHOW
+                                </button>
+                            </div>
                         </div>
 
-                        {/* Client DC Date — auto-filled to today (editable) */}
+                        {/* Order Date — Flatpickr */}
                         <div>
-                            <label className={labelCls}>Order Date</label>
+                            <label className={labelCls}>Order Date <span className="text-[10px] text-gray-400 font-normal normal-case">(optional)</span></label>
                             <input
-                                type="date"
-                                value={form.order_date}
-                                onChange={(e) => setForm((p) => ({ ...p, order_date: e.target.value }))}
+                                ref={orderDateRef}
+                                type="text"
+                                placeholder="Select date"
                                 className={inputCls}
+                                readOnly
                             />
                         </div>
 
@@ -667,6 +757,30 @@ const SalesDCEntry = () => {
                             )}
                         </div>
 
+                    </div>
+
+                    {/* Display Fields — Order Number Display and Order Date Display */}
+                    <div className="grid grid-cols-4 gap-7 mt-4 pt-4 border-t border-gray-100">
+                        <div>
+                            <label className={labelCls}>Order Number Display</label>
+                            <input
+                                type="text"
+                                value={orderNoDisplay}
+                                readOnly
+                                className={roInputCls}
+                                placeholder="No order numbers added yet"
+                            />
+                        </div>
+                        <div>
+                            <label className={labelCls}>Order Date Display</label>
+                            <input
+                                type="text"
+                                value={orderDateDisplay}
+                                readOnly
+                                className={roInputCls}
+                                placeholder="No dates added yet"
+                            />
+                        </div>
                     </div>
                 </div>
 

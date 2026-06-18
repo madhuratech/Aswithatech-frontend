@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
 
 const API_URL = "http://localhost:3000/api/pendings";
 
@@ -21,7 +22,7 @@ const EMPTY_FIELDS = {
 
 const PendingForm = () => {
   const navigate = useNavigate();
-  const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
+  const { showPasswordModal, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
 
   const [clientList,      setClientList]      = useState([]);
   const [clientOpen,      setClientOpen]      = useState(false);
@@ -59,14 +60,12 @@ const PendingForm = () => {
       .catch(console.error);
 
     loadPending();
+  }, []);
 
-    const handleOutside = (e) => {
-      if (clientRef.current && !clientRef.current.contains(e.target)) setClientOpen(false);
-      if (itemRef.current   && !itemRef.current.contains(e.target))   setItemDropOpen(false);
-    };
-    document.addEventListener("mousedown", handleOutside);
-    return () => document.removeEventListener("mousedown", handleOutside);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useOutsideClick([
+    { ref: clientRef, onClose: () => setClientOpen(false) },
+    { ref: itemRef,   onClose: () => setItemDropOpen(false) },
+  ]);
 
   useEffect(() => {
     const config = ITEM_TYPE_ENDPOINTS[fields.item_type];

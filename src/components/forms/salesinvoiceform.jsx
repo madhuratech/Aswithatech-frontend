@@ -7,12 +7,14 @@ import InvoiceFormat from "../pages/Sales/invoiceformat";
 import { isTamilNadu, calcGstAmounts } from "../../utils/gstUtils";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
+import flatpickr from "flatpickr";
+import { toDmy, toYmd } from "../../utils/dateFormat";
 
 const API = "http://localhost:3000/api/salesinvoices";
 const TODAY = new Date().toISOString().split("T")[0];
 
 const DESPATCH_OPTIONS = [ "Courier", "Transport", "By Hand", "Lorry"];
-const UOM_LIST = ["Nos", "Set", "Pkt", "Kg", "Mtr", "Ltr", "Box", "Unit"];
 
 const INIT_FORM = {
     customer_name: "",
@@ -69,6 +71,11 @@ const SalesInvoiceForm = () => {
         uom: false, despatch: false, loadInv: false,
     });
 
+    // ── SHOW display fields (comma-separated, read-only) ────────────────
+    const [dcNoDisplay, setDcNoDisplay]         = useState("");
+    const [orderNoDisplay, setOrderNoDisplay]   = useState("");
+    const [orderDateDisplay, setOrderDateDisplay] = useState("");
+
     // ── loading flags ─────────────────────────────────────────────────────
     const [busy, setBusy] = useState({ dcs: false, products: false, save: false });
 
@@ -85,6 +92,8 @@ const SalesInvoiceForm = () => {
     const uomRef     = useRef(null);
     const despRef    = useRef(null);
     const loadRef    = useRef(null);
+    const invoiceDateRef = useRef(null);
+    const invoiceDateFp  = useRef(null);
 
     // ── derived ───────────────────────────────────────────────────────────
     const customerSelected = !!form.customer_name;
@@ -95,17 +104,16 @@ const SalesInvoiceForm = () => {
     // ════════════════════════════════════════════════════════════════════
     useEffect(() => {
         fetchNextInvoiceNo();
-        const handler = (e) => {
-            if (custRef.current && !custRef.current.contains(e.target))    closeAll("customer");
-            if (dcRef.current   && !dcRef.current.contains(e.target))      closeAll("dc");
-            if (prodRef.current && !prodRef.current.contains(e.target))    closeAll("product");
-            if (uomRef.current  && !uomRef.current.contains(e.target))     closeAll("uom");
-            if (despRef.current && !despRef.current.contains(e.target))    closeAll("despatch");
-            if (loadRef.current && !loadRef.current.contains(e.target))    closeAll("loadInv");
-        };
-        document.addEventListener("mousedown", handler);
-        return () => document.removeEventListener("mousedown", handler);
     }, []);
+
+    useOutsideClick([
+        { ref: custRef, onClose: () => closeAll("customer") },
+        { ref: dcRef,   onClose: () => closeAll("dc") },
+        { ref: prodRef, onClose: () => closeAll("product") },
+        { ref: uomRef,  onClose: () => closeAll("uom") },
+        { ref: despRef, onClose: () => closeAll("despatch") },
+        { ref: loadRef, onClose: () => closeAll("loadInv") },
+    ]);
 
     const closeAll = (key) => setOpen((p) => ({ ...p, [key]: false }));
     const openDrop = (key) => setOpen((p) => ({ ...p, [key]: true }));
@@ -152,12 +160,13 @@ const SalesInvoiceForm = () => {
             if (!res.ok) throw new Error();
             const { header, items, aggregated_order_no, aggregated_order_date } = await res.json();
 
+            // Store only the selected DC reference — do NOT auto-fill order fields
             setForm((p) => ({
                 ...p,
                 dc_no:           header.dc_no    || "",
-                order_no:        aggregated_order_no || header.order_no || "",
                 dc_date:         header.dc_date   ? new Date(header.dc_date).toISOString().split("T")[0] : "",
-                order_date:      aggregated_order_date || (header.order_date ? new Date(header.order_date).toISOString().split("T")[0] : ""),
+                _selOrderNo:     aggregated_order_no || header.order_no || "",
+                _selOrderDate:   aggregated_order_date || header.order_date || "",
                 dispatch_through:  "",
             }));
 
@@ -165,12 +174,51 @@ const SalesInvoiceForm = () => {
             setCurrentItem(INIT_ITEM);
             setProdSearch("");
             closeAll("dc");
-            toast.success("DC loaded — select products to add.");
+            toast.success(`DC ${dcNo} loaded — click SHOW to add to invoice.`);
         } catch {
             toast.error("Failed to load DC details.");
         } finally {
             setBusy((p) => ({ ...p, products: false }));
         }
+    };
+
+    const handleShowClick = () => {
+        const dcNo = form.dc_no?.trim();
+        const orderNo = form._selOrderNo?.trim();
+        const orderDate = form._selOrderDate?.trim();
+        if (!dcNo) { toast.error("Select an Admin DC first."); return; }
+        if (!orderNo) { toast.error("No Order No found for this DC."); return; }
+
+        // Check duplicate DC No
+        const existingDcs = dcNoDisplay.split(",").map(s => s.trim()).filter(Boolean);
+        if (existingDcs.includes(dcNo)) { toast.error(`DC ${dcNo} already added.`); return; }
+
+        // Append to display fields
+        setDcNoDisplay(prev => prev ? `${prev}, ${dcNo}` : dcNo);
+        setOrderNoDisplay(prev => {
+            const existing = (prev || "").split(",").map(s => s.trim()).filter(Boolean);
+            // Append each order number individually (handle comma-separated from aggregation)
+            const newNos = orderNo.split(",").map(s => s.trim()).filter(Boolean);
+            for (const no of newNos) {
+                if (!existing.includes(no)) {
+                    prev = prev ? `${prev}, ${no}` : no;
+                    existing.push(no);
+                }
+            }
+            return prev;
+        });
+        setOrderDateDisplay(prev => {
+            const existing = (prev || "").split(",").map(s => s.trim()).filter(Boolean);
+            const newDates = orderDate.split(",").map(s => s.trim()).filter(Boolean);
+            for (const d of newDates) {
+                if (!existing.includes(d)) {
+                    prev = prev ? `${prev}, ${d}` : d;
+                    existing.push(d);
+                }
+            }
+            return prev;
+        });
+        toast.success(`DC ${dcNo} added to invoice.`);
     };
 
     const searchInvoices = async (q = "") => {
@@ -187,22 +235,25 @@ const SalesInvoiceForm = () => {
             const data = await res.json();
             if (!res.ok) throw new Error(data.message || "Not found");
 
-            const fmt = (d) => d ? new Date(d).toISOString().split("T")[0] : "";
+            const fmtDate = (d) => d ? new Date(d).toISOString().split("T")[0] : "";
 
             setLoadedInvoiceNo(invNo);
             setInvoiceNo(invNo);
             setCustSearch(data.header.customer_name || "");
             setForm({
                 customer_name:    data.header.customer_name    || "",
-                invoice_date:     fmt(data.header.invoice_date),
-                dc_no:            data.header.dc_no            || "",
-                dc_date:          fmt(data.header.dc_date),
-                order_no:         data.header.order_no         || "",
-                order_date:       fmt(data.header.order_date),
+                invoice_date:     fmtDate(data.header.invoice_date),
+                dc_no:            "",  // not auto-selected
+                dc_date:          data.header.dc_date          || "",
+                order_no:         "",  // not auto-filled
+                order_date:       "",  // not auto-filled
                 dispatch_through: data.header.dispatch_through || "",
                 discount:         data.header.discount         || 0,
                 transport:        data.header.transport        || 0,
             });
+            setDcNoDisplay(data.header.dc_no || "");
+            setOrderNoDisplay(data.header.order_no || "");
+            setOrderDateDisplay(data.header.order_date || "");
 
             const items = (data.items || []).map((it) => ({
                 item_name:   it.item_name   || "",
@@ -213,9 +264,9 @@ const SalesInvoiceForm = () => {
                 dc_quantity: "",
                 amount:      Number(it.quantity || 0) * Number(it.price || 0),
                 order_no:    it.order_no    || "",
-                order_date:  it.order_date  ? it.order_date.split("T")[0] : "",
+                order_date:  it.order_date  || "",
                 dc_no:       it.dc_no || data.header.dc_no || "",
-                dc_date:     it.dc_date ? it.dc_date.split("T")[0] : (data.header.dc_date ? data.header.dc_date.split("T")[0] : ""),
+                dc_date:     it.dc_date || data.header.dc_date || "",
             }));
             setTableData(items);
             closeAll("loadInv");            setLoadSearch(invNo);
@@ -239,6 +290,9 @@ const SalesInvoiceForm = () => {
         setTableData([]);
         setCurrentItem(INIT_ITEM);
         setProdSearch("");
+        setDcNoDisplay("");
+        setOrderNoDisplay("");
+        setOrderDateDisplay("");
         closeAll("customer");
         fetchDcsForCustomer(name);
     };
@@ -261,8 +315,8 @@ const SalesInvoiceForm = () => {
             sl_no:       prod.sl_no    || "",
             dc_quantity: prod.quantity || "",
             amount:      0,
-            order_no:    prod.order_no    || form.order_no || "",
-            order_date:  prod.order_date  || form.order_date || "",
+            order_no:    prod.order_no    || form._selOrderNo || "",
+            order_date:  prod.order_date  || form._selOrderDate || "",
             dc_no:       prod.dc_no       || form.dc_no || "",
             dc_date:     prod.dc_date     || form.dc_date || "",
         });
@@ -289,8 +343,8 @@ const SalesInvoiceForm = () => {
         const newRow = { 
             ...currentItem, 
             amount, 
-            order_no: currentItem.order_no || form.order_no || "", 
-            order_date: currentItem.order_date || form.order_date || "",
+            order_no: currentItem.order_no || form._selOrderNo || "", 
+            order_date: currentItem.order_date || form._selOrderDate || "",
             dc_no: currentItem.dc_no || form.dc_no || "",
             dc_date: currentItem.dc_date || form.dc_date || ""
         };
@@ -331,12 +385,12 @@ const SalesInvoiceForm = () => {
     // ════════════════════════════════════════════════════════════════════
     const subtotal   = tableData.reduce((s, it) => s + Number(it.amount || 0), 0);
     const totalQty   = tableData.reduce((s, it) => s + Number(it.quantity || 0), 0);
-    const discount   = Number(form.discount  || 0);
     const transport  = Number(form.transport || 0);
+    const taxableValue = parseFloat((subtotal + transport).toFixed(2));
     const isIntrastate = isTamilNadu(customerState, customerGst);
-    const { cgst, sgst, igst, cgstPct, sgstPct, igstPct } = calcGstAmounts(subtotal, gstPct, isIntrastate);
-    const rawTotal   = subtotal - discount + transport + cgst + sgst + igst;
-    const roundOff   = Math.round(rawTotal) - rawTotal;
+    const { cgst, sgst, igst, cgstPct, sgstPct, igstPct } = calcGstAmounts(taxableValue, gstPct, isIntrastate);
+    const rawTotal   = taxableValue + cgst + sgst + igst;
+    const roundOff   = parseFloat((Math.round(rawTotal) - rawTotal).toFixed(2));
     const grandTotal = Math.round(rawTotal);
 
     // ════════════════════════════════════════════════════════════════════
@@ -344,22 +398,20 @@ const SalesInvoiceForm = () => {
     // ════════════════════════════════════════════════════════════════════
     const validate = () => {
         if (!form.customer_name?.trim()) { toast.error("Customer is required.");     return false; }
-        if (!form.order_no?.trim())  { toast.error("Client DC No is required."); return false; }
-        if (!form.dc_no?.trim())         { toast.error("Admin DC No is required."); return false; }
+        if (!orderNoDisplay?.trim())  { toast.error("Click SHOW to add at least one DC Order."); return false; }
+        if (!form.dispatch_through?.trim()) { toast.error("Despatch Through is required."); return false; }
         if (!tableData.length)           { toast.error("Add at least one product."); return false; }
         return true;
     };
 
     const buildPayload = () => {
-        const uniqueDcNos = [...new Set(tableData.map(it => it.dc_no).filter(Boolean))];
         const uniqueDcDates = [...new Set(tableData.map(it => it.dc_date).filter(Boolean))];
-        const uniqueOrderNos = [...new Set(tableData.map(it => it.order_no).filter(Boolean))];
         const uniqueOrderDates = [...new Set(tableData.map(it => it.order_date).filter(Boolean))];
 
-        const dcNoStr = uniqueDcNos.length ? uniqueDcNos.join(", ") : (form.dc_no || "");
+        const dcNoStr = dcNoDisplay || (form.dc_no || "");
         const dcDateStr = uniqueDcDates.length ? uniqueDcDates.join(", ") : (form.dc_date || "");
-        const orderNoStr = uniqueOrderNos.length ? uniqueOrderNos.join(", ") : (form.order_no || "");
-        const orderDateStr = uniqueOrderDates.length ? uniqueOrderDates.join(", ") : (form.order_date || "");
+        const orderNoStr = orderNoDisplay || (form._selOrderNo || "");
+        const orderDateStr = uniqueOrderDates.length ? uniqueOrderDates.join(", ") : (orderDateDisplay || form._selOrderDate || "");
 
         return {
             customer_name:    form.customer_name,
@@ -370,9 +422,9 @@ const SalesInvoiceForm = () => {
             order_no:         orderNoStr,
             order_date:       orderDateStr,
             dispatch_through: form.dispatch_through  || null,
-            discount:         discount,
             transport:        transport,
             subtotal:         subtotal,
+            taxable_value:    taxableValue,
             cgst:             cgst,
             sgst:             sgst,
             igst:             igst,
@@ -453,6 +505,9 @@ const SalesInvoiceForm = () => {
         setGstPct(18);
         setCustomerState("");
         setCustomerGst("");
+        setDcNoDisplay("");
+        setOrderNoDisplay("");
+        setOrderDateDisplay("");
         fetchNextInvoiceNo();
     };
 
@@ -477,6 +532,30 @@ const SalesInvoiceForm = () => {
   const num = Number(qty);
   return num % 1 === 0 ? num : num.toFixed(2);
 };
+
+    // ════════════════════════════════════════════════════════════════════
+    // Flatpickr: Invoice Date
+    // ════════════════════════════════════════════════════════════════════
+    useEffect(() => {
+        invoiceDateFp.current = flatpickr(invoiceDateRef.current, {
+            disableMobile: true,
+            monthSelectorType: "static",
+            dateFormat: "d-m-Y",
+            defaultDate: toDmy(form.invoice_date) || new Date(),
+            onChange: (selectedDates, dateStr) => {
+                setForm(p => ({ ...p, invoice_date: toYmd(dateStr) }));
+            },
+        });
+        return () => invoiceDateFp.current?.destroy();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useEffect(() => {
+        if (invoiceDateFp.current && form.invoice_date) {
+            invoiceDateFp.current.setDate(toDmy(form.invoice_date));
+        }
+    }, [form.invoice_date]);
+
     // Render
     return (
         <div className="min-h-screen bg-gray-50/70 p-6 font-sans">
@@ -605,9 +684,7 @@ const SalesInvoiceForm = () => {
                         {/* Invoice Date */}
                         <div>
                             <label className={labelCls}>Invoice Date</label>
-                            <input type="date" value={form.invoice_date}
-                                onChange={(e) => setForm((p) => ({ ...p, invoice_date: e.target.value }))}
-                                className={inputCls} />
+                            <input ref={invoiceDateRef} type="text" readOnly className={inputCls} />
                         </div>
 
                         {/* Despatch Through — dropdown */}
@@ -661,7 +738,7 @@ const SalesInvoiceForm = () => {
                             <span className="text-[11px] text-blue-500 font-semibold animate-pulse">Loading products…</span>
                         )}
                     </div>
-                    <div className="grid grid-cols-5 gap-5">
+                    <div className="grid grid-cols-6 gap-5">
 
                         {/* Admin DC No — searchable dropdown */}
                         <div className="relative" ref={dcRef}>
@@ -695,51 +772,41 @@ const SalesInvoiceForm = () => {
                             )}
                         </div>
 
-                        {/* Client DC No — read-only, auto-filled from selected Admin DC */}
+                        {/* SHOW Button */}
+                        <div className="flex items-end">
+                            <button type="button" onClick={handleShowClick}
+                                disabled={!form.dc_no}
+                                className={`w-full max-w-[100px] px-4 py-2.5 rounded-lg text-[13px] font-black uppercase tracking-wider transition-all duration-150 ${
+                                    form.dc_no
+                                        ? "bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-200"
+                                        : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                }`}>
+                                SHOW
+                            </button>
+                        </div>
+
+                        {/* Order No Display — read-only, accumulates from SHOW */}
                         <div>
                             <label className={labelCls}>
                                 Order No
-                                {dcSelected && <span className="ml-1.5 text-[10px] text-blue-500 font-black normal-case">Auto-filled</span>}
                             </label>
-                            <input type="text" value={form.order_no}
+                            <input type="text" value={orderNoDisplay}
                                 readOnly
                                 className={roInputCls}
-                                placeholder="Auto-filled" />
+                                placeholder="Click SHOW to add" />
                         </div>
 
-                        {/* Client DC Date — auto-filled from DC.Client_dc_date, editable */}
+                        {/* Order Date Display — read-only, accumulates from SHOW */}
                         <div>
                             <label className={labelCls}>
                                 Order Date
-                                {dcSelected && <span className="ml-1.5 text-[10px] text-blue-500 font-black normal-case">Auto-filled</span>}
                             </label>
-                            <input type="date" value={form.order_date}
-                                onChange={(e) => setForm((p) => ({ ...p, order_date: e.target.value }))}
-                                className={inputCls} />
+                            <input type="text" value={orderDateDisplay}
+                                readOnly
+                                className={roInputCls}
+                                placeholder="Click SHOW to add" />
                         </div>
 
-                        {/* Order No — auto-filled */}
-                        {/* <div>
-                            <label className={labelCls}>
-                                Order No
-                                {dcSelected && <span className="ml-1.5 text-[10px] text-blue-500 font-black normal-case">Auto-filled</span>}
-                            </label>
-                            <input type="text" value={form.order_no}
-                                onChange={(e) => setForm((p) => ({ ...p, order_no: e.target.value }))}
-                                className={inputCls}
-                                placeholder="Order number" />
-                        </div> */}
-
-                        {/* Order Date — auto-filled */}
-                        {/* <div>
-                            <label className={labelCls}>
-                                Order Date
-                                {dcSelected && <span className="ml-1.5 text-[10px] text-blue-500 font-black normal-case">Auto-filled</span>}
-                            </label>
-                            <input type="date" value={form.order_date || TODAY}
-                                onChange={(e) => setForm((p) => ({ ...p, order_date: e.target.value }))}
-                                className={inputCls} />
-                        </div> */}
                     </div>
 
                     {/* DC Date row */}
@@ -998,15 +1065,20 @@ const SalesInvoiceForm = () => {
                         <div className="bg-gray-50/50 rounded-xl border border-gray-200 p-6 space-y-3 max-w-sm ml-auto">
 
                             <div className="flex justify-between items-center">
-                                <span className="text-[12px] font-black text-gray-500 uppercase">Subtotal</span>
+                                <span className="text-[12px] font-black text-gray-500 uppercase">Sub Total</span>
                                 <span className="text-[13px] font-bold text-gray-900">₹{subtotal.toFixed(2)}</span>
                             </div>
 
-                          <div className="flex justify-between items-center">
-                                <span className="text-[12px] font-black text-gray-500 uppercase">Transport (+)</span>
+                            <div className="flex justify-between items-center">
+                                <span className="text-[12px] font-black text-gray-500 uppercase">Transport Charges (+)</span>
                                 <input type="number" min="0" value={form.transport}
                                     onChange={(e) => setForm((p) => ({ ...p, transport: e.target.value }))}
                                     className="w-28 p-1.5 border-b border-gray-300 bg-transparent text-right font-bold text-black outline-none focus:border-black text-[13px]" />
+                            </div>
+
+                            <div className="flex justify-between items-center bg-blue-50 px-2 py-1 rounded">
+                                <span className="text-[12px] font-black text-blue-700 uppercase">Taxable Value</span>
+                                <span className="text-[13px] font-bold text-blue-900">₹{taxableValue.toFixed(2)}</span>
                             </div>
 
                             {/* GST % selector + state badge */}
@@ -1037,15 +1109,13 @@ const SalesInvoiceForm = () => {
                                 <span className="text-[13px] font-bold text-gray-700">₹{igst.toFixed(2)}</span>
                             </div>
 
-                            
-
                             <div className="flex justify-between items-center">
                                 <span className="text-[12px] font-black text-gray-500 uppercase">Round Off</span>
                                 <span className="text-[13px] font-bold text-gray-700">{roundOff.toFixed(2)}</span>
                             </div>
 
                             <div className="flex justify-between items-center pt-4 border-t-2 border-gray-300 mt-2">
-                                <span className="text-[15px] font-black text-black uppercase">Grand Total</span>
+                                <span className="text-[15px] font-black text-black uppercase">NET TOTAL</span>
                                 <span className="text-[24px] font-black text-indigo-700">₹{grandTotal}</span>
                             </div>
                         </div>

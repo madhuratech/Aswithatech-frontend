@@ -208,7 +208,8 @@ const ReceiptReport = ({ onClose, onMinimize, title = "Receipt Voucher" }) => {
   const [isMinimized, setIsMinimized] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const [filters, setFilters] = useState({ fromDate: "", toDate: "", customerName: "", receiptNo: "" });
+  const TODAY = new Date().toISOString().split("T")[0];
+  const [filters, setFilters] = useState({ fromDate: "", toDate: TODAY, customerName: "", receiptNo: "" });
   const [clientList, setClientList] = useState([]);
   const [receiptNoList, setReceiptNoList] = useState([]);
   const [data, setData] = useState([]);

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import html2pdf from "html2pdf.js";
 
 const API = "http://localhost:3000/api/salesinvoices";
+const TODAY = new Date().toISOString().split("T")[0];
 
 const PendingBillsReport = ({ onClose, onMinimize, title = "Pending Bills" }) => {
   const navigate = useNavigate();
@@ -14,12 +15,18 @@ const PendingBillsReport = ({ onClose, onMinimize, title = "Pending Bills" }) =>
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState([]);
 
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState(TODAY);
+
   const fmt = (val) => Number(val || 0).toFixed(2);
 
-  const loadReport = async () => {
+  const loadReport = async (fd = fromDate, td = toDate) => {
     setLoading(true);
     try {
-      const res = await fetch(`${API}/report/pending-bills`);
+      const params = new URLSearchParams();
+      if (fd) params.set("fromDate", fd);
+      if (td) params.set("toDate", td);
+      const res = await fetch(`${API}/report/pending-bills?${params}`);
       const json = await res.json();
       setData(Array.isArray(json) ? json : []);
     } catch (err) {
@@ -31,8 +38,24 @@ const PendingBillsReport = ({ onClose, onMinimize, title = "Pending Bills" }) =>
   };
 
   useEffect(() => {
-    loadReport();
+    (async () => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams();
+        params.set("toDate", TODAY);
+        const res = await fetch(`${API}/report/pending-bills?${params}`);
+        const json = await res.json();
+        setData(Array.isArray(json) ? json : []);
+      } catch (err) {
+        console.error(err);
+        setData([]);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
+
+  const handleSearch = () => loadReport(fromDate, toDate);
 
   const handleClose = () => { if (onClose) onClose(); else navigate(-1); };
   const handleMinimize = () => { setIsMinimized(true); if (onMinimize) onMinimize(); };
@@ -106,11 +129,32 @@ const PendingBillsReport = ({ onClose, onMinimize, title = "Pending Bills" }) =>
 
         {/* Toolbar */}
         <div className="bg-black px-4 py-2 flex flex-wrap items-end gap-4">
+
+          <div className="flex flex-col gap-0.5">
+            <label className="text-[10px] font-bold text-white tracking-widest">FROM DATE</label>
+            <input
+              type="date"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+              className="w-[130px] px-2 py-[3px] border border-gray-400 text-[11px] bg-white text-black outline-none focus:border-blue-400"
+            />
+          </div>
+
+          <div className="flex flex-col gap-0.5">
+            <label className="text-[10px] font-bold text-white tracking-widest">TO DATE</label>
+            <input
+              type="date"
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+              className="w-[130px] px-2 py-[3px] border border-gray-400 text-[11px] bg-white text-black outline-none focus:border-blue-400"
+            />
+          </div>
+
           <div className="flex gap-2 items-end pb-0 ml-auto">
-            <button onClick={loadReport}
+            <button onClick={handleSearch}
               className="px-4 py-[3px] text-[11px] font-bold bg-white text-black border border-gray-400 hover:bg-gray-100 active:bg-gray-200 tracking-wide"
               style={{ height: "26px" }}>
-              REFRESH
+              SEARCH
             </button>
             <button onClick={handleClose}
               className="px-4 py-[3px] text-[11px] font-bold bg-white text-black border border-gray-400 hover:bg-gray-100 active:bg-gray-200 tracking-wide"

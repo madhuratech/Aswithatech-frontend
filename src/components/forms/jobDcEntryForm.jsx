@@ -6,6 +6,9 @@ import JobDeliveryChallan from "../pages/Services/jobDcFormat";
 import ServiceWindowModal from "../ui/servicewindowModal";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
+import flatpickr from "flatpickr";
+import { toDmy, toYmd } from "../../utils/dateFormat";
 
 const TODAY = new Date().toISOString().split("T")[0];
 const Api_url = "http://localhost:3000/api/jobdcentry";
@@ -17,7 +20,7 @@ const INIT_FORM = {
     customer_name: "",
     is_returnable: "No",
     order_no: "",
-    order_date: TODAY,
+    order_date: "",
     despatch_through: "",
     purpose: "",
     order_type: "Service" // Default order type
@@ -78,6 +81,8 @@ const JobDcEntryForm = () => {
     const [editSuggestions, setEditSuggestions] = useState([]);
     const [editOpen, setEditOpen] = useState(false);
     const editRef = useRef(null);
+    const jobDcDateRef = useRef(null);
+    const jobDcDateFp = useRef(null);
 
     const labelCls = "text-[12px] font-bold text-gray-600 uppercase tracking-tight";
     const inputCls = "w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black focus:outline-none bg-white shadow-sm";
@@ -89,16 +94,15 @@ const JobDcEntryForm = () => {
         fetchAllDc();
         fetchSpares();
         fetchServices();
-        const handler = (e) => {
-            if (customerRef.current && !customerRef.current.contains(e.target)) setCustomerOpen(false);
-            if (spareRef.current && !spareRef.current.contains(e.target)) setSpareOpen(false);
-            if (despatchRef.current && !despatchRef.current.contains(e.target)) setDespatchOpen(false);
-            if (uomRef.current && !uomRef.current.contains(e.target)) setUomOpen(false);
-            if (editRef.current && !editRef.current.contains(e.target)) setEditOpen(false);
-        };
-        document.addEventListener("mousedown", handler);
-        return () => document.removeEventListener("mousedown", handler);
     }, []);
+
+    useOutsideClick([
+        { ref: customerRef, onClose: () => setCustomerOpen(false) },
+        { ref: spareRef,    onClose: () => setSpareOpen(false) },
+        { ref: despatchRef, onClose: () => setDespatchOpen(false) },
+        { ref: uomRef,      onClose: () => setUomOpen(false) },
+        { ref: editRef,     onClose: () => setEditOpen(false) },
+    ]);
 
     const fetchNextDcNo = async () => {
         try {
@@ -245,6 +249,7 @@ const JobDcEntryForm = () => {
         if (!formData.customer_name.trim()) { toast.error("Customer Name is required"); return; }
         if (!formData.job_dc_no.trim()) { toast.error("Job DC Number is required"); return; }
         if (!formData.dc_date) { toast.error("DC Date is required"); return; }
+        if (!formData.despatch_through?.trim()) { toast.error("Despatch Through is required."); return; }
         if (!tabledata.length) { toast.error("Please add at least one item"); return; }
 
         const payload = {
@@ -362,6 +367,26 @@ const JobDcEntryForm = () => {
     const filteredServices = services.filter(s =>
         s.service_name.toLowerCase().includes((currentrow.item_name || "").toLowerCase())
     );
+
+    useEffect(() => {
+        jobDcDateFp.current = flatpickr(jobDcDateRef.current, {
+            disableMobile: true,
+            monthSelectorType: "static",
+            dateFormat: "d-m-Y",
+            defaultDate: toDmy(formData.dc_date) || new Date(),
+            onChange: (selectedDates, dateStr) => {
+                setFormData(p => ({ ...p, dc_date: toYmd(dateStr) }));
+            },
+        });
+        return () => jobDcDateFp.current?.destroy();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useEffect(() => {
+        if (jobDcDateFp.current && formData.dc_date) {
+            jobDcDateFp.current.setDate(toDmy(formData.dc_date));
+        }
+    }, [formData.dc_date]);
 
     return (
         <div className="min-h-screen bg-gray-50 p-6 font-sans">
@@ -492,12 +517,7 @@ const JobDcEntryForm = () => {
                         {/* DC Date */}
                         <div>
                             <label className={labelCls}>DC Date</label>
-                            <input
-                                type="date"
-                                value={formData.dc_date || TODAY}
-                                onChange={(e) => setFormData(p => ({ ...p, dc_date: e.target.value }))}
-                                className={inputCls}
-                            />
+                            <input ref={jobDcDateRef} type="text" readOnly className={inputCls} />
                         </div>
 
                         {/* Despatch Through */}
@@ -574,8 +594,9 @@ const JobDcEntryForm = () => {
                         <div>
                             <label className={labelCls}>Order Date</label>
                             <input
-                                type="date"
-                                value={formData.order_date || TODAY}
+                                type="text"
+                                placeholder="Enter Order Date(s)"
+                                value={formData.order_date}
                                 onChange={(e) => setFormData(p => ({ ...p, order_date: e.target.value }))}
                                 className={inputCls}
                             />

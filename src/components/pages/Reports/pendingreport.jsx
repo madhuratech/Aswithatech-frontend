@@ -14,8 +14,9 @@ const PendingReport = () => {
   const [data,     setData]     = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [search,   setSearch]   = useState("");
+  const TODAY = new Date().toISOString().split("T")[0];
   const [fromDate, setFromDate] = useState("");
-  const [toDate,   setToDate]   = useState("");
+  const [toDate,   setToDate]   = useState(TODAY);
 
   useEffect(() => {
     fetch(`${API_URL}/calculated`)

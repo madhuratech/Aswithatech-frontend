@@ -80,7 +80,7 @@ const StandbyDeliveryChallan = ({ dcNumber }) => {
               { label: "DC No",          value: data?.standby_dc_no },
               { label: "Date",           value: data?.dc_date ? new Date(data.dc_date).toLocaleDateString("en-GB") : "" },
               { label: "Your Dc No",       value: data?.order_no || "" },
-              { label: "Your Dc Date",     value: data?.order_date ? new Date(data.order_date).toLocaleDateString("en-GB") : "" },
+              { label: "Your Dc Date",     value: data?.order_date || "" },
               { label: "Despatch",       value: data?.despatch_through || "By Hand" },
             ].map((row, i) => (
               <div key={i} className="flex text-[11px] font-bold">

@@ -20,7 +20,6 @@ const CustomerLedger = ({ onClose, onMinimize, title = "Customer Ledger" }) => {
   const [filters, setFilters] = useState({ fromDate: "", toDate: "", customer_name: "" });
 
   const [customerList, setCustomerList] = useState([]);
-  const [reportGenerated, setReportGenerated] = useState(false);
 
   // Ledger data
   const [entries, setEntries] = useState([]);
@@ -44,7 +43,6 @@ const CustomerLedger = ({ onClose, onMinimize, title = "Customer Ledger" }) => {
   // Core fetch — takes explicit params so it works from mount, onChange, and button
   const loadReport = async (customerName, fromDate, toDate, type) => {
     setLoading(true);
-    setReportGenerated(true);
     try {
       const params = new URLSearchParams({ type });
       if (customerName) params.set("customer_name", customerName);

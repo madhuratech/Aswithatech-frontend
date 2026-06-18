@@ -316,9 +316,10 @@ const PurchaseReport = ({ onMinimize, onClose, setIsMinimizedInternal, title = "
   const [openbillno,   setopenbillno]   = useState(false);
   const [supplieropen, setsupplieropen] = useState(false);
 
+  const TODAY = new Date().toISOString().split("T")[0];
   const [filters, setfilters] = useState({
     fromdate:      "",
-    todate:        "",
+    todate:        TODAY,
     bill_no:       "",
     supplier_name: "",
   });

@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Printer, FileDown, Table } from "lucide-react";
 import toast from "react-hot-toast";
 import html2pdf from "html2pdf.js";
 import * as XLSX from "xlsx";
+import { useOutsideClick } from "../../../hooks/useOutsideClick";
 
 const Api_url = "http://localhost:3000/api/jobdcentry";
 
@@ -23,27 +24,17 @@ const JobDetailsReport = () => {
   const custRef = useRef(null);
 
   // Filters state
+  const TODAY = new Date().toISOString().split("T")[0];
   const [filters, setFilters] = useState({
     fromDate: "",
-    toDate: "",
+    toDate: TODAY,
     customerName: "",
     dcNo: ""
   });
 
   const printAreaRef = useRef(null);
 
-  useEffect(() => {
-    fetchReportData();
-    fetchCustomers();
-
-    const handler = (e) => {
-        if (custRef.current && !custRef.current.contains(e.target)) setShowCustDropdown(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  const fetchCustomers = async () => {
+  const fetchCustomers = useCallback(async () => {
       try {
           const res = await fetch("http://localhost:3000/api/customers/all");
           const clientData = await res.json();
@@ -51,9 +42,9 @@ const JobDetailsReport = () => {
       } catch {
           setCustomers([]);
       }
-  };
+  }, []);
 
-  const fetchReportData = async () => {
+  const fetchReportData = useCallback(async () => {
       setLoading(true);
       try {
           const params = new URLSearchParams();
@@ -71,7 +62,16 @@ const JobDetailsReport = () => {
       } finally {
           setLoading(false);
       }
-  };
+  }, [filters]);
+
+  useEffect(() => {
+    fetchReportData();
+    fetchCustomers();
+  }, [fetchReportData, fetchCustomers]);
+
+  useOutsideClick([
+    { ref: custRef, onClose: () => setShowCustDropdown(false) },
+  ]);
 
   const handleSearch = (e) => {
       e.preventDefault();

@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import logo from "../../../asset/Logo.jpeg";
 import { toWords } from "number-to-words";
 
 const Creditnoteview = ({ cnNumber }) => {
@@ -207,7 +206,7 @@ const Creditnoteview = ({ cnNumber }) => {
                 <div className="w-[40%] p-2 text-[12px] font-bold text-right pr-4">{(Number(creditnote.subtotal) || 0).toFixed(2)}</div>
               </div>
               <div className="flex border-b border-black">
-                <div className="w-[60%] p-2 text-[12px] font-bold border-r border-black">Forward & Packing</div>
+                <div className="w-[60%] p-2 text-[12px] font-bold border-r border-black">Transport Charges</div>
                 <div className="w-[40%] p-2 text-[12px] font-bold text-right pr-4">{(Number(creditnote.delivery_charge) || 0).toFixed(2)}</div>
               </div>
               <div className="flex border-b border-black">

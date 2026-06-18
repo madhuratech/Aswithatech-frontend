@@ -4,6 +4,9 @@ import { SquarePen, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
+import flatpickr from "flatpickr";
+import { toDmy, toYmd } from "../../utils/dateFormat";
 
 // Debounce helper
 function debounce(func, delay) {
@@ -54,12 +57,34 @@ const ScrapPcb = () => {
   const typeRef = useRef(null);
   const sourceRef = useRef(null);
   const searchRef = useRef(null);
+  const scrapDamageDateRef = useRef(null);
+  const scrapDamageDateFp = useRef(null);
 
   // Set default date to today
   useEffect(() => {
     const today = new Date().toISOString().split("T")[0];
     setDamageDate(today);
   }, []);
+
+  useEffect(() => {
+    scrapDamageDateFp.current = flatpickr(scrapDamageDateRef.current, {
+      disableMobile: true,
+      monthSelectorType: "static",
+      dateFormat: "d-m-Y",
+      defaultDate: damageDate ? toDmy(damageDate) : new Date(),
+      onChange: (selectedDates, dateStr) => {
+        setDamageDate(toYmd(dateStr));
+      },
+    });
+    return () => scrapDamageDateFp.current?.destroy();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (scrapDamageDateFp.current && damageDate) {
+      scrapDamageDateFp.current.setDate(toDmy(damageDate));
+    }
+  }, [damageDate]);
 
   // Fetch next generated Scrap Number
   const fetchNextSno = async () => {
@@ -278,28 +303,13 @@ const ScrapPcb = () => {
 
   const debouncedSnoSearch = useRef(debounce(handleSearchSno, 300)).current;
 
-  // Click outside dropdowns listener
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (pcbRef.current && !pcbRef.current.contains(event.target)) {
-        setShowPcbDropdown(false);
-      }
-      if (empRef.current && !empRef.current.contains(event.target)) {
-        setShowEmpDropdown(false);
-      }
-      if (typeRef.current && !typeRef.current.contains(event.target)) {
-        setShowTypeDropdown(false);
-      }
-      if (sourceRef.current && !sourceRef.current.contains(event.target)) {
-        setShowSourceDropdown(false);
-      }
-      if (searchRef.current && !searchRef.current.contains(event.target)) {
-        setShowSearchDropdown(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  useOutsideClick([
+    { ref: pcbRef,    onClose: () => setShowPcbDropdown(false) },
+    { ref: empRef,    onClose: () => setShowEmpDropdown(false) },
+    { ref: typeRef,   onClose: () => setShowTypeDropdown(false) },
+    { ref: sourceRef, onClose: () => setShowSourceDropdown(false) },
+    { ref: searchRef, onClose: () => setShowSearchDropdown(false) },
+  ]);
 
   // Filter PCBs for autocomplete
   const filteredPcbs = pcbStocks.filter(
@@ -414,10 +424,11 @@ const ScrapPcb = () => {
                 Damage Date <span className="text-red-500">*</span>
               </label>
               <input
-                type="date"
-                value={damageDate}
-                onChange={(e) => setDamageDate(e.target.value)}
+                ref={scrapDamageDateRef}
+                type="text"
+                placeholder="Select Date"
                 className={inputCls}
+                readOnly
               />
             </div>
 
