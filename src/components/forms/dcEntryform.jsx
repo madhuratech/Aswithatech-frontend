@@ -35,7 +35,7 @@ const INIT_ROW = {
 };
 
 const DESPATCH_OPTIONS = ["Courier", "Transport", "By Hand"];
-const REMARKS_OPTIONS = ["Serviced", "Re Serviced", "For Sale", "Beyond", "For Testing Purpose"];
+const REMARKS_OPTIONS = ["Serviced", "Re Serviced", "For Sale", "Beyond", "For Testing Purpose","Buy Back"];
 
 const DcEntryForm = () => {
     const navigate = useNavigate();
@@ -184,7 +184,9 @@ const DcEntryForm = () => {
         setFormData(p => ({ ...p, party_dc_no: dc.dc_number, party_dc_date: "" }));
         setClientDcOpen(false);
     try {
-        const res = await fetch(`${Api_url}/inward/${encodeURIComponent(dc.dc_number)}`);
+        const res = await fetch(
+          `${Api_url}/inward/${encodeURIComponent(dc.dc_number)}?supplier=${encodeURIComponent(formData.supplier_name)}`
+        );
         const data = await res.json();
         if (data.header?.inward_date) {
             setInwardDate(data.header.inward_date.split("T")[0]);
@@ -204,7 +206,9 @@ const DcEntryForm = () => {
         // Fetch order date from inward entry
         let orderDate = "";
         try {
-            const res = await fetch(`${Api_url}/inward/${encodeURIComponent(orderNo)}`);
+            const res = await fetch(
+              `${Api_url}/inward/${encodeURIComponent(orderNo)}?supplier=${encodeURIComponent(formData.supplier_name)}`
+            );
             const data = await res.json();
             if (data.header?.dc_date) {
                 orderDate = data.header.dc_date;
@@ -236,7 +240,7 @@ const DcEntryForm = () => {
             item_name: item.item_name || "",
             hsn: item.hsn || "",
             uom: item.unit || item.uom || "",
-            quantity: item.quantity || p.quantity,
+            quantity: item.quantity != null ? item.quantity : p.quantity,
             serial_no: item.pcb_sl_no || item.serial_no || "",
             party_dc_no: formData.party_dc_no || "",
             party_dc_date: formData.party_dc_date || ""
@@ -300,8 +304,8 @@ const DcEntryForm = () => {
                 uom: item.uom,
                 hsn: item.hsn,
                 remarks: item.remarks,
-                party_dc_no: item.party_dc_no || "",
-                party_dc_date: item.party_dc_date || ""
+                party_dc_no: item.party_dc_no || orderNoDisplay || "",
+                party_dc_date: item.party_dc_date || orderDateDisplay || ""
             }))
         };
 
@@ -604,7 +608,7 @@ const DcEntryForm = () => {
                                         !formData.supplier_name ? "bg-gray-100 text-gray-400" : ""
                                     }`}
                                 >
-                                    <span className={formData.party_dc_no ? "text-black" : "text-gray-400 font-medium"}>
+                                    <span className={formData.party_dc_no ? "text-black" : "text-gray-400 font-medium "}>
                                         {formData.party_dc_no || (formData.supplier_name ? "Select Order Number…" : "Select a client first")}
                                     </span>
                                     <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -643,7 +647,7 @@ const DcEntryForm = () => {
                                             }
                                         </div>
                                     ) : (
-                                        <div className={`${dropdownCls} px-4 py-3 text-[13px] text-gray-400`}>
+                                        <div className={`${dropdownCls} px-4 py-3 text-[13px] text-gray-400 max-w-[200px]`}>
                                             No remaining order numbers.
                                         </div>
                                     )}
@@ -746,7 +750,7 @@ const DcEntryForm = () => {
                         <div>
                              <label className={labelCls} >Qty</label>
                             <input type="text" placeholder="Quantity"
-                                value={currentrow.quantity}
+                                value={Number(currentrow.quantity)}
                                 onChange={(e) => setCurrentrow(p => ({ ...p, quantity: e.target.value }))}
                                 className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-medium text-black outline-none bg-gray-50/50" />
                         </div>
@@ -838,7 +842,7 @@ const DcEntryForm = () => {
                                     <tr key={idx} className={`border-b border-gray-100 ${editIndex === idx ? "bg-blue-50" : "hover:bg-gray-50"}`}>
                                         <td className="p-3 text-[12px] text-gray-500 border-r">{idx + 1}</td>
                                         <td className="p-3 text-[12px] font-semibold border-r">{item.item_name} {item.serial_no}</td>
-                                        <td className="p-3 text-[12px] border-r">{item.quantity}</td>
+                                        <td className="p-3 text-[12px] border-r">{Number(item.quantity || 0)}</td>
                                         <td className="p-3 text-[12px] border-r">{item.uom}</td>
                                         <td className="p-3 text-[12px] border-r">{item.hsn}</td>
                                         <td className="p-3 text-[12px] border-r">{item.remarks}</td>

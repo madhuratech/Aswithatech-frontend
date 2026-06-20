@@ -6,6 +6,7 @@ import QuotationFormat from "./quotationoverview";
 import InvoiceFormat from "./invoiceformat";
 import SalesDCFormat from "./salesdcformat";
 import CreditNoteView from "./creditnote";
+import PerformanceInvoiceLayout2 from "./performanceinvoiceformat2";
 const SalesCard = ({ title, subtitle, icon: Icon, bgColor, iconColor, onClick }) => {
     return (
         <div
@@ -33,6 +34,7 @@ const SalesModule = () => {
     const [modalTitle, setModalTitle] = useState("");
     const [isMinimized, setIsMinimized] = useState(false);
     const [initialView] = useState("qt");
+    const [modalKey, setModalKey] = useState(0);
     
     
 
@@ -93,6 +95,22 @@ const openReport = async (type) => {
             latestNumber = data[0]?.cn_number || "";
         }
 
+        if (type === "Direct Invoice Format") {
+            const res = await fetch(
+              "http://localhost:3000/api/directinvoices/INV/search?q="
+            );
+            const data = await res.json();
+            latestNumber = data[0]?.invoice_no || "";
+        }
+
+        if (type === "PI2 Format") {
+            const res = await fetch(
+              "http://localhost:3000/api/performanceinvoices2/INV/search?q="
+            );
+            const data = await res.json();
+            latestNumber = data[0]?.invoice_no || "";
+        }
+
         setFilters({
             fromDate: "",
             toDate: "",
@@ -102,6 +120,7 @@ const openReport = async (type) => {
 
         setviewtype(type);
 
+        setModalKey(prev => prev + 1);
         setShowModal(true);
 
     } catch (error) {
@@ -112,7 +131,7 @@ const openReport = async (type) => {
 };
 
 const ShowReport = (item) => {
-    if(item.name === "Quotation Format" || item.name === "Invoice Format" || item.name === "DC Format" || item.name === "Credit Note Format"){
+    if(item.name === "Quotation Format" || item.name === "Invoice Format" || item.name === "DC Format" || item.name === "Credit Note Format" || item.name === "Direct Invoice Format" || item.name === "PI2 Format"){
         openReport(item.name);
     }
     else{
@@ -206,8 +225,9 @@ const ShowReport = (item) => {
         { name: "DC Format", path: "/sales/stock-report" },
         { name: "Credit Note Format", path: "/sales/credit-note-view" },
         { name: "Invoice Format", path: "/sales/tax-report" },
+        { name: "Direct Invoice Format", path: "/sales/direct-invoice-format" },
         { name: "Reciept Format", path: "/sales/Reciept-Format" },
-        { name: "PI2 Report", path: "/sales/pi2-report" },
+        { name: "PI2 Format", path: "/sales/pi2-report" },
     ];
     return (
          <div className={`min-h-screen overflow-visible transition-all duration-300 ${openDropdown !== null ? "" : ""  }`}>
@@ -256,7 +276,7 @@ const ShowReport = (item) => {
                 ))}
         </div>
          <SaleswindowModel
-          key={viewtype}
+          key={modalKey}
           title={modalTitle}
           isOpen={showModal}
           type={viewtype}
@@ -279,6 +299,12 @@ const ShowReport = (item) => {
         } 
         {viewtype === "Credit Note Format" &&
         <CreditNoteView cnNumber={filters.QtNumber} />
+        }
+        {viewtype === "Direct Invoice Format" &&
+        <InvoiceFormat InvNumber={filters.QtNumber} />
+        }
+        {viewtype === "PI2 Format" &&
+        <PerformanceInvoiceLayout2 InvNumber={filters.QtNumber} />
         }
         </SaleswindowModel>
 

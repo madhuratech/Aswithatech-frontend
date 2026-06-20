@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { toWords } from "number-to-words";
+import { splitAddress } from "../../../utils/AddressBlock";
 
 const Debitnoteview = ({ dnNumber }) => {
   const [debitnote, setDebitnote] = useState({
@@ -35,11 +36,13 @@ const Debitnoteview = ({ dnNumber }) => {
     return (
       <div className="print-copy-wrapper py-4 print:py-0 flex flex-col items-center animate-in fade-in duration-200">
         {/* TOP BAR / LABEL */}
-        <div className="w-[190mm] text-right px-4 pt-1 flex-shrink-0">
-          <span className="text-[13px] font-bold uppercase tracking-wider">
-            {copyLabel}
-          </span>
-        </div>
+        {copyLabel && copyLabel.trim() !== "" && (
+          <div className="w-[190mm] text-right px-4 pt-1 flex-shrink-0">
+            <span className="text-[13px] font-bold uppercase tracking-wider">
+              {copyLabel}
+            </span>
+          </div>
+        )}
         <div className="print-container w-[190mm] border-2 border-black bg-white relative shadow-lg overflow-hidden">
 
           {/* HEADER */}
@@ -71,8 +74,9 @@ const Debitnoteview = ({ dnNumber }) => {
                 {debitnote?.client?.customer_name}
               </h2>
               <div className="text-[12px] leading-5 font-medium max-w-[350px]">
-                <p>{debitnote?.client?.address}</p>
-                <p>{debitnote?.client?.state} - {debitnote?.client?.pincode}</p>
+                {splitAddress(debitnote?.client?.address, debitnote?.client?.state, debitnote?.client?.pincode).map((line, idx) => (
+                  <p key={idx}>{line}</p>
+                ))}
                 <p className="mt-2 font-bold">Ph: {debitnote?.client?.phone}</p>
                 <p className="font-bold">GSTIN : {debitnote?.client?.gst_number}</p>
               </div>
@@ -232,8 +236,8 @@ const Debitnoteview = ({ dnNumber }) => {
         }
       `}</style>
       <div className="print-wrapper w-full flex flex-col items-center py-6 overflow-auto">
-        {renderDebitNotePage("[ORIGINAL FOR RECIPIENT]")}
-        {renderDebitNotePage("[DUPLICATE COPY]")}
+        {renderDebitNotePage("")}
+        {renderDebitNotePage("")}
       </div>
     </>
   );

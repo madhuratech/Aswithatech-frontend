@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { X, Square, Minus, Printer } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import html2pdf from "html2pdf.js";
+import { splitAddress } from "../../utils/AddressBlock";
 
 const API = "http://localhost:3000/api/receipts";
 
@@ -54,7 +55,7 @@ export const ReceiptVoucher = ({ receipt, copyLabel }) => {
   return (
     <div className="print-copy-wrapper py-4 print:py-0 flex flex-col items-center animate-in fade-in duration-200">
       {/* TOP BAR / LABEL */}
-      {copyLabel && (
+      {copyLabel && copyLabel.trim() !== "" && (
         <div className="w-[190mm] text-right px-4 pt-1 flex-shrink-0">
           <span className="text-[13px] font-bold uppercase tracking-wider">
             {copyLabel}
@@ -87,7 +88,7 @@ export const ReceiptVoucher = ({ receipt, copyLabel }) => {
         </div>
 
         {/* DETAILS SECTION */}
-        <div className="flex border-b border-black">
+        <div className="flex border-b-2 border-black">
           {/* Left - To Section */}
           <div className="w-[60%] p-4 min-h-[140px] border-r-2 border-black">
             <h2 className="text-[15px] font-bold mb-1">To:</h2>
@@ -95,7 +96,9 @@ export const ReceiptVoucher = ({ receipt, copyLabel }) => {
               {receipt?.customer_name}
             </h2>
             <div className="text-[12px] leading-5 font-medium max-w-[350px] space-y-1">
-              {receipt?.address && <p>{receipt?.address}</p>}
+              {receipt?.address && splitAddress(receipt.address, receipt.state, receipt.pincode).map((line, idx) => (
+                <p key={idx}>{line}</p>
+              ))}
               {receipt?.phone && <p className="font-bold">Ph: {receipt?.phone}</p>}
               {receipt?.gst_number && <p className="font-bold">GSTIN : {receipt?.gst_number}</p>}
             </div>
@@ -125,37 +128,47 @@ export const ReceiptVoucher = ({ receipt, copyLabel }) => {
         <div className="flex flex-col overflow-hidden min-h-[245px]">
           <table className="w-full border-collapse">
             <thead>
-              <tr className="bg-gray-50 border-b border-black">
-                <th className="border-r border-black p-2 w-[5%] text-center text-[12px] font-bold">S.No</th>
-                <th className="border-r border-black p-2 w-[20%] text-center text-[12px] font-bold">Bill No</th>
-                <th className="border-r border-black p-2 w-[20%] text-center text-[12px] font-bold">Date</th>
-                <th className="border-r border-black p-2 w-[20%] text-center text-[12px] font-bold">Bill Amount</th>
-                <th className="border-r border-black p-2 w-[20%] text-center text-[12px] font-bold">Paid Amt</th>
-                <th className="p-2 w-[15%] border-black text-center text-[12px] font-bold">Balance</th>
+              <tr className="bg-gray-50 border-b-2 border-black text-blue-800">
+                <th className="p-2 w-[5%] text-center text-[12px] font-bold text-blue-800">SNO</th>
+                <th className="p-2 w-[18%] text-center text-[12px] font-bold text-blue-800">BILL NO</th>
+                <th className="p-2 w-[18%] text-center text-[12px] font-bold text-blue-800">DATE</th>
+                <th className="p-2 w-[20%] text-center text-[12px] font-bold text-blue-800 pr-4">BILL AMOUNT</th>
+                <th className="p-2 w-[11%] text-right text-[12px] font-bold text-blue-800 pr-4">ADVANS</th>
+                <th className="p-2 w-[11%] text-right text-[12px] font-bold text-blue-800 pr-4">TDSAMT</th>
+                <th className="p-2 w-[13%] text-right text-[12px] font-bold text-blue-800 pr-4">PAIDAMT</th>
+                <th className="p-2 w-[12%] text-right text-[12px] font-bold text-blue-800 pr-4">NETPAID</th>
               </tr>
             </thead>
             <tbody>
               {items.map((item, index) => {
+                const adv = Number(item.advance_paid || 0);
+                const tds = Number(item.tds_amt || 0);
+                const paid = Number(item.paid_amount || 0);
+                const netPaid = paid + tds + adv;
                 return (
-                  <tr key={index} className=" border-black min-h-[35px]">
-                    <td className="border-r border-black p-2 text-center text-[12px]">{index + 1}</td>
-                    <td className="border-r border-black px-3 py-2 text-[12px] font-medium">{item.bill_no}</td>
-                    <td className="border-r border-black p-2 text-center text-[12px]">{fmtDate(item.bill_date)}</td>
-                    <td className="border-r border-black p-2 text-right text-[12px] pr-4">{fmt(item.bill_amount)}</td>
-                    <td className="border-r border-black p-2 text-right text-[12px] pr-4">{fmt(item.paid_amount)}</td>
-                    <td className="p-2 text-right text-[12px] border-black font-bold pr-4">{fmt(item.balance)}</td>
+                  <tr key={index} className="  border-gray-100 min-h-[35px]">
+                    <td className="p-2 border-r-2 border-black text-center text-[12px]">{index + 1}</td>
+                    <td className="px-3 py-2 border-r-2 border-black text-[12px] font-medium text-center">{item.bill_no}</td>
+                    <td className="p-2 border-r-2 border-black text-center text-[12px]">{fmtDate(item.bill_date)}</td>
+                    <td className="p-2 border-r-2 border-black text-center text-[12px] pr-4">{fmt(item.bill_amount)}</td>
+                    <td className="p-2 border-r-2 border-black text-right text-[12px] pr-4">{fmt(adv)}</td>
+                    <td className="p-2 border-r-2 border-black text-right text-[12px] pr-4">{fmt(tds)}</td>
+                    <td className="p-2 border-r-2 border-black text-right text-[12px] pr-4">{fmt(paid)}</td>
+                    <td className="p-2  text-right text-[12px] font-bold pr-4">{fmt(netPaid)}</td>
                   </tr>
                 );
               })}
               {/* Filler rows */}
               {Array.from({ length: emptyRows }).map((_, i) => (
-                <tr key={`filler-${i}`} className=" border-black h-[35px]">
-                  <td className="border-r border-black">&nbsp;</td>
-                  <td className="border-r border-black">&nbsp;</td>
-                  <td className="border-r border-black">&nbsp;</td>
-                  <td className="border-r border-black">&nbsp;</td>
-                  <td className="border-r border-black">&nbsp;</td>
-                  <td className="border-black">&nbsp;</td>
+                <tr key={`filler-${i}`} className="h-[35px]">
+                  <td className="border-r-2 border-black">&nbsp;</td>
+                  <td className="border-r-2 border-black"></td>
+                  <td className="border-r-2 border-black"></td>
+                  <td className="border-r-2 border-black"></td>
+                  <td className="border-r-2 border-black"></td>
+                  <td className="border-r-2 border-black"></td>
+                  <td className="border-r-2 border-black"></td>
+                  <td className=""></td>
                 </tr>
               ))}
             </tbody>
@@ -163,16 +176,16 @@ export const ReceiptVoucher = ({ receipt, copyLabel }) => {
         </div>
 
         {/* SUMMARY SECTION - Fixed alignment with columns */}
-        <div className="border-t border-black flex">
-          <div className="w-[70%] border-r border-black ml-[10px]  items-center px-4 py-2 text-[13px]">
+        <div className="border-t-2 border-black flex">
+          <div className="w-[70%] border-r-2 border-black ml-[10px]  items-center px-4 py-2 text-[13px]">
             <p><strong>Payment Mode :</strong> {receipt?.payment_mode || "—"}</p>
             <p><strong>Bank Name :</strong> {receipt?.bank_name || "—"}</p>
             <p><strong>Reference Number :</strong> {receipt?.reference_number || "—"}</p>
           </div>
           <div className="w-[30%] border-black">
-            <div className="flex bg-gray-50 h-[38px] items-center">
-              <div className="w-[50%] p-2 text-[13px] font-extrabold border-r border-black h-full flex items-center">NET TOTAL </div>
-              <div className="w-[50%] p-2 text-[13px] font-extrabold text-right pr-4 h-full flex items-center justify-end">{fmt(netTotal)}</div>
+            <div className="flex  h-[80px] items-center">
+              <div className="w-[50%] p-2 text-[13px] font-extrabold border-r-2 h-full border-black h-full flex items-center">NET TOTAL </div>
+              <div className="w-[50%] p-2 text-[13px] font-extrabold text-right  pr-4 h-full flex items-center justify-end">{fmt(netTotal)}</div>
             </div>
           </div>
         </div>
@@ -190,7 +203,7 @@ export const ReceiptVoucher = ({ receipt, copyLabel }) => {
             <span className="text-[12px] font-bold border-t border-black pt-1">Receiver's Signature</span>
           </div>
           <div className="text-right">
-            <h2 className="text-[13px] font-bold mb-8">For {COMPANY.name}</h2>
+            <h2 className="text-[13px] font-bold text-red-500 mb-8">For {COMPANY.name}</h2>
             <span className="text-[12px] font-bold border-t border-black pt-1 inline-block">Authorised Signatory</span>
           </div>
         </div>
@@ -259,38 +272,7 @@ const ReceiptReport = ({ onClose, onMinimize, title = "Receipt Voucher" }) => {
   const handleMinimize = () => { setIsMinimized(true); if (onMinimize) onMinimize(); };
 
   const handlePrint = () => {
-    const win = window.open("", "", "width=900,height=700");
-    win.document.write(`
-      <html><head><title>${title}</title>
-      <script src="https://cdn.tailwindcss.com"></script>
-      <style>
-        * { box-sizing: border-box; }
-        body { margin: 0; padding: 16px; font-family: Arial, sans-serif; font-size: 11px; background: #fff; }
-        @page { size: A4 portrait; margin: 8mm; }
-        .print-copy-wrapper {
-          page-break-after: always !important;
-          break-after: page !important;
-        }
-        .print-copy-wrapper:last-child {
-          page-break-after: auto !important;
-          break-after: auto !important;
-        }
-        @media print {
-          body { padding: 0; }
-          .print-copy-wrapper {
-            padding: 0 !important;
-          }
-        }
-      </style>
-      </head><body>
-        <div class="flex flex-col items-center">
-          ${contentRef.current.innerHTML}
-        </div>
-      </body></html>
-    `);
-    win.document.close();
-    win.focus();
-    setTimeout(() => win.print(), 1000);
+    window.print();
   };
 
   const exportPDF = () => {
@@ -326,7 +308,7 @@ const ReceiptReport = ({ onClose, onMinimize, title = "Receipt Voucher" }) => {
         {/* ── Title Bar ── */}
         <div
           onDoubleClick={() => setIsMaximized(!isMaximized)}
-          className="bg-gradient-to-r from-[#0050a0] to-[#0078d7] text-white px-2 py-1 flex justify-between items-center cursor-default select-none"
+          className="bg-gradient-to-r from-[#0050a0] to-[#0078d7] text-white px-2 py-1 flex justify-between items-center cursor-default select-none no-print"
         >
           <span className="text-xs font-bold tracking-wide">{title}</span>
           <div className="flex shrink-0">
@@ -337,7 +319,7 @@ const ReceiptReport = ({ onClose, onMinimize, title = "Receipt Voucher" }) => {
         </div>
 
         {/* ── Filter Toolbar ── */}
-        <div className="bg-black px-4 py-2 flex flex-wrap items-end gap-4">
+        <div className="bg-black px-4 py-2 flex flex-wrap items-end gap-4 no-print">
           <div className="flex flex-col gap-0.5">
             <label className="text-[10px] font-bold text-white tracking-widest">FROM DATE</label>
             <input
@@ -426,7 +408,7 @@ const ReceiptReport = ({ onClose, onMinimize, title = "Receipt Voucher" }) => {
 
         {/* ── Voucher Display Area ── */}
         <div className="flex-1 overflow-auto bg-white py-6 custom-scrollbar">
-          <div ref={contentRef} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <div ref={contentRef} className="print-area" style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
             {loading ? (
               <div style={{ padding: "40px", fontFamily: "Arial", fontSize: "12px", color: "#555", fontStyle: "italic" }}>
                 Loading vouchers...
@@ -437,8 +419,8 @@ const ReceiptReport = ({ onClose, onMinimize, title = "Receipt Voucher" }) => {
               </div>
             ) : (
               data.flatMap((receipt, i) => [
-                <ReceiptVoucher key={`orig-${receipt.id ?? i}`} receipt={receipt} copyLabel="[ORIGINAL COPY]" />,
-                <ReceiptVoucher key={`dupe-${receipt.id ?? i}`} receipt={receipt} copyLabel="[DUPLICATE COPY]" />
+                <ReceiptVoucher key={`orig-${receipt.id ?? i}`} receipt={receipt} copyLabel="" />,
+                <ReceiptVoucher key={`dupe-${receipt.id ?? i}`} receipt={receipt} copyLabel="" />
               ])
             )}
           </div>
@@ -458,8 +440,54 @@ const ReceiptReport = ({ onClose, onMinimize, title = "Receipt Voucher" }) => {
           break-after: auto;
         }
         @media print {
-          .no-print { display: none !important; }
-          body { margin: 0; padding: 0; }
+          body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+          }
+          body * {
+            visibility: hidden;
+          }
+          .print-area, .print-area * {
+            visibility: visible;
+          }
+          .print-area {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+          }
+          #root,
+          #root > div,
+          main,
+          main > div,
+          main > div > div,
+          .fixed,
+          .inset-0,
+          .custom-scrollbar {
+            display: block !important;
+            position: static !important;
+            height: auto !important;
+            min-height: auto !important;
+            max-height: none !important;
+            overflow: visible !important;
+            float: none !important;
+            box-shadow: none !important;
+            border: none !important;
+            background: transparent !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+          .no-print {
+            display: none !important;
+          }
         }
       `}</style>
     </div>

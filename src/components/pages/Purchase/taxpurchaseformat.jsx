@@ -33,11 +33,13 @@ const TaxPurchaseFormat = ({ billNo }) => {
     return (
       <div className="print-copy-wrapper py-4 print:py-0 flex flex-col items-center animate-in fade-in duration-200">
         {/* TOP BAR / LABEL */}
-        <div className="w-[190mm] text-right px-4 pt-1 flex-shrink-0">
-          <span className="text-[13px] font-bold uppercase tracking-wider">
-            {copyLabel}
-          </span>
-        </div>
+        {copyLabel && copyLabel.trim() !== "" && (
+          <div className="w-[190mm] text-right px-4 pt-1 flex-shrink-0">
+            <span className="text-[13px] font-bold uppercase tracking-wider">
+              {copyLabel}
+            </span>
+          </div>
+        )}
         <div className="print-container w-[190mm] border-2 border-black bg-white relative shadow-lg overflow-hidden">
 
           {/* HEADER */}
@@ -249,8 +251,8 @@ const TaxPurchaseFormat = ({ billNo }) => {
         }
       `}</style>
       <div className="print-wrapper w-full flex flex-col items-center py-6 overflow-auto">
-        {renderTaxPurchasePage("[ORIGINAL FOR RECIPIENT]")}
-        {renderTaxPurchasePage("[DUPLICATE COPY]")}
+        {renderTaxPurchasePage("")}
+        {renderTaxPurchasePage("")}
       </div>
     </>
   );

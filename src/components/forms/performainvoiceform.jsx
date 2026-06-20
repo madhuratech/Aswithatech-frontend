@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { SquarePen,Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { isTamilNadu, calcGstAmounts } from "../../utils/gstUtils";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import flatpickr from "flatpickr";
@@ -20,8 +21,8 @@ const PerformanceInvoiceForm  = () => {
   const [search , setsearch] = useState();
   const[items , setitems] = useState([]);
   const[itemsearch , setitemsearch] = useState();
-  // SHOW display fields (comma-separated, read-only)
   const [dcNoDisplay, setDcNoDisplay]         = useState("");
+  const [dcDateDisplay, setDcDateDisplay]     = useState("");
   const [orderNoDisplay, setOrderNoDisplay]   = useState("");
   const [orderDateDisplay, setOrderDateDisplay] = useState("");
 
@@ -34,6 +35,7 @@ const PerformanceInvoiceForm  = () => {
 
 
   const[clientopen , setclientopen] = useState(false);
+  const [dispatchOpen, setDispatchOpen] = useState(false);
   const [shouldAutoSelect, setShouldAutoSelect] = useState(false);
   const [itemopen , setitemopen] = useState(false);
   const [openUom , setopenUom] = useState(false);
@@ -48,6 +50,7 @@ const PerformanceInvoiceForm  = () => {
 
   const Api_url = "http://localhost:3000/api/directinvoices"
 
+  const DESPATCH_OPTIONS = ["Courier", "Hand Delivery", "Transport", "By Bus", "By Train", "Parcel Service", "Customer Pickup"];
 
   // States
 
@@ -136,6 +139,33 @@ const PerformanceInvoiceForm  = () => {
 
   const orderDateRef = useRef(null);
   const orderDateFp = useRef(null);
+  const dispatchRef = useRef(null);
+  const customerDropdownRef = useRef(null);
+  const itemDropdownRef = useRef(null);
+  const uomDropdownRef = useRef(null);
+  const loadInvoiceDropdownRef = useRef(null);
+
+  useOutsideClick([
+    { ref: customerDropdownRef, onClose: () => setclientopen(false) },
+    { ref: dispatchRef, onClose: () => setDispatchOpen(false) },
+    { ref: itemDropdownRef, onClose: () => setitemopen(false) },
+    { ref: uomDropdownRef, onClose: () => setopenUom(false) },
+    { ref: loadInvoiceDropdownRef, onClose: () => setLoadInvoiceOpen(false) },
+  ]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setclientopen(false);
+        setDispatchOpen(false);
+        setitemopen(false);
+        setopenUom(false);
+        setLoadInvoiceOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   useEffect(() => {
     perfInvoiceDateFp.current = flatpickr(perfInvoiceDateRef.current, {
@@ -322,8 +352,9 @@ useEffect(() => {
 
   const handleShowClick = () => {
     const dcNo = formData.dc_no?.trim();
+    const dcDate = formData.dc_date?.trim() || dcDateRef.current?.value;
     const orderNo = formData.order_no?.trim();
-    const orderDate = formData.order_date?.trim();
+    const orderDate = formData.order_date?.trim() || orderDateRef.current?.value;
     if (!dcNo && !orderNo) { toast.error("Enter DC No or Order No first."); return; }
 
     // Append DC No
@@ -331,6 +362,13 @@ useEffect(() => {
       const existingDcs = (dcNoDisplay || "").split(",").map(s => s.trim()).filter(Boolean);
       if (!existingDcs.includes(dcNo)) {
         setDcNoDisplay(prev => prev ? `${prev}, ${dcNo}` : dcNo);
+        // Append DC Date
+        if (dcDate) {
+          const existingDates = (dcDateDisplay || "").split(",").map(s => s.trim()).filter(Boolean);
+          if (!existingDates.includes(dcDate)) {
+            setDcDateDisplay(prev => prev ? `${prev}, ${dcDate}` : dcDate);
+          }
+        }
       } else {
         toast.error(`DC No ${dcNo} already added.`);
       }
@@ -341,17 +379,25 @@ useEffect(() => {
       const existing = (orderNoDisplay || "").split(",").map(s => s.trim()).filter(Boolean);
       if (!existing.includes(orderNo)) {
         setOrderNoDisplay(prev => prev ? `${prev}, ${orderNo}` : orderNo);
+        // Append Order Date
+        if (orderDate) {
+          const existingDates = (orderDateDisplay || "").split(",").map(s => s.trim()).filter(Boolean);
+          if (!existingDates.includes(orderDate)) {
+            setOrderDateDisplay(prev => prev ? `${prev}, ${orderDate}` : orderDate);
+          }
+        }
       }
     }
 
-    // Append Order Date
-    if (orderDate) {
-      const existingDates = (orderDateDisplay || "").split(",").map(s => s.trim()).filter(Boolean);
-      if (!existingDates.includes(orderDate)) {
-        setOrderDateDisplay(prev => prev ? `${prev}, ${orderDate}` : orderDate);
-      }
-    }
-
+    dcDateFp.current?.clear(false);
+    orderDateFp.current?.clear(false);
+    setFormdata(prev => ({
+      ...prev,
+      dc_no: "",
+      dc_date: "",
+      order_no: "",
+      order_date: "",
+    }));
     toast.success("Values added to invoice.");
   };
 
@@ -362,16 +408,21 @@ useEffect(() => {
       return;
     }
 
+    const finalDcNo = dcNoDisplay || formData.dc_no;
+    const finalDcDate = dcDateDisplay || formData.dc_date || (finalDcNo ? dcDateRef.current?.value : "");
+    const finalOrderNo = orderNoDisplay || formData.order_no;
+    const finalOrderDate = orderDateDisplay || formData.order_date || (finalOrderNo ? orderDateRef.current?.value : "");
+
     const invoicedata = {
       ...formData,
       customer_name: formData.customer_name,
       ordertype: ordertype,
       invoice_no: invoiceno,
       invoice_date: formData.invoice_date,
-      dc_no: dcNoDisplay || formData.dc_no,
-      dc_date: formData.dc_date,
-      order_no: orderNoDisplay || formData.order_no,
-      order_date: orderDateDisplay || formData.order_date,
+      dc_no: finalDcNo,
+      dc_date: finalDcDate,
+      order_no: finalOrderNo,
+      order_date: finalOrderDate,
       discount: formData.discount,
       payment_terms: formData.payment_terms,
       dispatch_through: formData.dispatch_through,
@@ -463,6 +514,8 @@ const LoadInvoice = async (invoiceNo) => {
 
     setLoadInvoice(invoiceNo);
     setInvoiceno(invoiceNo);
+    setCustomerState(data.client?.state || "");
+    setCustomerGst(data.client?.gst_number || "");
 
     setFormdata({
       customer_name: data.header.customer_name || "",
@@ -477,6 +530,7 @@ const LoadInvoice = async (invoiceNo) => {
       transport: data.header.transport || 0,
     });
     setDcNoDisplay(data.header.dc_no || "");
+    setDcDateDisplay(data.header.dc_date || "");
     setOrderNoDisplay(data.header.order_no || "");
     setOrderDateDisplay(data.header.order_date || "");
 
@@ -570,11 +624,14 @@ const edititem = (index) => {
       transport: ""
     });
     setDcNoDisplay("");
+    setDcDateDisplay("");
     setOrderNoDisplay("");
     setOrderDateDisplay("");
     setTabledata([]);
     setLoadInvoice("");
     setOrdertype("");
+    setCustomerState("");
+    setCustomerGst("");
     setclientopen(false);
     setitemopen(false);
     setopenUom(false);
@@ -625,7 +682,7 @@ const edititem = (index) => {
           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Step 1 — Invoice Header</p>
           <div className="grid grid-cols-4 gap-5">
             {/* Customer */}
-            <div className="relative col-span-2">
+            <div className="relative col-span-2" ref={customerDropdownRef}>
               <label className={labelCls}>Customer / Company <span className="text-red-500">*</span></label>
               <input type="text" placeholder="Type to search customers…"
                 value={formData.customer_name}
@@ -699,10 +756,30 @@ const edititem = (index) => {
                  className={inputCls}
                />
             </div>
-            <div>
-              <label className={labelCls}>Despatch Through</label>
-              <input type="text" placeholder="Dispatch through" value={formData.dispatch_through}
-                onChange={(e) => setFormdata({...formData, dispatch_through: e.target.value})} className={inputCls} />
+            <div className="relative" ref={dispatchRef}>
+              <label className={labelCls}>Despatch Through <span className="text-red-500">*</span></label>
+              <div
+                onClick={() => setDispatchOpen(!dispatchOpen)}
+                className={`${inputCls} flex justify-between items-center cursor-pointer min-h-[43px]`}
+              >
+                <span className={formData.dispatch_through ? "text-black" : "text-gray-400 font-medium text-[13px]"}>
+                  {formData.dispatch_through || "Select mode…"}
+                </span>
+                <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+              {dispatchOpen && (
+                <div className={dropdownCls}>
+                  {DESPATCH_OPTIONS.map((opt) => (
+                    <div key={opt}
+                      onClick={() => { setFormdata({...formData, dispatch_through: opt}); setDispatchOpen(false); }}
+                      className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0">
+                      {opt}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="flex items-end">
               <button type="button" onClick={handleShowClick}
@@ -718,10 +795,14 @@ const edititem = (index) => {
           </div>
 
           {/* Display fields (accumulated values) */}
-          <div className="grid grid-cols-3 gap-5 mt-4">
+          <div className="grid grid-cols-4 gap-5 mt-4">
             <div>
               <label className={labelCls}>DC No (Added)</label>
               <input type="text" value={dcNoDisplay} readOnly className={roInputCls} placeholder="Click SHOW to add" />
+            </div>
+            <div>
+              <label className={labelCls}>DC Date (Added)</label>
+              <input type="text" value={dcDateDisplay} readOnly className={roInputCls} placeholder="Click SHOW to add" />
             </div>
             <div>
               <label className={labelCls}>Order No (Added)</label>
@@ -749,7 +830,7 @@ const edititem = (index) => {
 
           <div className="grid grid-cols-9 gap-3 items-end">
             {/* Item Name */}
-            <div className="col-span-2 relative">
+            <div className="col-span-2 relative" ref={itemDropdownRef}>
               <label className={labelCls}>Item Name <span className="text-red-500">*</span></label>
               <input type="text" placeholder="Search item…"
                 value={currentrow.item_name}
@@ -799,7 +880,7 @@ const edititem = (index) => {
                 readOnly className={roInputCls} />
             </div>
             {/* UOM */}
-            <div className="relative">
+            <div className="relative" ref={uomDropdownRef}>
               <label className={labelCls}>UOM</label>
               <input type="text" placeholder="Select" value={currentrow.uom}
                 onFocus={() => setopenUom(true)}
@@ -892,7 +973,7 @@ const edititem = (index) => {
           {/* Left: Load Invoice */}
           <div className="pt-6 border-t border-gray-100">
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Load / Edit Existing Invoice</p>
-            <div className="relative w-64">
+            <div className="relative w-64" ref={loadInvoiceDropdownRef}>
               <label className={labelCls}>Invoice No</label>
               <input type="text" value={loadInvoice}
                 onFocus={() => { setLoadInvoiceOpen(true); searchINV(loadInvoice); }}
@@ -1007,9 +1088,9 @@ const edititem = (index) => {
       )}
 
       <SaleswindowModel
-        title="Invoice Format"
+        title="Direct Invoice Format"
         isOpen={showInvoiceWindow}
-        type="Invoice Format"
+        type="Direct Invoice Format"
         onClose={() => setShowInvoiceWindow(false)}
         isMinimized={isMinimized}
         onMinimize={() => { setIsMinimized(true); setShowInvoiceWindow(false); }}

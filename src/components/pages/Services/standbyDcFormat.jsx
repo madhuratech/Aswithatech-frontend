@@ -30,7 +30,9 @@ const StandbyDeliveryChallan = ({ dcNumber }) => {
       {/* Title row */}
       <div className="w-[200mm] relative flex justify-center items-center py-1 font-bold text-[15px]">
         <h1>STANDBY DELIVERY CHALLAN</h1>
-        <h1 className="absolute right-0 font-bold uppercase">{copyLabel}</h1>
+        {copyLabel && copyLabel.trim() !== "" && (
+          <h1 className="absolute right-0 font-bold uppercase">{copyLabel}</h1>
+        )}
       </div>
 
       {/* Challan box */}
@@ -165,13 +167,13 @@ const StandbyDeliveryChallan = ({ dcNumber }) => {
 
   return (
     <div className="bg-white w-full py-2 flex flex-col justify-center items-center print:py-0 print:bg-white">
-      {renderChallan("(ORIGINAL COPY)")}
+      {renderChallan("")}
 
       {/* Dashed divider between copies */}
       <div className="w-[200mm] mt-10 border-t border-dashed border-black print:mt-10"></div>
       <div className="html2pdf__page-break"></div>
 
-      {renderChallan("(DUPLICATE COPY)")}
+      {renderChallan("")}
 
       <style>{`
         @page { size: A4 portrait; margin: 5mm; }

@@ -44,7 +44,9 @@ const DeliveryChallan = ({ dcNumber }) => {
         {/* Title row — reduced py-2→py-1, text-[18px]→text-[15px] */}
         <div className="w-[200mm] relative flex justify-center items-center py-2 font-bold text-[15px]">
           <h1>DELIVERY CHALLAN</h1>
-          <h1 className="absolute right-0 font-bold uppercase">{copyLabel}</h1>
+          {copyLabel && copyLabel.trim() !== "" && (
+            <h1 className="absolute right-0 font-bold uppercase">{copyLabel}</h1>
+          )}
         </div>
 
         {/* Challan box */}
@@ -174,12 +176,12 @@ const DeliveryChallan = ({ dcNumber }) => {
 
   return (
     <div className="bg-white w-full py-2 flex flex-col justify-center items-center print:py-0 print:bg-white">
-      {renderChallan("(ORIGINAL COPY)")}
+      {renderChallan("")}
 
       {/* Dashed divider between copies */}
       <div className="w-[200mm] mt-10 border-t py-2  border-dashed border-black print:mt-10"></div>
 
-      {renderChallan("(DUPLICATE COPY)")}
+      {renderChallan("")}
 
       <style>{`
         @page {

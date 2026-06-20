@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { X, Minus, Square, Printer } from "lucide-react";
 import html2pdf from "html2pdf.js";
 import { useNavigate } from "react-router-dom";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
 
 const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, children, onFilterChange, initialViewMode, initialView, filters: externalFilters }) => {
   const navigate = useNavigate();
@@ -14,6 +15,25 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
   const [clientlist, setclientlist] = useState([]);
   const [deleteConfirm, setDeleteConfirm] = useState({ open: false, dcNo: null });
   const contentRef = useRef(null);
+  const qtDropdownRef = useRef(null);
+  const clientDropdownRef = useRef(null);
+  const modalContainerRef = useRef(null);
+
+  useOutsideClick([
+    { ref: qtDropdownRef, onClose: () => setpodown(false) },
+    { ref: clientDropdownRef, onClose: () => setclientopen(false) },
+    { ref: modalContainerRef, onClose: () => { if (!isMaximized) onClose(); } }
+  ]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
 
 
   useEffect(() => {
@@ -78,7 +98,11 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
           ? `http://localhost:3000/api/salesdc/DC/search?q=`
           : (type === "Credit Note Format")
             ? `http://localhost:3000/api/creditnotes/cn/search?q=`
-            : null;
+            : (type === "Direct Invoice Format")
+              ? `http://localhost:3000/api/directinvoices/INV/search?q=`
+              : (type === "PI2 Format")
+                ? `http://localhost:3000/api/performanceinvoices2/INV/search?q=`
+                : null;
 
     if (searchurl) {
       fetch(searchurl)
@@ -116,7 +140,7 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
         params.append("quotationNo", filters.QtNumber);
       }
 
-      if ((type === "Invoice Format") && filters.QtNumber) {
+      if ((type === "Invoice Format" || type === "Direct Invoice Format" || type === "PI2 Format") && filters.QtNumber) {
         params.append("invoiceNo", filters.QtNumber);
       }
 
@@ -128,17 +152,21 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
         params.append("cnNumber", filters.QtNumber);
       }
 
-      if ((type === "qt" || type === "Quotation Format" || type === "Invoice Format" || type === "DC Format" || type === "Credit Note Format") && filters.clientName) {
+      if ((type === "qt" || type === "Quotation Format" || type === "Invoice Format" || type === "Direct Invoice Format" || type === "PI2 Format" || type === "DC Format" || type === "Credit Note Format") && filters.clientName) {
         params.append("clientName", filters.clientName);
       }
 
       const url = (type === "Invoice Format")
         ? `http://localhost:3000/api/salesinvoices/report/filters?${params.toString()}`
-        : (type === "DC Format")
-          ? `http://localhost:3000/api/salesdc/report/filters?${params.toString()}`
-          : (type === "Credit Note Format")
-            ? `http://localhost:3000/api/creditnotes/report/filters?${params.toString()}`
-            : `${Api_urls}/report/filters?${params.toString()}`;
+        : (type === "Direct Invoice Format")
+          ? `http://localhost:3000/api/directinvoices/report/filters?${params.toString()}`
+          : (type === "PI2 Format")
+            ? `http://localhost:3000/api/performanceinvoices2/report/filters?${params.toString()}`
+            : (type === "DC Format")
+              ? `http://localhost:3000/api/salesdc/report/filters?${params.toString()}`
+              : (type === "Credit Note Format")
+                ? `http://localhost:3000/api/creditnotes/report/filters?${params.toString()}`
+                : `${Api_urls}/report/filters?${params.toString()}`;
       const response = await fetch(url);
 
       const data = await response.json();
@@ -165,7 +193,7 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
     if ((type === "qt" || type === "Quotation Format") && filters.QtNumber) {
       params.append("quotationNo", filters.QtNumber);
     }
-    if ((type === "Invoice Format") && filters.QtNumber) {
+    if ((type === "Invoice Format" || type === "Direct Invoice Format" || type === "PI2 Format") && filters.QtNumber) {
       params.append("invoiceNo", filters.QtNumber);
     }
     if ((type === "DC Format") && filters.QtNumber) {
@@ -176,11 +204,15 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
     }
     const url = (type === "Invoice Format")
       ? `http://localhost:3000/api/salesinvoices/report/excel?${params.toString()}`
-      : (type === "DC Format")
-        ? `http://localhost:3000/api/salesdc/report/excel?${params.toString()}`
-        : (type === "Credit Note Format")
-          ? `http://localhost:3000/api/creditnotes/report/excel?${params.toString()}`
-          : `${Api_urls}/report/excel?${params.toString()}`;
+      : (type === "Direct Invoice Format")
+        ? `http://localhost:3000/api/directinvoices/report/excel?${params.toString()}`
+        : (type === "PI2 Format")
+          ? `http://localhost:3000/api/performanceinvoices2/report/excel?${params.toString()}`
+          : (type === "DC Format")
+            ? `http://localhost:3000/api/salesdc/report/excel?${params.toString()}`
+            : (type === "Credit Note Format")
+              ? `http://localhost:3000/api/creditnotes/report/excel?${params.toString()}`
+              : `${Api_urls}/report/excel?${params.toString()}`;
     window.open(url, "_blank");
 
   }
@@ -284,15 +316,7 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
 
 
 
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (!e.target.closest(".qt-dropdown")) {
-        setpodown(false);
-      }
-    };
-    document.addEventListener("click", handleClickOutside);
-    return () => document.removeEventListener("click", handleClickOutside);
-  }, []);
+
 
   if (!isOpen || isMinimized) return null;
 
@@ -309,6 +333,7 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
       }}
     >
       <div
+        ref={modalContainerRef}
         className="service-modal-container"
         style={{
           position: "relative",
@@ -428,11 +453,11 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
             </div>
 
             {/* QT / INVOICE / DC NUMBER */}
-            <div style={{ display: "flex", flexDirection: "column", position: "relative" }} className="qt-dropdown">
+            <div style={{ display: "flex", flexDirection: "column", position: "relative" }} className="qt-dropdown" ref={qtDropdownRef}>
               <label style={{ color: "#fff", fontWeight: "bold", fontSize: "11px", marginBottom: "4px", letterSpacing: "0.5px" }}>
                 {type === "qt" || type === "Quotation Format"
                   ? "QUOTATION NO"
-                  : type === "Invoice Format"
+                  : type === "Invoice Format" || type === "Direct Invoice Format" || type === "PI2 Format"
                     ? "INVOICE NO"
                     : type === "Credit Note Format"
                       ? " CREDIT NOTE NO"
@@ -467,7 +492,7 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
                         key={po.cn_number || po.dc_no || po.invoice_no || po.quotation_no}
                         onClick={(e) => {
                           e.stopPropagation();
-                          const selectedQt = type === "Invoice Format" ? po.invoice_no : type === "DC Format" ? po.dc_no : type === "Credit Note Format" ? po.cn_number : po.quotation_no;
+                          const selectedQt = type === "Invoice Format" || type === "Direct Invoice Format" || type === "PI2 Format" ? po.invoice_no : type === "DC Format" ? po.dc_no : type === "Credit Note Format" ? po.cn_number : po.quotation_no;
                           setFilters((prev) => ({ ...prev, QtNumber: selectedQt }));
                           if (onFilterChange) onFilterChange({ ...filters, fromDate: filters.fromDate, toDate: filters.toDate, clientName: filters.clientName, QtNumber: selectedQt });
                           setReportData([]);
@@ -489,7 +514,7 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
             </div>
 
             {/* CLIENT NAME */}
-            <div style={{ display: "flex", flexDirection: "column", position: "relative" }}>
+            <div style={{ display: "flex", flexDirection: "column", position: "relative" }} ref={clientDropdownRef}>
               <label style={{ color: "#fff", fontWeight: "bold", fontSize: "11px", marginBottom: "4px", letterSpacing: "0.5px" }}>
                 CLIENT NAME
               </label>
@@ -657,7 +682,7 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
                       <tr style={{ background: "#b8cce4" }}>
                         {[
                           { label: "SNO", align: "left" },
-                          { label: (type === "qt" || type === "Quotation Format") ? "QUOTATION NO" : (type === "Invoice Format" ? "INVOICE NO" : (type === "DC Format" ? "DC NO" : "CN NUMBER")), align: "left" },
+                          { label: (type === "qt" || type === "Quotation Format") ? "QUOTATION NO" : (type === "Invoice Format" || type === "Direct Invoice Format" || type === "PI2 Format" ? "INVOICE NO" : (type === "DC Format" ? "DC NO" : "CN NUMBER")), align: "left" },
                           { label: "DATE", align: "left" },
                           { label: "CLIENT NAME", align: "left" },
                           { label: "PURCHASE ITEM", align: "left" },

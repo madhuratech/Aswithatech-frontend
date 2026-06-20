@@ -13,7 +13,7 @@ import { useOutsideClick } from "../../hooks/useOutsideClick";
 const API = "http://localhost:3000/api/salesdc";
 const TODAY = new Date().toISOString().split("T")[0];
 const DESPATCH_OPTIONS = ["Courier", "Transport", "By Hand"];
-const REMARKS_OPTIONS = ["Serviced", "Re Serviced", "For Sale", "Beyond", "For Testing Purpose"];
+const REMARKS_OPTIONS = ["Serviced", "Re Serviced", "For Sale", "Beyond", "For Testing Purpose","Buy Back"];
 
 const INIT_FORM = {
     customer_name: "",
@@ -49,9 +49,6 @@ const SalesDCEntry = () => {
     const [editRowIndex, setEditRowIndex] = useState(-1);
 
     // ── Order Number multi-entry display ─────────────────────────────────────
-    const [orderNoDisplay, setOrderNoDisplay] = useState("");
-    const [orderDateDisplay, setOrderDateDisplay] = useState("");
-
     //Success Model state
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [savedDcNo, setSavedDcNo] = useState("");
@@ -87,32 +84,11 @@ const SalesDCEntry = () => {
     const loadDcRef = useRef(null);
     const despatchRef = useRef(null);
     const remarksRef = useRef(null);
-    const orderDateRef = useRef(null);
-    const orderDateFp = useRef(null);
     const salesDcDateRef = useRef(null);
     const salesDcDateFp = useRef(null);
+    const orderDateRef = useRef(null);
+    const orderDateFp = useRef(null);
 
-    // ── Flatpickr for Order Date (single date per SHOW click) ───────────────
-    useEffect(() => {
-        orderDateFp.current = flatpickr(orderDateRef.current, {
-            dateFormat: "d/m/Y",
-            monthSelectorType: "static",
-            onChange: (selectedDates, dateStr) => {
-                setForm((p) => ({ ...p, order_date: dateStr }));
-            },
-        });
-        return () => orderDateFp.current?.destroy();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    // Update Flatpickr when form.order_date changes (e.g. after SHOW clears it)
-    useEffect(() => {
-        if (orderDateFp.current && form.order_date) {
-            orderDateFp.current.setDate(form.order_date);
-        }
-    }, [form.order_date]);
-
-    // ── Flatpickr for DC Date ────────────────────────────────────────────
     useEffect(() => {
         salesDcDateFp.current = flatpickr(salesDcDateRef.current, {
             disableMobile: true,
@@ -132,6 +108,28 @@ const SalesDCEntry = () => {
             salesDcDateFp.current.setDate(toDmy(form.dc_date));
         }
     }, [form.dc_date]);
+
+    // ── Order Date flatpickr with multi-date mode ─────────────────────────────
+    useEffect(() => {
+        orderDateFp.current = flatpickr(orderDateRef.current, {
+            disableMobile: true,
+            monthSelectorType: "static",
+            dateFormat: "d-m-Y",
+            mode: "multiple",
+            defaultDate: form.order_date || null,
+            onChange: (selectedDates, dateStr) => {
+                setForm((p) => ({ ...p, order_date: dateStr }));
+            },
+        });
+        return () => orderDateFp.current?.destroy();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useEffect(() => {
+        if (orderDateFp.current && form.order_date !== undefined) {
+            orderDateFp.current.setDate(form.order_date || "");
+        }
+    }, [form.order_date]);
 
     // ── auto-load DC from navigation state (e.g. from report view Edit) ──────
     useEffect(() => {
@@ -236,8 +234,6 @@ const SalesDCEntry = () => {
             setCustSearch(header.customer_name || "");
             setRows(items || []);
             // Populate display fields from saved comma-separated values
-            setOrderNoDisplay(header.order_no || "");
-            setOrderDateDisplay(header.order_date || "");
             toast.success("DC loaded for editing.");
         } catch (e) {
             toast.error(e.message || "Failed to load DC.");
@@ -246,31 +242,6 @@ const SalesDCEntry = () => {
 
     // Event handlers
 
-    const handleShowClick = async () => {
-        const orderNo = form.order_no?.trim();
-        if (!orderNo) { toast.error("Type an Order Number first."); return; }
-        // Check duplicate
-        const existing = orderNoDisplay.split(",").map(s => s.trim()).filter(Boolean);
-        if (existing.includes(orderNo)) { toast.error(`Order Number ${orderNo} already added.`); return; }
-        // Fetch order date
-        let orderDate = form.order_date?.trim() || "";
-        if (!orderDate) {
-            try {
-                const res = await fetch(`${API}/order-date?order_no=${encodeURIComponent(orderNo)}`);
-                const data = await res.json();
-                orderDate = data.order_date || "";
-            } catch { /* ignore */ }
-        }
-        // Append
-        setOrderNoDisplay(prev => prev ? `${prev}, ${orderNo}` : orderNo);
-        setOrderDateDisplay(prev => {
-            const dateVal = orderDate || "—";
-            return prev ? `${prev}, ${dateVal}` : dateVal;
-        });
-        // Clear inputs
-        setForm((p) => ({ ...p, order_no: "", order_date: "" }));
-        if (orderDateFp.current) orderDateFp.current.clear();
-    };
 
     const handleCustomerSelect = (c) => {
         // Reset everything downstream
@@ -285,18 +256,12 @@ const SalesDCEntry = () => {
         setRows([]);
         setItem(INIT_ITEM);
         setProducts([]);
-        setOrderNoDisplay("");
-        setOrderDateDisplay("");
         closeAll("customer");
     };
 
 
 
     const handleProductSelect = (p) => {
-        if (rows.some((r, i) => i !== editRowIndex && r.item_name === p.item_name)) {
-            toast.error("This product is already added.");
-            return;
-        }
         setItem({
             item_name: p.item_name,
             quantity: p.pending_qty > 0 ? String(p.pending_qty) : "",
@@ -362,8 +327,8 @@ const SalesDCEntry = () => {
         customer_name: form.customer_name,
         dc_no: form.dc_no,
         dc_date: form.dc_date,
-        order_no: orderNoDisplay || null,
-        order_date: orderDateDisplay || null,
+        order_no: form.order_no || null,
+        order_date: form.order_date || null,
         despatch_through: form.despatch_through || null,
         ordertype: form.ordertype,
         items: rows.map((r) => ({
@@ -380,7 +345,7 @@ const SalesDCEntry = () => {
 
     const validateHeader = () => {
         if (!form.customer_name?.trim()) { toast.error("Customer is required."); return false; }
-        if (!orderNoDisplay?.trim()) { toast.error("Add at least one Order Number."); return false; }
+        if (!form.order_no?.trim()) { toast.error("Order Number is required."); return false; }
         if (!form.despatch_through?.trim()) { toast.error("Despatch Through is required."); return false; }
         if (!rows.length) { toast.error("Add at least one product."); return false; }
         return true;
@@ -473,8 +438,6 @@ const SalesDCEntry = () => {
         setEditRowIndex(-1);
         setProducts([]);
         setDcSearchList([]);
-        setOrderNoDisplay("");
-        setOrderDateDisplay("");
         fetchNextDcNo();
     };
 
@@ -680,7 +643,6 @@ const SalesDCEntry = () => {
                             />
                         </div>
 
-
                     </div>
                 </div>
 
@@ -692,33 +654,24 @@ const SalesDCEntry = () => {
                         Step 2 — Order Number Details
                     </p>
                     <div className="grid grid-cols-4 gap-7 mb-4">
-                        {/* Order Number Input + SHOW Button */}
                         <div className="relative" ref={clientDcRef}>
                             <label className={labelCls}>Order Number <span className="text-red-500">*</span></label>
-                            <div className="flex gap-2">
-                                <input
-                                    type="text"
-                                    value={form.order_no}
-                                    onChange={(e) => setForm((p) => ({ ...p, order_no: e.target.value, order_date: "" }))}
-                                    className={`${inputCls} flex-1 min-h-[43px]`}
-                                    placeholder="Type order number"
-                                />
-                                <button
-                                    onClick={handleShowClick}
-                                    className="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-[13px] font-bold hover:bg-blue-700 transition-colors whitespace-nowrap"
-                                >
-                                    SHOW
-                                </button>
-                            </div>
+                            <input
+                                type="text"
+                                value={form.order_no}
+                                onChange={(e) => setForm((p) => ({ ...p, order_no: e.target.value }))}
+                                className={`${inputCls} min-h-[43px]`}
+                                placeholder="Type order number"
+                            />
                         </div>
 
-                        {/* Order Date — Flatpickr */}
+                        {/* Order Date — multi-date picker */}
                         <div>
-                            <label className={labelCls}>Order Date <span className="text-[10px] text-gray-400 font-normal normal-case">(optional)</span></label>
+                            <label className={labelCls}>Order Date <span className="text-[10px] text-gray-400 font-normal normal-case">(optional / multi)</span></label>
                             <input
                                 ref={orderDateRef}
                                 type="text"
-                                placeholder="Select date"
+                                placeholder="Select date(s)"
                                 className={inputCls}
                                 readOnly
                             />
@@ -759,29 +712,6 @@ const SalesDCEntry = () => {
 
                     </div>
 
-                    {/* Display Fields — Order Number Display and Order Date Display */}
-                    <div className="grid grid-cols-4 gap-7 mt-4 pt-4 border-t border-gray-100">
-                        <div>
-                            <label className={labelCls}>Order Number Display</label>
-                            <input
-                                type="text"
-                                value={orderNoDisplay}
-                                readOnly
-                                className={roInputCls}
-                                placeholder="No order numbers added yet"
-                            />
-                        </div>
-                        <div>
-                            <label className={labelCls}>Order Date Display</label>
-                            <input
-                                type="text"
-                                value={orderDateDisplay}
-                                readOnly
-                                className={roInputCls}
-                                placeholder="No dates added yet"
-                            />
-                        </div>
-                    </div>
                 </div>
 
                 {/* ═══════════════════════════════════════════════════════════

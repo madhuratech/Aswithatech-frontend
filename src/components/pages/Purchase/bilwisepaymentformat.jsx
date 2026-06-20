@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { toWords } from "number-to-words";
+import { splitAddress } from "../../../utils/AddressBlock";
 
 const Billwiseformat = ({ billNo, title }) => {
   const [purchase, setPurchase] = useState({
@@ -50,12 +51,14 @@ const Billwiseformat = ({ billNo, title }) => {
     return (
       <div className="print-copy-wrapper py-4 print:py-0 flex flex-col items-center animate-in fade-in duration-200">
         {/* TOP BAR / LABEL */}
-        <div className="w-[190mm] text-right px-4 pt-1 flex-shrink-0">
-          <span className="text-[13px] font-bold uppercase tracking-wider">
-            {copyLabel}
-          </span>
-        </div>
-        <div className="print-container w-[190mm] border-2 border-black bg-white relative shadow-lg overflow-hidden">
+        {copyLabel && copyLabel.trim() !== "" && (
+          <div className="w-[190mm] text-right px-4 pt-1 flex-shrink-0">
+            <span className="text-[13px] font-bold uppercase tracking-wider">
+              {copyLabel}
+            </span>
+          </div>
+        )}
+        <div className="print-container w-[190mm] h-[270mm] border-2 border-black bg-white relative shadow-lg overflow-hidden">
 
           {/* HEADER */}
           <div className="flex flex-col justify-center items-center text-center border-b-2 border-black p-2 h-[120px]">
@@ -86,8 +89,9 @@ const Billwiseformat = ({ billNo, title }) => {
                 {purchase?.supplier_name}
               </h2>
               <div className="text-[12px] leading-5 font-medium max-w-[350px]">
-                <p>{purchase?.address}</p>
-                <p>{purchase?.state} - {purchase?.pincode}</p>
+                {splitAddress(purchase?.address, purchase?.state, purchase?.pincode).map((line, idx) => (
+                  <p key={idx}>{line}</p>
+                ))}
                 <p className="mt-2 font-bold">Ph: {purchase?.phone}</p>
                 <p className="font-bold">GSTIN : {purchase?.gst_number}</p>
               </div>
@@ -187,16 +191,8 @@ const Billwiseformat = ({ billNo, title }) => {
                 <div className="flex-1 font-medium">{purchase?.reference_no || "-"}</div>
               </div>
             </div>
-            <div className="w-[30%]">
-              <div className="flex  border-black">
-                <div className="w-[50%] p-2 text-[12px] font-bold border-r-2 border-black">SUB Total</div>
-                <div className="w-[50%] p-2 text-[12px] font-bold text-right pr-4">{Number(purchase.subtotal || 0).toFixed(2)}</div>
-              </div>
-              <div className="flex  border-black">
-                <div className="w-[50%] p-2 text-[12px] font-bold border-r-2 border-black">GST @18.00%</div>
-                <div className="w-[50%] p-2 text-[12px] font-bold text-right pr-4">{Number(gst).toFixed(2)}</div>
-              </div>
-              <div className="flex bg-gray-50">
+            <div className="w-[30%] ">
+              <div className="flex h-[99%] ">
                 <div className="w-[50%] p-2 text-[13px] font-extrabold border-r-2 border-black">NET TOTAL</div>
                 <div className="w-[50%] p-2 text-[13px] font-extrabold text-right pr-4">{Number(purchase.grand_total || 0).toFixed(2)}</div>
               </div>
@@ -211,7 +207,7 @@ const Billwiseformat = ({ billNo, title }) => {
           </div>
 
           {/* FOOTER SECTION */}
-          <div className="border-t-2 border-black px-4 pt-2 pb-1 relative">
+          <div className="border-t-2 border-black px-4 pt-2 pb-1 absolute bottom-0 left-0 right-0">
             <div className="right-8 text-right">
               <h2 className="text-[14px] font-bold text-red-500 mb-4">For ASWITHA TECH</h2>
               <h3 className="text-[13px] font-bold  border-black pt-1 inline-block">Authorized Signatory</h3>
@@ -250,8 +246,8 @@ const Billwiseformat = ({ billNo, title }) => {
         }
       `}</style>
       <div className="print-wrapper w-full flex flex-col items-center py-6 overflow-auto">
-        {renderBillwisePage("[ORIGINAL FOR RECIPIENT]")}
-        {renderBillwisePage("[DUPLICATE COPY]")}
+        {renderBillwisePage("")}
+        {renderBillwisePage("")}
       </div>
     </>
   );

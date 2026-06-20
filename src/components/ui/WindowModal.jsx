@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { X, Minus, Square, Printer } from "lucide-react";
 import html2pdf from "html2pdf.js";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
 
 const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, children, onFilterChange, initialViewMode }) => {
   const [isMaximized, setIsMaximized] = useState(false);
@@ -11,6 +12,25 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
   const [clientopen, setclientopen] = useState(false);
   const [clientlist, setclientlist] = useState([]);
   const contentRef = useRef(null);
+  const poDropdownRef = useRef(null);
+  const clientDropdownRef = useRef(null);
+  const modalContainerRef = useRef(null);
+
+  useOutsideClick([
+    { ref: poDropdownRef, onClose: () => setpodown(false) },
+    { ref: clientDropdownRef, onClose: () => setclientopen(false) },
+    { ref: modalContainerRef, onClose: () => { if (!isMaximized) onClose(); } }
+  ]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
 
   useEffect(() => {
     if (isOpen) {
@@ -177,7 +197,7 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
 
   return (
     <div className={`fixed inset-0 z-[9999] flex ${isMaximized ? "items-stretch" : "items-center justify-center p-4 bg-black/30"} purchase-modal-overlay`}>
-      <div className={`bg-[#f0f0f0] border-2 border-white flex flex-col shadow-2xl transition-all duration-200 ${isMaximized ? "w-full h-full border-none" : "w-[98vw] h-[95vh]"} purchase-modal-container`}>
+      <div ref={modalContainerRef} className={`bg-[#f0f0f0] border-2 border-white flex flex-col shadow-2xl transition-all duration-200 ${isMaximized ? "w-full h-full border-none" : "w-[98vw] h-[95vh]"} purchase-modal-container`}>
 
         {/* ── Title Bar ── */}
         <div
@@ -224,7 +244,7 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
           </div>
 
           {/* PO / DN / BILL NUMBER */}
-          <div className="flex flex-col gap-0.5 relative">
+          <div className="flex flex-col gap-0.5 relative" ref={poDropdownRef}>
             <label className="text-[10px] font-bold text-white tracking-widest">
               {type === "po" ? "PURCHASE ORDER NO" : type === "dn" ? "DEBIT NOTE NO" : "BILL NO"}
             </label>
@@ -276,7 +296,7 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
           </div>
 
           {/* CLIENT NAME */}
-          <div className="flex flex-col gap-0.5 relative">
+          <div className="flex flex-col gap-0.5 relative" ref={clientDropdownRef}>
             <label className="text-[10px] font-bold text-white tracking-widest">CLIENT NAME</label>
             <input
               type="text"

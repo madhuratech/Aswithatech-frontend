@@ -99,10 +99,6 @@ const PurchaseEntry = () => {
   // ════════════════════════════════════════════════════════════════════
   // Lifecycle
   // ════════════════════════════════════════════════════════════════════
-  useEffect(() => {
-    fetchNextBillNo();
-  }, []);
-
   useOutsideClick([
     { ref: supplierRef, onClose: () => closeAll("supplier") },
     { ref: itemRef,     onClose: () => closeAll("item") },
@@ -158,13 +154,6 @@ const PurchaseEntry = () => {
   // ════════════════════════════════════════════════════════════════════
   // API helpers
   // ════════════════════════════════════════════════════════════════════
-  const fetchNextBillNo = async () => {
-    try {
-      const res  = await fetch(`${API}/nextbillno`);
-      const data = await res.json();
-      if (data?.bill_no) setBillNo(data.bill_no);
-    } catch { console.error("Could not fetch bill number"); }
-  };
 
   const searchSuppliers = async (q = "") => {
     try {
@@ -389,7 +378,6 @@ const PurchaseEntry = () => {
     setGstPct(18);
     setSupplierState("");
     setSupplierGst("");
-    await fetchNextBillNo();
   };
 
   const orderTypeSelected = !!orderType;
@@ -509,10 +497,10 @@ const PurchaseEntry = () => {
               )}
             </div>
 
-            {/* Bill No (auto-generated) */}
+            {/* Bill Number (manual) */}
             <div>
-              <label className={labelCls}>Bill No (Auto)</label>
-              <input type="text" value={billNo} readOnly className={roInputCls} />
+              <label className={labelCls}>Bill No <span className="text-red-500">*</span></label>
+              <input type="text" value={billNo} onChange={(e) => setBillNo(e.target.value)} placeholder="Enter bill number" className={inputCls} />
             </div>
 
             {/* Bill Date */}

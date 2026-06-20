@@ -71,9 +71,11 @@ const InvoiceFormat = ({ dcNumber }) => {
 
       <div className="invoice-page">
         {/* TOP LABEL */}
-        <div className="text-right px-4 pt-1 flex-shrink-0">
-          <span className="text-[13px] font-bold uppercase tracking-wider">{copyLabel}</span>
-        </div>
+        {copyLabel && copyLabel.trim() !== "" && (
+          <div className="text-right px-4 pt-1 flex-shrink-0">
+            <span className="text-[13px] font-bold uppercase tracking-wider">{copyLabel}</span>
+          </div>
+        )}
       <div className="invoice-page-inner w-[200mm] h-[270mm] border-2 border-black bg-white relative flex flex-col"
         style={{ boxSizing: "border-box", overflow: "hidden" }}
       >
@@ -330,14 +332,12 @@ const InvoiceFormat = ({ dcNumber }) => {
         }
       `}</style>
       <div className="invoice-print-root bg-white w-full flex flex-col items-center print:bg-white">
-        {/* PAGE 1 — ORIGINAL COPY */}
         <div className="invoice-copy-wrapper py-4 print:py-0">
-          <InvoicePage copyLabel="[ORIGINAL FOR RECIPIENT]" />
+          <InvoicePage copyLabel="" />
         </div>
 
-        {/* PAGE 2 — DUPLICATE COPY */}
         <div className="invoice-copy-wrapper py-4 print:py-0">
-          <InvoicePage copyLabel="[DUPLICATE COPY]" />
+          <InvoicePage copyLabel="" />
         </div>
       </div>
     </>

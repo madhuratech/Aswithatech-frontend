@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { X, Square, Minus, Printer } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
 import html2pdf from "html2pdf.js";
 import * as XLSX from "xlsx";
 
@@ -10,10 +11,25 @@ const CustomerLedger = ({ onClose, onMinimize, title = "Customer Ledger" }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const contentRef = useRef(null);
+  const modalContainerRef = useRef(null);
 
   const [isMaximized, setIsMaximized] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  useOutsideClick([
+    { ref: modalContainerRef, onClose: () => { if (!isMaximized) handleClose(); } }
+  ]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        handleClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
 
   const initialLedgerType = location.state?.ledgerType || "ledger";
   const [ledgerType, setLedgerType] = useState(initialLedgerType); // "ledger" | "outstanding"
@@ -204,7 +220,7 @@ const CustomerLedger = ({ onClose, onMinimize, title = "Customer Ledger" }) => {
 
   return (
     <div className={`fixed inset-0 z-[9999] flex ${isMaximized ? "items-stretch" : "items-center justify-center p-4 bg-black/30"}`}>
-      <div className={`bg-[#f0f0f0] border-2 border-white flex flex-col shadow-2xl transition-all duration-200
+      <div ref={modalContainerRef} className={`bg-[#f0f0f0] border-2 border-white flex flex-col shadow-2xl transition-all duration-200
         ${isMaximized ? "w-full h-full border-none" : "w-[98vw] h-[95vh]"}`}>
 
         {/* Title bar */}

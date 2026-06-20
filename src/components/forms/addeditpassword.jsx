@@ -1,8 +1,22 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { errorToast, successToast } from "../ui/nottifications";
 import { X } from "lucide-react";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
 const Addpassword = ({onSuccess,onClose}) => {
     const[password, setpassword]= useState("");
+    const cardRef = useRef(null);
+
+    useOutsideClick([{ ref: cardRef, onClose }]);
+
+    useEffect(() => {
+      const handleKeyDown = (e) => {
+        if (e.key === "Escape") {
+          onClose();
+        }
+      };
+      window.addEventListener("keydown", handleKeyDown);
+      return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [onClose]);
 
     const verifypassword = (e) =>{
      e.preventDefault();
@@ -18,7 +32,7 @@ const Addpassword = ({onSuccess,onClose}) => {
 
   return (
      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 overflow-y-auto">
-        <div  className="bg-white w-[450px] mt-[220px] ml-20 rounded-xl shadow-lg p-6 flex flex-col mb-[80px]">
+        <div ref={cardRef} className="bg-white w-[450px] mt-[220px] ml-20 rounded-xl shadow-lg p-6 flex flex-col mb-[80px]">
              <div className="flex items-center justify-between mb-4 ">
                  <div>
                     <h2 className="text-lg font-semibold">Enter Password</h2>

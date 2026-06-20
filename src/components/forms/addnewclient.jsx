@@ -47,27 +47,27 @@ const AddNewCustomerModal = ({ onClose, customer, refresh }) => {
 
   // Search and Select Customer;
 
-  const selectCustomer = (c) => {
-  setSelectedCustomer(c);
-  selectCustomerType("existing");
+  const selectCustomer = (customer) => {
+    setSelectedCustomer(customer);
+    selectCustomerType("existing");
 
-  setForm(prev => ({
-    ...prev,
-    customer_name: c.customer_name || "",
-    phone: c.phone || "",
-    email: c.email || "",
-    address: c.address || "",
-    gst_number: c.gst_number || "",
-    state: c.state || "",
-    pincode: c.pincode || "",
-    contact_person: c.contact_person || "",
-    customer_type: "existing",
-  }));
+    setForm(prev => ({
+      ...prev,
+      customer_name: customer.customer_name || "",
+      phone: customer.phone || "",
+      email: customer.email || "",
+      address: customer.address || "",
+      gst_number: customer.gst_number || "",
+      state: customer.state || "",
+      pincode: customer.pincode || "",
+      contact_person: customer.contact_person || "",
+      customer_type: "existing",
+    }));
 
-  setSearchTerm(c.customer_name);
-  setFilteredCustomers([]);
-  setDropdown(false);
-};
+    setSearchTerm(customer.customer_name);
+    setFilteredCustomers([]);
+    setDropdown(false);
+  };
 
 
 
@@ -278,7 +278,7 @@ useEffect(() => {
           {/* Existing Client */}
           {customerType === "existing" && (
             <div className="p-6 flex flex-col space-y-4 ">
-              <div ref={searchRef} className="relative right-6">
+              <div ref={searchRef} className="relative right-6 w-[600px]">
                 <label className="text-sm font-medium">Search Customer</label>
                 <input
                   type="text"
@@ -286,49 +286,46 @@ useEffect(() => {
                   onFocus={() => {setDropdown(true); setSelectedCustomer("");}}
                   value={searchTerm}
                   onChange={(e) => { setSearchTerm(e.target.value); setSelectedCustomer(null) }}
-                  className="mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-1  w-[600px]"
+                  className="mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-1"
                 />
+
+                {/* Search Results */}
+                {showDropdown && (
+                  <div className="border rounded-lg max-h-52 overflow-y-auto bg-white shadow absolute left-0 right-0 z-10 mt-1">
+                    {filteredCustomers.length > 0 ? (
+                      filteredCustomers.map((customer) => (
+                        <div
+                          key={customer.id}
+                          onClick={() => selectCustomer(customer)}
+                          className="p-3 cursor-pointer hover:bg-gray-100 border-b"
+                        >
+                          <p className="font-medium">{customer.customer_name}</p>
+                          <p className="text-xs text-gray-500">
+                            {customer.phone} • {customer.gst_number || "No GST"}
+                          </p>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-3 text-sm text-gray-500 text-center">
+                        No customers found
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-
-
-              {/* Search Results */}
-
-             {showDropdown && (
-  <div className="border rounded-lg max-h-52 overflow-y-auto bg-white shadow">
-    
-    {filteredCustomers.length > 0 ? (
-      filteredCustomers.map((c) => (
-        <div
-          key={c.id}
-          onClick={() => selectCustomer(c)}
-          className="p-3 cursor-pointer hover:bg-gray-100 border-b"
-        >
-          <p className="font-medium">{c.customer_name}</p>
-          <p className="text-xs text-gray-500">
-            {c.phone} • {c.gst_number || "No GST"}
-          </p>
-        </div>
-      ))
-    ) : (
-      <div className="p-3 text-sm text-gray-500 text-center">
-        No customers found
-      </div>
-    )}
-  </div>
-)}
 
 
               {/* Buttons */}
 
               <div className="flex justify-end gap-3 relative top-5">
-                <button
+                <button type="button"
                   onClick={onClose}
                   className="px-4 py-2 rounded-lg border text-sm"
                 >
                   Cancel
                 </button>
 
-                <button type="submit"
+                <button type="button"
                   disabled={!selectedCustomer}
                   onClick={() => { selectCustomerType("new"); }}
                   className="px-5 py-2 rounded-lg bg-black text-white text-sm">
@@ -402,12 +399,15 @@ useEffect(() => {
                   Address <span className="text-red-500">*</span>
                 </label>
                 <textarea
-                  placeholder="Enter full address"
+                  placeholder="Format: Door No, Street Name, Area, Locality/Landmark, City (e.g., 156, Allimalar 4th Street, Vasan Nagar, Pothumbur, Madurai)"
                   value={form.address}
                   onChange={(e) => setForm({ ...form, address: e.target.value })}
                   rows={2}
                   className="mt-1 w-full rounded-lg bg-gray-100 px-3 py-2 text-sm outline-none resize-none"
                 />
+                <p className="text-[10px] text-gray-500 mt-1 font-semibold leading-normal">
+                  * Note: Use commas to separate parts for correct layout spacing on printed vouchers.
+                </p>
               </div>
 
               {/* State & pincode */}
@@ -451,7 +451,7 @@ useEffect(() => {
               </div>
 
               <div className="relative p-4 top-4 flex justify-end gap-3">
-                <button
+                <button type="button"
                   onClick={onClose}
                   className="px-4 py-2 rounded-lg border text-sm"
                 >

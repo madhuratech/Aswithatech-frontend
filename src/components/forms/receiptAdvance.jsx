@@ -5,11 +5,30 @@ import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import flatpickr from "flatpickr";
 import { toDmy, toYmd } from "../../utils/dateFormat";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
 
 const ReceiptAdvance = () => {
   const navigate = useNavigate();
   const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
   const Api_url = "http://localhost:3000/api/receipts";
+  const clientDropdownRef = useRef(null);
+  const loadReceiptDropdownRef = useRef(null);
+
+  useOutsideClick([
+    { ref: clientDropdownRef, onClose: () => setClientOpen(false) },
+    { ref: loadReceiptDropdownRef, onClose: () => setLoadOpen(false) }
+  ]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setClientOpen(false);
+        setLoadOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const [formData, setFormData] = useState({
     receipt_no: "",
@@ -250,7 +269,7 @@ const ReceiptAdvance = () => {
                   className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-black"
                 />
               </div>
-              <div className="relative">
+              <div className="relative" ref={clientDropdownRef}>
                 <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Customer Name</label>
                 <input
                   type="text"
@@ -261,7 +280,6 @@ const ReceiptAdvance = () => {
                     setFormData({ ...formData, customer_name: e.target.value });
                     setClientOpen(true);
                   }}
-                  onBlur={() => setTimeout(() => setClientOpen(false), 200)}
                   className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-black"
                 />
                 {clientOpen && clientList.length > 0 && (
@@ -400,7 +418,7 @@ const ReceiptAdvance = () => {
             <div className="mb-3 text-xs font-black uppercase tracking-[0.24em] text-gray-500">
               Select Receipt No To Edit
             </div>
-            <div className="relative max-w-md">
+            <div className="relative max-w-md" ref={loadReceiptDropdownRef}>
               <input
                 type="text"
                 value={loadReceipt}

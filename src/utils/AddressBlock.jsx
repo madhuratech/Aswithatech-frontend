@@ -12,31 +12,64 @@ export function getStateCode(stateCode, gstNumber) {
   return "";
 }
 
-function splitAddress(address) {
-  if (!address) return [];
+export function splitAddress(address, state, pincode) {
+  if (!address) {
+    const statePincode = [state, pincode].filter(Boolean).join(" - ");
+    return statePincode ? [statePincode.toUpperCase()] : [];
+  }
 
   const parts = address
-    .split(",")
+    .split(/[\n,]+/)
     .map((s) => s.trim())
     .filter(Boolean);
 
+  if (parts.length === 0) {
+    const statePincode = [state, pincode].filter(Boolean).join(" - ");
+    return statePincode ? [statePincode.toUpperCase()] : [];
+  }
+
   const lines = [];
+  let nextIdx = 0;
 
-  // Line 1
-  if (parts.length >= 2) {
+  // Line 1: First part (combine with second if first part is short like a door number)
+  const isShortFirstPart =
+    parts[0].length <= 10 &&
+    !/street|nagar|road|flat|building|ward|block|layout|cross|avenue/i.test(parts[0]);
+
+  if (isShortFirstPart && parts.length > 1) {
     lines.push(`${parts[0]}, ${parts[1]}`);
-  } else if (parts.length === 1) {
+    nextIdx = 2;
+  } else {
     lines.push(parts[0]);
+    nextIdx = 1;
   }
 
-  // Line 2
-  if (parts.length >= 4) {
-    lines.push(`${parts[2]}, ${parts[3]}`);
-  } else if (parts.length === 3) {
-    lines.push(parts[2]);
+  // Line 3: City + State/Pincode (City is the last part if there are more parts)
+  let city = "";
+  if (parts.length > nextIdx) {
+    city = parts[parts.length - 1];
   }
 
-  return lines;
+  const statePincode = [state, pincode].filter(Boolean).join(" - ");
+  const line3 = [city, statePincode].filter(Boolean).join(", ");
+
+  // Line 2: Middle parts
+  const middleParts = [];
+  const endIdx = parts.length > nextIdx ? parts.length - 1 : nextIdx;
+  for (let idx = nextIdx; idx < endIdx; idx++) {
+    middleParts.push(parts[idx]);
+  }
+  const line2 = middleParts.join(", ");
+
+  if (line2) {
+    lines.push(line2);
+  }
+
+  if (line3) {
+    lines.push(line3);
+  }
+
+  return lines.map((l) => l.toUpperCase());
 }
 
 /* ==========================
@@ -52,7 +85,7 @@ export function InvoiceAddressBlock({
   gst,
   stateCode,
 }) {
-  const lines = splitAddress(address);
+  const lines = splitAddress(address, state, pincode);
   const stCode = getStateCode(stateCode, gst);
 
   return (
@@ -70,14 +103,6 @@ export function InvoiceAddressBlock({
           {lines.map((line, i) => (
             <p key={i}>{line}</p>
           ))}
-
-          {(state || pincode) && (
-            <p>
-              {state}
-              {state && pincode ? " - " : ""}
-              {pincode}
-            </p>
-          )}
 
           {phone && <p className="mt-1">PH : {phone}</p>}
 
@@ -109,7 +134,7 @@ export function DcAddressBlock({
   email,
   textSize = "text-[11px]",
 }) {
-  const lines = splitAddress(address);
+  const lines = splitAddress(address, state, pincode);
   const stCode = getStateCode(stateCode, gst);
 
   return (
@@ -123,14 +148,6 @@ export function DcAddressBlock({
         {lines.map((line, i) => (
           <p key={i}>{line}</p>
         ))}
-
-        {(state || pincode) && (
-          <p>
-            {state}
-            {state && pincode ? " - " : ""}
-            {pincode}
-          </p>
-        )}
 
         {phone && <p className="mt-0.5">PH : {phone}</p>}
 
@@ -166,7 +183,7 @@ export function QuotationAddressBlock({
   nameClassName = "text-[14px] font-bold uppercase mb-1 text-blue-900",
   textSize = "text-[12px]",
 }) {
-  const lines = splitAddress(address);
+  const lines = splitAddress(address, state, pincode);
   const stCode = getStateCode(stateCode, gst);
 
   return (
@@ -179,14 +196,6 @@ export function QuotationAddressBlock({
         {lines.map((line, i) => (
           <p key={i}>{line}</p>
         ))}
-
-        {(state || pincode) && (
-          <p>
-            {state}
-            {state && pincode ? " - " : ""}
-            {pincode}
-          </p>
-        )}
 
         {phone && (
           <p className="mt-2 font-bold uppercase">

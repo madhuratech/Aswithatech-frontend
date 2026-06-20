@@ -9,7 +9,10 @@
 
 export const isTamilNadu = (state, gstNumber) => {
   if (gstNumber && String(gstNumber).trim().startsWith("33")) return true;
-  if (state && state.trim().toLowerCase() === "tamil nadu") return true;
+  if (state) {
+    const s = String(state).replace(/\s+/g, "").toLowerCase();
+    if (s === "tamilnadu" || s === "tn") return true;
+  }
   return false;
 };
 

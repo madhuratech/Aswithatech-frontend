@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { X, PackagePlus } from "lucide-react";
 import { successToast, errorToast, loadingToast } from "./nottifications";
 import toast from "react-hot-toast";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
 
 const DEFAULT_HSN = { spare: "853210", service: "998314" };
 
@@ -11,6 +12,19 @@ const inputCls = "w-full p-2.5 border border-gray-200 rounded-lg text-[13px] fon
 const ProductQuickAddModal = ({ onClose, onSuccess, defaultType = "spare" }) => {
   const [productType, setProductType] = useState(defaultType);
   const [productName, setProductName] = useState("");
+  const modalRef = useRef(null);
+
+  useOutsideClick([{ ref: modalRef, onClose }]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
   const [hsn, setHsn] = useState(DEFAULT_HSN[defaultType]);
   const [saving, setSaving] = useState(false);
 
@@ -62,7 +76,7 @@ const ProductQuickAddModal = ({ onClose, onSuccess, defaultType = "spare" }) => 
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-white w-full max-w-[440px] rounded-xl shadow-2xl p-6">
+      <div ref={modalRef} className="bg-white w-full max-w-[440px] rounded-xl shadow-2xl p-6">
 
         {/* Header */}
         <div className="flex items-center justify-between mb-5">

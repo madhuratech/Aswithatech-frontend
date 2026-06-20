@@ -1,6 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { X, Square, Minus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
 
 const fmt = (n) => Number(n || 0).toFixed(2);
 
@@ -15,6 +16,25 @@ const PurchaseReport = ({ onMinimize, onClose, setIsMinimizedInternal, title }) 
   const [supplierList, setSupplierList] = useState([]);
   const [openBillNo, setOpenBillNo] = useState(false);
   const [openSupplier, setOpenSupplier] = useState(false);
+  const billDropdownRef = useRef(null);
+  const supplierDropdownRef = useRef(null);
+  const modalContainerRef = useRef(null);
+
+  useOutsideClick([
+    { ref: billDropdownRef, onClose: () => setOpenBillNo(false) },
+    { ref: supplierDropdownRef, onClose: () => setOpenSupplier(false) },
+    { ref: modalContainerRef, onClose: () => { if (!isMaximized) handleClose(); } }
+  ]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        handleClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
 
   const [filters, setFilters] = useState({ fromdate: "", todate: "", bill_no: "", supplier_name: "" });
 
@@ -36,18 +56,7 @@ const PurchaseReport = ({ onMinimize, onClose, setIsMinimizedInternal, title }) 
 
   useEffect(() => { generateReport(); }, [generateReport]);
 
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (!e.target.closest(".bill-dropdown")) {
-        setOpenBillNo(false);
-      }
-      if (!e.target.closest(".supplier-dropdown")) {
-        setOpenSupplier(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+
 
   const fetchBillNos = async (q) => {
     const res = await fetch(`${baseApi}/billno/search?q=${encodeURIComponent(q)}`);
@@ -172,6 +181,7 @@ const PurchaseReport = ({ onMinimize, onClose, setIsMinimizedInternal, title }) 
       }}
     >
       <div
+        ref={modalContainerRef}
         style={{
           display: "flex",
           flexDirection: "column",
@@ -312,7 +322,7 @@ const PurchaseReport = ({ onMinimize, onClose, setIsMinimizedInternal, title }) 
             </div>
 
             {/* BILL NUMBER */}
-            <div style={{ display: "flex", flexDirection: "column", position: "relative" }} className="bill-dropdown">
+            <div style={{ display: "flex", flexDirection: "column", position: "relative" }} className="bill-dropdown" ref={billDropdownRef}>
               <label style={{ color: "#fff", fontWeight: "bold", fontSize: "11px", marginBottom: "4px", letterSpacing: "0.5px" }}>
                 BILL NUMBER
               </label>
@@ -351,7 +361,7 @@ const PurchaseReport = ({ onMinimize, onClose, setIsMinimizedInternal, title }) 
             </div>
 
             {/* SUPPLIER NAME */}
-            <div style={{ display: "flex", flexDirection: "column", position: "relative" }} className="supplier-dropdown">
+            <div style={{ display: "flex", flexDirection: "column", position: "relative" }} className="supplier-dropdown" ref={supplierDropdownRef}>
               <label style={{ color: "#fff", fontWeight: "bold", fontSize: "11px", marginBottom: "4px", letterSpacing: "0.5px" }}>
                 SUPPLIER NAME
               </label>

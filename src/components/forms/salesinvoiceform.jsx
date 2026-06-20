@@ -267,6 +267,8 @@ const SalesInvoiceForm = () => {
                 order_date:  it.order_date  || "",
                 dc_no:       it.dc_no || data.header.dc_no || "",
                 dc_date:     it.dc_date || data.header.dc_date || "",
+                serial_no:   it.serial_no || it.sl_no || "",
+                sl_no:       it.serial_no || it.sl_no || "",
             }));
             setTableData(items);
             closeAll("loadInv");            setLoadSearch(invNo);
@@ -302,10 +304,6 @@ const SalesInvoiceForm = () => {
     };
 
     const handleProductSelect = (prod) => {
-        if (tableData.some((r, i) => i !== editIndex && r.item_name === prod.item_name)) {
-            toast.error("This product is already added.");
-            return;
-        }
         setCurrentItem({
             item_name:   prod.item_name,
             quantity:    prod.quantity || "",
@@ -313,6 +311,7 @@ const SalesInvoiceForm = () => {
             uom:         prod.uom      || "Nos",
             hsn_number:  prod.hsn      || "",
             sl_no:       prod.sl_no    || "",
+            serial_no:   prod.serial_no || "",
             dc_quantity: prod.quantity || "",
             amount:      0,
             order_no:    prod.order_no    || form._selOrderNo || "",
@@ -336,9 +335,6 @@ const SalesInvoiceForm = () => {
         if (!isNaN(dcQty) && parseFloat(currentItem.quantity) > dcQty) {
             toast.error(`Quantity cannot exceed DC quantity (${dcQty}).`); return;
         }
-        if (editIndex < 0 && tableData.some((r) => r.item_name === currentItem.item_name)) {
-            toast.error("Duplicate product — already in the list."); return;
-        }
         const amount = (parseFloat(currentItem.quantity) * parseFloat(currentItem.price)).toFixed(2);
         const newRow = { 
             ...currentItem, 
@@ -346,7 +342,8 @@ const SalesInvoiceForm = () => {
             order_no: currentItem.order_no || form._selOrderNo || "", 
             order_date: currentItem.order_date || form._selOrderDate || "",
             dc_no: currentItem.dc_no || form.dc_no || "",
-            dc_date: currentItem.dc_date || form.dc_date || ""
+            dc_date: currentItem.dc_date || form.dc_date || "",
+            serial_no: currentItem.serial_no || currentItem.sl_no || ""
         };
         if (editIndex >= 0) {
             setTableData((p) => { const u = [...p]; u[editIndex] = newRow; return u; });
@@ -366,7 +363,8 @@ const SalesInvoiceForm = () => {
             price:       it.price,
             uom:         it.uom,
             hsn_number:  it.hsn_number,
-            sl_no:       it.sl_no || "",
+            sl_no:       it.serial_no || it.sl_no || "",
+            serial_no:   it.serial_no || it.sl_no || "",
             dc_quantity: it.dc_quantity,
             amount:      it.amount,
             order_no:    it.order_no || "",
@@ -441,6 +439,7 @@ const SalesInvoiceForm = () => {
                 order_date: it.order_date || null,
                 dc_no:      it.dc_no      || null,
                 dc_date:    it.dc_date    || null,
+                serial_no:  it.serial_no  || it.sl_no || null,
             })),
         };
     };

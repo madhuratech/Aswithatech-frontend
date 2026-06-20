@@ -36,11 +36,13 @@ const QuotationLayout = ({ QtNumber }) => {
     return (
       <div className="quotation-copy-wrapper py-4 print:py-0 flex flex-col items-center animate-in fade-in duration-200">
         {/* TOP BAR / LABEL */}
-        <div className="quotation-label w-[190mm] text-right px-4 pt-1 flex-shrink-0">
-          <span className="text-[13px] mb-2 font-bold uppercase tracking-wider">
-            {copyLabel}
-          </span>
-        </div>
+        {copyLabel && copyLabel.trim() !== "" && (
+          <div className="quotation-label w-[190mm] text-right px-4 pt-1 flex-shrink-0">
+            <span className="text-[13px] mb-2 font-bold uppercase tracking-wider">
+              {copyLabel}
+            </span>
+          </div>
+        )}
         <div className="quotation-page-inner w-[190mm] h-[270mm] border-2 border-black bg-white relative shadow-lg print:shadow-none overflow-hidden flex flex-col"
           style={{ boxSizing: "border-box" }}>
           {/* HEADER */}
@@ -272,8 +274,8 @@ const QuotationLayout = ({ QtNumber }) => {
         }
       `}</style>
       <div className="quotation-print-root w-full flex flex-col items-center py-4 overflow-auto">
-        {renderQuotationPage("[ORIGINAL FOR RECIPIENT]")}
-        {renderQuotationPage("[DUPLICATE COPY]")}
+        {renderQuotationPage("")}
+        {renderQuotationPage("")}
       </div>
     </>
   );

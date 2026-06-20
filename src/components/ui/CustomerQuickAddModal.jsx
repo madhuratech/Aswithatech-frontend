@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { X, UserPlus } from "lucide-react";
 import { successToast, errorToast, loadingToast } from "./nottifications";
 import toast from "react-hot-toast";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
 
 const GST_STATE_CODE = {
   "01": "Jammu and Kashmir", "02": "Himachal Pradesh", "03": "Punjab",
@@ -33,6 +34,19 @@ const inputCls = "w-full p-2.5 border border-gray-200 rounded-lg text-[13px] fon
 const CustomerQuickAddModal = ({ onClose, onSuccess }) => {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const modalRef = useRef(null);
+
+  useOutsideClick([{ ref: modalRef, onClose }]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
 
   const set = (field, value) => setForm(p => ({ ...p, [field]: value }));
 
@@ -75,7 +89,7 @@ const CustomerQuickAddModal = ({ onClose, onSuccess }) => {
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-white w-full max-w-[560px] rounded-xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
+      <div ref={modalRef} className="bg-white w-full max-w-[560px] rounded-xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
 
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
@@ -144,10 +158,13 @@ const CustomerQuickAddModal = ({ onClose, onSuccess }) => {
             <textarea
               value={form.address}
               onChange={(e) => set("address", e.target.value)}
-              placeholder="Enter full address"
+              placeholder="Format: Door No, Street Name, Area, Locality/Landmark, City (e.g., 156, Allimalar 4th Street, Vasan Nagar, Pothumbur, Madurai)"
               rows={2}
               className={`${inputCls} resize-none`}
             />
+            <p className="text-[10px] text-gray-500 mt-1 font-semibold leading-normal">
+              * Note: Use commas to separate parts for correct layout spacing on printed vouchers.
+            </p>
           </div>
 
           {/* GST */}

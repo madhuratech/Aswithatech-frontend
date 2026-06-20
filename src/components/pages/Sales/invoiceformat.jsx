@@ -38,20 +38,9 @@ const InvoiceLayout = ({ InvNumber }) => {
 
     const fetchData = async () => {
       try {
-        console.log("Fetching invoice data for:", InvNumber);
-        let res = await fetch(
-          `http://localhost:3000/api/salesinvoices/full/${encodeURIComponent(
-            InvNumber
-          )}`
+        const res = await fetch(
+          `http://localhost:3000/api/salesinvoices/full/${encodeURIComponent(InvNumber)}`
         );
-
-        if (!res.ok) {
-          res = await fetch(
-            `http://localhost:3000/api/directinvoices/edit/${encodeURIComponent(
-              InvNumber
-            )}`
-          );
-        }
 
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
@@ -94,11 +83,13 @@ const InvoiceLayout = ({ InvNumber }) => {
     return (
       <div className="invoice-page">
         {/* TOP BAR / LABEL */}
-        <div className="text-right px-4 pt-1 flex-shrink-0">
-          <span className="text-[13px] font-bold uppercase tracking-wider">
-            {copyLabel}
-          </span>
-        </div>
+        {copyLabel && copyLabel.trim() !== "" && (
+          <div className="text-right px-4 pt-1 flex-shrink-0">
+            <span className="text-[13px] font-bold uppercase tracking-wider">
+              {copyLabel}
+            </span>
+          </div>
+        )}
 
         <div className="invoice-page-inner w-[200mm] h-[270mm] border-2 border-black bg-white relative flex flex-col"
           style={{ boxSizing: "border-box", overflow: "hidden" }}
@@ -360,17 +351,15 @@ const InvoiceLayout = ({ InvNumber }) => {
         }
       `}</style>
       <div className="invoice-print-root bg-white w-full flex flex-col items-center print:bg-white">
-        {/* PAGE 1 — ORIGINAL COPY */}
         <div className="invoice-copy-wrapper py-4 print:py-0">
-          <InvoicePage copyLabel="[ORIGINAL FOR RECIPIENT]" />
+          <InvoicePage copyLabel="" />
         </div>
 
         {/* DEBUG MARKER: Confirm Duplicate Copy exists in DOM */}
         <div id="debug-duplicate-copy-marker" style={{ display: "none" }} data-desc="Duplicate Copy DOM verification marker"></div>
 
-        {/* PAGE 2 — DUPLICATE COPY */}
         <div className="invoice-copy-wrapper py-4 print:py-0">
-          <InvoicePage copyLabel="[DUPLICATE COPY]" />
+          <InvoicePage copyLabel="" />
         </div>
       </div>
     </>

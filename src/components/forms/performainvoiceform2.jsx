@@ -3,10 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { SquarePen, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { isTamilNadu, calcGstAmounts } from "../../utils/gstUtils";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import flatpickr from "flatpickr";
 import { toDmy, toYmd } from "../../utils/dateFormat";
+import SaleswindowModel from "../ui/saleswindowModal";
+import PerformanceInvoiceLayout2 from "../pages/Sales/performanceinvoiceformat2";
 
 const PerformanceInvoiceForm2 = () => {
   const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
@@ -19,6 +22,7 @@ const PerformanceInvoiceForm2 = () => {
   const [items, setitems] = useState([]);
   const [itemsearch, setitemsearch] = useState();
   const [dcNoDisplay, setDcNoDisplay] = useState("");
+  const [dcDateDisplay, setDcDateDisplay] = useState("");
   const [orderNoDisplay, setOrderNoDisplay] = useState("");
   const [orderDateDisplay, setOrderDateDisplay] = useState("");
   const [loadInvoice, setLoadInvoice] = useState("");
@@ -27,12 +31,18 @@ const PerformanceInvoiceForm2 = () => {
   const [customerGst, setCustomerGst] = useState("");
   const [invoiceList, setInvoiceList] = useState([]);
   const [clientopen, setclientopen] = useState(false);
+  const [dispatchOpen, setDispatchOpen] = useState(false);
   const [shouldAutoSelect, setShouldAutoSelect] = useState(false);
   const [itemopen, setitemopen] = useState(false);
   const [openUom, setopenUom] = useState(false);
   const [loadInvoiceOpen, setLoadInvoiceOpen] = useState(false);
+  const [showInvoiceWindow, setShowInvoiceWindow] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [savedNo, setSavedNo] = useState(null);
 
   const Api_url = "http://localhost:3000/api/performanceinvoices2";
+
+  const DESPATCH_OPTIONS = ["Courier", "Hand Delivery", "Transport", "By Bus", "By Train", "Parcel Service", "Customer Pickup"];
 
   const [formData, setFormdata] = useState({
     customer_name: "",
@@ -43,7 +53,6 @@ const PerformanceInvoiceForm2 = () => {
     order_no: "",
     order_date: "",
     discount: "",
-    payment_terms: "",
     dispatch_through: "",
     transport: "",
   });
@@ -101,6 +110,33 @@ const PerformanceInvoiceForm2 = () => {
 
   const orderDateRef = useRef(null);
   const orderDateFp = useRef(null);
+  const dispatchRef = useRef(null);
+  const customerDropdownRef = useRef(null);
+  const itemDropdownRef = useRef(null);
+  const uomDropdownRef = useRef(null);
+  const loadInvoiceDropdownRef = useRef(null);
+
+  useOutsideClick([
+    { ref: customerDropdownRef, onClose: () => setclientopen(false) },
+    { ref: dispatchRef, onClose: () => setDispatchOpen(false) },
+    { ref: itemDropdownRef, onClose: () => setitemopen(false) },
+    { ref: uomDropdownRef, onClose: () => setopenUom(false) },
+    { ref: loadInvoiceDropdownRef, onClose: () => setLoadInvoiceOpen(false) },
+  ]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setclientopen(false);
+        setDispatchOpen(false);
+        setitemopen(false);
+        setopenUom(false);
+        setLoadInvoiceOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   useEffect(() => {
     perfInvoiceDateFp.current = flatpickr(perfInvoiceDateRef.current, {
@@ -131,7 +167,7 @@ const PerformanceInvoiceForm2 = () => {
       defaultDate: formData.dc_date || new Date(),
       allowInput: false,
       onChange: (selectedDates, dateStr) => {
-        setFormdata((prev) => ({ ...prev, dc_date: dateStr }));
+        setFormdata((prev) => ({ ...prev, dc_date: toYmd(dateStr) }));
       },
     });
     return () => dcDateFp.current?.destroy();
@@ -153,7 +189,7 @@ const PerformanceInvoiceForm2 = () => {
       mode: "multiple",
       allowInput: false,
       onChange: (selectedDates, dateStr) => {
-        setFormdata((prev) => ({ ...prev, order_date: dateStr }));
+        setFormdata((prev) => ({ ...prev, order_date: dateStr.split(",").map(d => toYmd(d.trim())).filter(Boolean).join(", ") }));
       },
     });
     return () => orderDateFp.current?.destroy();
@@ -232,14 +268,21 @@ const PerformanceInvoiceForm2 = () => {
 
   const handleShowClick = () => {
     const dcNo = formData.dc_no?.trim();
+    const dcDate = formData.dc_date?.trim() || toYmd(dcDateRef.current?.value);
     const orderNo = formData.order_no?.trim();
-    const orderDate = formData.order_date?.trim();
+    const orderDate = formData.order_date?.trim() || orderDateRef.current?.value;
     if (!dcNo && !orderNo) { toast.error("Enter DC No or Order No first."); return; }
 
     if (dcNo) {
       const existingDcs = (dcNoDisplay || "").split(",").map((s) => s.trim()).filter(Boolean);
       if (!existingDcs.includes(dcNo)) {
         setDcNoDisplay((prev) => (prev ? `${prev}, ${dcNo}` : dcNo));
+        if (dcDate) {
+          const existingDates = (dcDateDisplay || "").split(",").map((s) => s.trim()).filter(Boolean);
+          if (!existingDates.includes(dcDate)) {
+            setDcDateDisplay((prev) => (prev ? `${prev}, ${dcDate}` : dcDate));
+          }
+        }
       } else {
         toast.error(`DC No ${dcNo} already added.`);
       }
@@ -248,14 +291,23 @@ const PerformanceInvoiceForm2 = () => {
       const existing = (orderNoDisplay || "").split(",").map((s) => s.trim()).filter(Boolean);
       if (!existing.includes(orderNo)) {
         setOrderNoDisplay((prev) => (prev ? `${prev}, ${orderNo}` : orderNo));
+        if (orderDate) {
+          const existingDates = (orderDateDisplay || "").split(",").map((s) => s.trim()).filter(Boolean);
+          if (!existingDates.includes(orderDate)) {
+            setOrderDateDisplay((prev) => (prev ? `${prev}, ${orderDate}` : orderDate));
+          }
+        }
       }
     }
-    if (orderDate) {
-      const existingDates = (orderDateDisplay || "").split(",").map((s) => s.trim()).filter(Boolean);
-      if (!existingDates.includes(orderDate)) {
-        setOrderDateDisplay((prev) => (prev ? `${prev}, ${orderDate}` : orderDate));
-      }
-    }
+    dcDateFp.current?.clear(false);
+    orderDateFp.current?.clear(false);
+    setFormdata((prev) => ({
+      ...prev,
+      dc_no: "",
+      dc_date: "",
+      order_no: "",
+      order_date: "",
+    }));
     toast.success("Values added to invoice.");
   };
 
@@ -263,18 +315,22 @@ const PerformanceInvoiceForm2 = () => {
     if (!formData.dispatch_through?.trim()) { toast.error("Despatch Through is required."); return; }
     if (tabledata.length === 0) { alert("Please Add Items"); return; }
 
+    const finalDcNo = dcNoDisplay || formData.dc_no;
+    const finalDcDate = dcDateDisplay || formData.dc_date || (finalDcNo ? toYmd(dcDateRef.current?.value) : "");
+    const finalOrderNo = orderNoDisplay || formData.order_no;
+    const finalOrderDate = orderDateDisplay || formData.order_date || (finalOrderNo ? orderDateRef.current?.value : "");
+
     const invoicedata = {
       ...formData,
       customer_name: formData.customer_name,
       ordertype,
       invoice_no: invoiceno,
       invoice_date: formData.invoice_date,
-      dc_no: dcNoDisplay || formData.dc_no,
-      dc_date: formData.dc_date,
-      order_no: orderNoDisplay || formData.order_no,
-      order_date: orderDateDisplay || formData.order_date,
+      dc_no: finalDcNo,
+      dc_date: finalDcDate,
+      order_no: finalOrderNo,
+      order_date: finalOrderDate,
       discount: formData.discount,
-      payment_terms: formData.payment_terms,
       dispatch_through: formData.dispatch_through,
       items: tabledata.map((item) => ({
         item_name: item.item_name,
@@ -308,8 +364,7 @@ const PerformanceInvoiceForm2 = () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed");
 
-      toast.success(method === "PUT" ? "Invoice Updated" : "Invoice Created");
-      await resetall();
+      setSavedNo(invoiceno);
     } catch (error) {
       console.log("Error saving invoice:", error);
       toast.error("Failed to save invoice");
@@ -349,6 +404,8 @@ const PerformanceInvoiceForm2 = () => {
 
       setLoadInvoice(invoiceNo);
       setInvoiceno(invoiceNo);
+      setCustomerState(data.client?.state || "");
+      setCustomerGst(data.client?.gst_number || "");
       setFormdata({
         customer_name: data.header.customer_name || "",
         invoice_no: data.header.invoice_no || "",
@@ -357,11 +414,11 @@ const PerformanceInvoiceForm2 = () => {
         dc_date: data.header.dc_date || "",
         order_no: "",
         order_date: "",
-        payment_terms: data.header.payment_terms || "",
         dispatch_through: data.header.dispatch_through || "",
         transport: data.header.transport || 0,
       });
       setDcNoDisplay(data.header.dc_no || "");
+      setDcDateDisplay(data.header.dc_date || "");
       setOrderNoDisplay(data.header.order_no || "");
       setOrderDateDisplay(data.header.order_date || "");
       setTabledata(formattedItems);
@@ -418,14 +475,17 @@ const PerformanceInvoiceForm2 = () => {
   const resetall = async () => {
     setFormdata({
       customer_name: "", invoice_no: "", invoice_date: "", dc_no: "", dc_date: "",
-      order_no: "", order_date: "", discount: "", payment_terms: "", dispatch_through: "", transport: "",
+      order_no: "", order_date: "", discount: "", dispatch_through: "", transport: "",
     });
     setDcNoDisplay("");
+    setDcDateDisplay("");
     setOrderNoDisplay("");
     setOrderDateDisplay("");
     setTabledata([]);
     setLoadInvoice("");
     setOrdertype("");
+    setCustomerState("");
+    setCustomerGst("");
     setclientopen(false);
     setitemopen(false);
     setopenUom(false);
@@ -468,7 +528,7 @@ const PerformanceInvoiceForm2 = () => {
           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Step 1 — Invoice Header</p>
           <div className="grid grid-cols-4 gap-5">
             {/* Customer */}
-            <div className="relative col-span-2">
+            <div className="relative col-span-2" ref={customerDropdownRef}>
               <label className={labelCls}>Customer / Company <span className="text-red-500">*</span></label>
               <input type="text" placeholder="Type to search customers…"
                 value={formData.customer_name}
@@ -529,15 +589,30 @@ const PerformanceInvoiceForm2 = () => {
               <label className={labelCls}>Order Date</label>
               <input ref={orderDateRef} readOnly placeholder="Select Order Date(s)" className={inputCls} />
             </div>
-            <div>
-              <label className={labelCls}>Payment Terms</label>
-              <input type="text" placeholder="Payment terms" value={formData.payment_terms}
-                onChange={(e) => setFormdata({ ...formData, payment_terms: e.target.value })} className={inputCls} />
-            </div>
-            <div>
-              <label className={labelCls}>Despatch Through</label>
-              <input type="text" placeholder="Dispatch through" value={formData.dispatch_through}
-                onChange={(e) => setFormdata({ ...formData, dispatch_through: e.target.value })} className={inputCls} />
+            <div className="relative" ref={dispatchRef}>
+              <label className={labelCls}>Despatch Through <span className="text-red-500">*</span></label>
+              <div
+                onClick={() => setDispatchOpen(!dispatchOpen)}
+                className={`${inputCls} flex justify-between items-center cursor-pointer min-h-[43px]`}
+              >
+                <span className={formData.dispatch_through ? "text-black" : "text-gray-400 font-medium text-[13px]"}>
+                  {formData.dispatch_through || "Select mode…"}
+                </span>
+                <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+              {dispatchOpen && (
+                <div className={dropdownCls}>
+                  {DESPATCH_OPTIONS.map((opt) => (
+                    <div key={opt}
+                      onClick={() => { setFormdata({ ...formData, dispatch_through: opt }); setDispatchOpen(false); }}
+                      className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0">
+                      {opt}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="flex items-end">
               <button type="button" onClick={handleShowClick}
@@ -553,10 +628,14 @@ const PerformanceInvoiceForm2 = () => {
           </div>
 
           {/* Display fields (accumulated values) */}
-          <div className="grid grid-cols-3 gap-5 mt-4">
+          <div className="grid grid-cols-4 gap-5 mt-4">
             <div>
               <label className={labelCls}>DC No (Added)</label>
               <input type="text" value={dcNoDisplay} readOnly className={roInputCls} placeholder="Click SHOW to add" />
+            </div>
+            <div>
+              <label className={labelCls}>DC Date (Added)</label>
+              <input type="text" value={dcDateDisplay} readOnly className={roInputCls} placeholder="Click SHOW to add" />
             </div>
             <div>
               <label className={labelCls}>Order No (Added)</label>
@@ -583,7 +662,7 @@ const PerformanceInvoiceForm2 = () => {
 
           <div className="grid grid-cols-9 gap-3 items-end">
             {/* Item Name */}
-            <div className="col-span-2 relative">
+            <div className="col-span-2 relative" ref={itemDropdownRef}>
               <label className={labelCls}>Item Name <span className="text-red-500">*</span></label>
               <input type="text" placeholder="Search item…"
                 value={currentrow.item_name}
@@ -633,7 +712,7 @@ const PerformanceInvoiceForm2 = () => {
                 readOnly className={roInputCls} />
             </div>
             {/* UOM */}
-            <div className="relative">
+            <div className="relative" ref={uomDropdownRef}>
               <label className={labelCls}>UOM</label>
               <input type="text" placeholder="Select" value={currentrow.uom}
                 onFocus={() => setopenUom(true)}
@@ -726,7 +805,7 @@ const PerformanceInvoiceForm2 = () => {
           {/* Left: Load Invoice */}
           <div className="pt-6 border-t border-gray-100">
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Load / Edit Existing Invoice</p>
-            <div className="relative w-64">
+            <div className="relative w-64" ref={loadInvoiceDropdownRef}>
               <label className={labelCls}>Invoice No</label>
               <input type="text" value={loadInvoice}
                 onFocus={() => { setLoadInvoiceOpen(true); searchINV(loadInvoice); }}
@@ -800,6 +879,59 @@ const PerformanceInvoiceForm2 = () => {
         </div>
 
       </div>
+
+      {/* Success Modal */}
+      {savedNo && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4">
+          <div className="bg-white rounded-2xl p-8 shadow-2xl text-center w-full max-w-md animate-in fade-in zoom-in duration-200">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-9 h-9 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h2 className="text-[22px] font-black text-gray-900 mb-1">
+              Performance Invoice 2 Saved Successfully!
+            </h2>
+            <p className="text-[13px] text-gray-400 mb-6">
+              Invoice No: <span className="font-bold text-gray-700">{savedNo}</span>
+            </p>
+            <div className="flex gap-3 mb-4">
+              <button
+                onClick={() => { setShowInvoiceWindow(true); }}
+                className="flex-1 py-3 bg-blue-600 text-white rounded-xl text-[14px] font-bold hover:bg-blue-700 transition-colors"
+              >
+                View Invoice
+              </button>
+              <button
+                onClick={() => { setShowInvoiceWindow(true); }}
+                className="flex-1 py-3 bg-gray-900 text-white rounded-xl text-[14px] font-bold hover:bg-black transition-colors"
+              >
+                Print Invoice
+              </button>
+            </div>
+            <button
+              onClick={() => { setSavedNo(null); resetall(); }}
+              className="text-[13px] text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              Close &amp; start new invoice
+            </button>
+          </div>
+        </div>
+      )}
+
+      <SaleswindowModel
+        title="Performance Invoice 2 Format"
+        isOpen={showInvoiceWindow}
+        type="PI2 Format"
+        onClose={() => setShowInvoiceWindow(false)}
+        isMinimized={isMinimized}
+        onMinimize={() => { setIsMinimized(true); setShowInvoiceWindow(false); }}
+        initialView="qt"
+        filters={{ QtNumber: savedNo }}
+      >
+        <PerformanceInvoiceLayout2 InvNumber={savedNo} />
+      </SaleswindowModel>
+
       {showPasswordModal && (
         <Addpassword onSuccess={handlePasswordSuccess} onClose={handlePasswordCancel} />
       )}

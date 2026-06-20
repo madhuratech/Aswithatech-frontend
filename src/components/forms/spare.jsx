@@ -1,9 +1,10 @@
-import { useState,useEffect } from 'react';
+import { useState,useEffect, useRef } from 'react';
 import React from "react";
 import { successToast,errorToast } from "../ui/nottifications";
 import { X } from "lucide-react";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
 
 const SpareModel = ({ onClose, refreshSpare, editMode, spare }) => { 
   const {
@@ -13,6 +14,23 @@ const SpareModel = ({ onClose, refreshSpare, editMode, spare }) => {
   } = usePasswordProtection();
 
   const [search, setSearch] = useState("");
+  const modalRef = useRef(null);
+  const searchDropdownRef = useRef(null);
+
+  useOutsideClick([
+    { ref: modalRef, onClose },
+    { ref: searchDropdownRef, onClose: () => setShowDropdown(false) }
+  ]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
   const[result,setResult] = useState([]);
   const [sparename, setspareName] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
@@ -125,7 +143,7 @@ const Savespare = async (e) => {
 
   return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 overflow-y-auto">
-          <div className="bg-white w-[500px] mt-[150px]  ml-20 rounded-xl shadow-lg p-6 flex flex-col mb-[80px]">
+          <div ref={modalRef} className="bg-white w-[500px] mt-[150px]  ml-20 rounded-xl shadow-lg p-6 flex flex-col mb-[80px]">
               <div className="flex items-center justify-between mb-4">
                  <div>
                    <h2 className="text-lg font-semibold mb-1">Add New Spare</h2>
@@ -141,7 +159,7 @@ const Savespare = async (e) => {
         {/* Forms */}
 
           <div className="space-y-6">
-             <div className='relative'>
+             <div className='relative' ref={searchDropdownRef}>
               <label>
                 Search spare
               </label>

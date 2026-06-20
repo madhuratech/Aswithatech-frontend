@@ -152,13 +152,15 @@ const ReceiptEntry = () => {
     const ba  = Number(bill.bill_amount || 0);
     const ap  = Number(bill.already_paid || 0);
     const paid = Number(entry.paid_amount || 0);
+    const tds = Number(entry.tds_amt || 0);
+    const adv = Number(entry.advance_paid || 0);
     setEntry((p) => ({
       ...p,
       bill_no: bill.bill_no,
       bill_date: bill.bill_date ? String(bill.bill_date).split("T")[0] : "",
       bill_amount: ba,
       already_paid: ap,
-      balance: (ba - ap - paid).toFixed(2),
+      balance: (ba - ap - paid - tds - adv).toFixed(2),
     }));
     setBillOpen(false);
   };
@@ -168,7 +170,9 @@ const ReceiptEntry = () => {
     const ba   = Number(updated.bill_amount   || 0);
     const ap   = Number(updated.already_paid  || 0);
     const paid = Number(updated.paid_amount   || 0);
-    return (ba - ap - paid).toFixed(2);
+    const tds  = Number(updated.tds_amt       || 0);
+    const adv  = Number(updated.advance_paid  || 0);
+    return (ba - ap - paid - tds - adv).toFixed(2);
   };
 
   const updateEntry = (field, value) => {
@@ -215,7 +219,7 @@ const ReceiptEntry = () => {
     setTabledata((prev) => [...prev, { ...entry }]);
     setEntry({
       bill_no: "", bill_date: "", bill_amount: "", already_paid: "",
-      paid_amount: "",
+      advance_paid: "", tds_amt: "", paid_amount: "",
       balance: "", remarks: "", payment_mode: "",
       bank_name: lastBankName, reference_number: "",
     });
@@ -225,7 +229,7 @@ const ReceiptEntry = () => {
   const clearEntry = () =>
     setEntry({
       bill_no: "", bill_date: "", bill_amount: "", already_paid: "",
-      paid_amount: "",
+      advance_paid: "", tds_amt: "", paid_amount: "",
       balance: "", remarks: "", payment_mode: "",
       bank_name: "", reference_number: "",
     });
@@ -236,6 +240,8 @@ const ReceiptEntry = () => {
   // ── table totals ──────────────────────────────────────────────
   const totalBillAmt  = tabledata.reduce((s, r) => s + Number(r.bill_amount  || 0), 0);
   const totalAlreadyPaid = tabledata.reduce((s, r) => s + Number(r.already_paid || 0), 0);
+  const totalTds      = tabledata.reduce((s, r) => s + Number(r.tds_amt      || 0), 0);
+  const totalAdvance  = tabledata.reduce((s, r) => s + Number(r.advance_paid  || 0), 0);
   const totalPaid     = tabledata.reduce((s, r) => s + Number(r.paid_amount  || 0), 0);
   const totalBalance  = tabledata.reduce((s, r) => s + Number(r.balance      || 0), 0);
 
@@ -261,8 +267,11 @@ const ReceiptEntry = () => {
       reference_number: tabledata[0]?.reference_number || "",
       items: tabledata.map((r) => ({
         bill_no:         r.bill_no,
+        bill_date:       r.bill_date || null,
         bill_amount:     r.bill_amount,
         already_paid:    r.already_paid,
+        advance_paid:    Number(r.advance_paid || 0),
+        tds_amt:         Number(r.tds_amt || 0),
         paid_amount:     r.paid_amount,
         balance:         r.balance,
         remarks:         r.remarks,
@@ -339,8 +348,11 @@ const ReceiptEntry = () => {
       await loadPendingBills(h.customer_name);
       setTabledata((data.items || []).map((item) => ({
         bill_no:         item.bill_no         || "",
+        bill_date:       item.bill_date ? item.bill_date.split("T")[0] : "",
         bill_amount:     item.bill_amount      || 0,
         already_paid:    item.already_paid     || 0,
+        advance_paid:    item.advance_paid     || 0,
+        tds_amt:         item.tds_amt          || 0,
         paid_amount:     item.paid_amount      || 0,
         balance:         item.balance          || 0,
         remarks:         item.remarks          || "",
@@ -358,7 +370,7 @@ const ReceiptEntry = () => {
   const resetAll = async () => {
     const today = new Date().toISOString().split("T")[0];
     setHeader({ receipt_no: "", receipt_date: today, customer_name: "" });
-    setEntry({ bill_no: "", bill_amount: "", already_paid: "", paid_amount: "", balance: "", remarks: "", payment_mode: "", bank_name: "", reference_number: "" });
+    setEntry({ bill_no: "", bill_amount: "", already_paid: "", advance_paid: "", tds_amt: "", paid_amount: "", balance: "", remarks: "", payment_mode: "", bank_name: "", reference_number: "" });
     setTabledata([]);
     setPendingBills([]);
     setLoadedId(null);
@@ -526,6 +538,30 @@ const ReceiptEntry = () => {
               />
             </div>
 
+            {/* TDS Amount */}
+            <div className="flex flex-col gap-1">
+              <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">TDS Amount</label>
+              <input
+                type="number"
+                placeholder="0.00"
+                value={entry.tds_amt}
+                onChange={(e) => updateEntry("tds_amt", e.target.value)}
+                className="p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black outline-none bg-white shadow-sm"
+              />
+            </div>
+
+            {/* Advance Paid */}
+            <div className="flex flex-col gap-1">
+              <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Advance Paid</label>
+              <input
+                type="number"
+                placeholder="0.00"
+                value={entry.advance_paid}
+                onChange={(e) => updateEntry("advance_paid", e.target.value)}
+                className="p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black outline-none bg-white shadow-sm"
+              />
+            </div>
+
             {/* Balance — readonly, auto-calculated */}
             <div className="flex flex-col gap-1">
               <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Balance Amount</label>
@@ -639,7 +675,7 @@ const ReceiptEntry = () => {
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200 text-left">
-                {["Bill No","Bill Date","Bill Amount","Already Paid","Paid Amount","Balance","Payment Mode","Bank Name","Reference No","Remarks","Del"].map((h) => (
+                {["Bill No","Bill Date","Bill Amount","Already Paid","TDS Amount","Advance Paid","Paid Amount","Balance","Payment Mode","Bank Name","Reference No","Remarks","Del"].map((h) => (
                   <th key={h} className="p-3 text-[11px] font-black text-gray-500 border-r border-gray-100 uppercase text-center whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -652,6 +688,8 @@ const ReceiptEntry = () => {
                     <td className="p-3 text-[12px] text-gray-700 border-r border-gray-100 text-center">{row.bill_date || ""}</td>
                     <td className="p-3 text-[12px] font-bold text-blue-700 border-r border-gray-100 text-center">{fmt(row.bill_amount)}</td>
                     <td className="p-3 text-[12px] font-semibold text-gray-700 border-r border-gray-100 text-center">{fmt(row.already_paid)}</td>
+                    <td className="p-3 text-[12px] font-semibold text-gray-700 border-r border-gray-100 text-center">{fmt(row.tds_amt)}</td>
+                    <td className="p-3 text-[12px] font-semibold text-gray-700 border-r border-gray-100 text-center">{fmt(row.advance_paid)}</td>
                     <td className="p-3 text-[12px] font-bold text-green-700 border-r border-gray-100 text-center">{fmt(row.paid_amount)}</td>
                     <td className="p-3 text-[12px] font-bold text-red-600 border-r border-gray-100 text-center">{fmt(row.balance)}</td>
                     <td className="p-3 text-[12px] font-semibold text-gray-700 border-r border-gray-100 text-center">{row.payment_mode}</td>
@@ -669,7 +707,7 @@ const ReceiptEntry = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="11" className="p-10 text-center text-gray-400 text-sm">
+                  <td colSpan="13" className="p-10 text-center text-gray-400 text-sm">
                     Select a customer, choose a bill and click <strong>ADD</strong>
                   </td>
                 </tr>
@@ -683,6 +721,8 @@ const ReceiptEntry = () => {
                   <td className="p-3 border-r border-gray-100"></td>
                   <td className="p-3 text-center text-blue-700 border-r border-gray-100">{fmt(totalBillAmt)}</td>
                   <td className="p-3 text-center text-gray-700 border-r border-gray-100">{fmt(totalAlreadyPaid)}</td>
+                  <td className="p-3 text-center text-gray-700 border-r border-gray-100">{fmt(totalTds)}</td>
+                  <td className="p-3 text-center text-gray-700 border-r border-gray-100">{fmt(totalAdvance)}</td>
                   <td className="p-3 text-center text-green-700 border-r border-gray-100">{fmt(totalPaid)}</td>
                   <td className="p-3 text-center text-red-600 border-r border-gray-100">{fmt(totalBalance)}</td>
                   <td className="p-3 border-r border-gray-100"></td>

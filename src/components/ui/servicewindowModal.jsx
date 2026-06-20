@@ -3,6 +3,7 @@ import { X, Minus, Square, Printer } from "lucide-react";
 import html2pdf from "html2pdf.js";
 import JobDeliveryChallan from "../pages/Services/jobDcFormat";
 import StandbyDeliveryChallan from "../pages/Services/standbyDcFormat";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
 
 const ServiceWindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, children, onFilterChange, initialViewMode, initialView, filters: externalFilters }) => {
     const [isMaximized, setIsMaximized] = useState(false);
@@ -14,6 +15,25 @@ const ServiceWindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinim
     const [clientlist, setclientlist] = useState([]);
     const [docType, setDocType] = useState("Job DC");
     const contentRef = useRef(null);
+    const dcDropdownRef = useRef(null);
+    const clientDropdownRef = useRef(null);
+    const modalContainerRef = useRef(null);
+
+    useOutsideClick([
+      { ref: dcDropdownRef, onClose: () => setopendown(false) },
+      { ref: clientDropdownRef, onClose: () => setclientopen(false) },
+      { ref: modalContainerRef, onClose: () => { if (!isMaximized) onClose(); } }
+    ]);
+
+    useEffect(() => {
+      const handleKeyDown = (e) => {
+        if (e.key === "Escape") {
+          onClose();
+        }
+      };
+      window.addEventListener("keydown", handleKeyDown);
+      return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [onClose]);
     
 
     useEffect(() => {
@@ -186,13 +206,7 @@ const ServiceWindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinim
         }
     };
 
-    useEffect(() => {
-        const handleClickOutside = (e) => {
-            if (!e.target.closest(".dc-dropdown")) setopendown(false);
-        };
-        document.addEventListener("click", handleClickOutside);
-        return () => document.removeEventListener("click", handleClickOutside);
-    }, []);
+
 
     const handlePrint = () => {
         window.print();
@@ -212,6 +226,7 @@ const ServiceWindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinim
             }}
         >
             <div
+                ref={modalContainerRef}
                 className="service-modal-container"
                 style={{
                     display: "flex", flexDirection: "column",
@@ -328,7 +343,7 @@ const ServiceWindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinim
                         </div>
 
                         {/* DC / INVOICE NUMBER */}
-                        <div style={{ display: "flex", flexDirection: "column", position: "relative" }} className="dc-dropdown">
+                        <div style={{ display: "flex", flexDirection: "column", position: "relative" }} className="dc-dropdown" ref={dcDropdownRef}>
                             <label style={{ color: "#fff", fontWeight: "bold", fontSize: "11px", marginBottom: "4px", letterSpacing: "0.5px" }}>
                                 {type === "DC Format View"
                                     ? (docType.includes("Return") ? "RETURN DC NO" : "DC NO")
@@ -394,7 +409,7 @@ const ServiceWindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinim
                         </div>
 
                         {/* CLIENT / SUPPLIER NAME */}
-                        <div style={{ display: "flex", flexDirection: "column", position: "relative" }}>
+                        <div style={{ display: "flex", flexDirection: "column", position: "relative" }} ref={clientDropdownRef}>
                             <label style={{ color: "#fff", fontWeight: "bold", fontSize: "11px", marginBottom: "4px", letterSpacing: "0.5px" }}>
                                 {type === "Inward Report" ? "SUPPLIER NAME" : "CLIENT NAME"}
                             </label>

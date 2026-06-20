@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { toWords } from "number-to-words";
+import { splitAddress } from "../../../utils/AddressBlock";
 
 const Creditnoteview = ({ cnNumber }) => {
   const [creditnote, setCreditnote] = useState({
@@ -82,11 +83,13 @@ const Creditnoteview = ({ cnNumber }) => {
     return (
       <div className="print-copy-wrapper py-4 print:py-0 flex flex-col items-center animate-in fade-in duration-200">
         {/* TOP BAR / LABEL */}
-        <div className="w-[190mm] text-right px-4 pt-1 flex-shrink-0">
-          <span className="text-[13px] font-bold uppercase tracking-wider">
-            {copyLabel}
-          </span>
-        </div>
+        {copyLabel && copyLabel.trim() !== "" && (
+          <div className="w-[190mm] text-right px-4 pt-1 flex-shrink-0">
+            <span className="text-[13px] font-bold uppercase tracking-wider">
+              {copyLabel}
+            </span>
+          </div>
+        )}
         <div className="w-[190mm] border-2 border-black bg-white text-black font-sans shadow-lg print:shadow-none relative select-none flex flex-col credit-note-print" style={{ minHeight: "260mm", boxSizing: "border-box" }}>
           {/* HEADER */}
           <div className="flex flex-col justify-center items-center text-center border-b-2 border-black p-2 h-[120px]" style={{ pageBreakInside: "avoid", breakInside: "avoid" }}>
@@ -117,8 +120,9 @@ const Creditnoteview = ({ cnNumber }) => {
                 {creditnote.client?.customer_name || creditnote.client_name}
               </h2>
               <div className="text-[12px] leading-5 font-medium max-w-[350px]">
-                <p>{creditnote.client?.address}</p>
-                <p>{creditnote.client?.state} - {creditnote.client?.pincode}</p>
+                {splitAddress(creditnote.client?.address, creditnote.client?.state, creditnote.client?.pincode).map((line, idx) => (
+                  <p key={idx}>{line}</p>
+                ))}
                 <p className="mt-2 font-bold">Ph: {creditnote.client?.phone || "N/A"}</p>
                 <p className="font-bold">GSTIN : {creditnote.client?.gst_number || "N/A"}</p>
               </div>
@@ -326,8 +330,8 @@ const Creditnoteview = ({ cnNumber }) => {
         }
       `}</style>
 
-      {renderCreditNotePage("[ORIGINAL COPY]")}
-      {renderCreditNotePage("[DUPLICATE COPY]")}
+      {renderCreditNotePage("")}
+      {renderCreditNotePage("")}
     </div>
   );
 };

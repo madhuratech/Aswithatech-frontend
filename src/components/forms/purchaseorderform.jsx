@@ -233,7 +233,6 @@ export default function PurchaseOrder() {
     if (!currentItem.quantity || parseFloat(currentItem.quantity) <= 0) { toast.error("Quantity must be > 0."); return; }
     if (!currentItem.price    || parseFloat(currentItem.price) <= 0)    { toast.error("Price is required."); return; }
     if (!currentItem.unit)                                { toast.error("Unit is required."); return; }
-    if (editIndex < 0 && tabledata.some((r) => r.item_name === currentItem.item_name)) { toast.error("Duplicate item."); return; }
     const amount = (parseFloat(currentItem.quantity) * parseFloat(currentItem.price)).toFixed(2);
     const newRow = { ...currentItem, amount };
     if (editIndex >= 0) {

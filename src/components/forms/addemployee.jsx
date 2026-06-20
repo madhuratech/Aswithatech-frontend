@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { X, Eye, Trash2 } from "lucide-react";
 import { useScrollLock } from "../../hooks/useScrollLock";
 import { toast } from "react-hot-toast";
 import { successToast, errorToast, loadingToast } from "../ui/nottifications";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
 
 const MAX_FILES = 5;
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -36,6 +37,23 @@ const AddEmployee = ({ onClose, refreshEmployees, employee }) => {
   const [category, setCategory] = React.useState("");
   const [documents, setDocuments] = useState([]);
   const [busy, setBusy] = useState(false);
+  const cardRef = useRef(null);
+  const departmentRef = useRef(null);
+
+  useOutsideClick([
+    { ref: cardRef, onClose },
+    { ref: departmentRef, onClose: () => setOpen(false) }
+  ]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
 
   useScrollLock(true);
   const { showPasswordModal, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
@@ -191,7 +209,7 @@ const AddEmployee = ({ onClose, refreshEmployees, employee }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 overflow-y-auto">
-      <div className="bg-white w-[650px] mt-[450px] ml-20 rounded-xl shadow-lg p-6 flex flex-col mb-[80px]">
+      <div ref={cardRef} className="bg-white w-[650px] mt-[450px] ml-20 rounded-xl shadow-lg p-6 flex flex-col mb-[80px]">
         <div className="flex items-start justify-between mb-4">
           <div>
             <h2 className="text-lg font-semibold">{employee ? "Edit Employee" : "Add New Employee"}</h2>
@@ -243,7 +261,7 @@ const AddEmployee = ({ onClose, refreshEmployees, employee }) => {
                   placeholder="Eg: 9876543210" />
               </div>
 
-              <div className="relative">
+              <div className="relative" ref={departmentRef}>
                 <label className="text-sm font-medium">Department</label>
                 <input
                   value={category || formData.department}

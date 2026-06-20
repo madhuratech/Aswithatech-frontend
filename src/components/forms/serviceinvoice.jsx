@@ -364,7 +364,12 @@ const ServiceInvoiceForm = () => {
         const uniqueDcDates = [...new Set(tabledata.map(it => it.dc_date).filter(Boolean))];
         const uniqueOrderDates = [...new Set(tabledata.map(it => it.order_date).filter(Boolean))];
 
-        const dcNoStr = formData.dc_no || "";
+        // Combine all selected DCs with any currently-loaded (not yet SHOW'd) DC
+        const allSelectedDcNos = [...new Set([
+            ...selectedDcNos,
+            ...(formData.dc_no ? [formData.dc_no] : [])
+        ])];
+        const dcNoStr = allSelectedDcNos.length ? allSelectedDcNos.join(", ") : "";
         const dcDateStr = uniqueDcDates.length ? uniqueDcDates.join(", ") : (formData.dc_date || "");
         const orderNoStr = orderNoDisplay || (formData._selOrderNo || "");
         const orderDateStr = uniqueOrderDates.length ? uniqueOrderDates.join(", ") : (orderDateDisplay || formData._selOrderDate || "");
@@ -440,11 +445,12 @@ const ServiceInvoiceForm = () => {
                 customer_name: h.customer_name || "",
                 invoice_no: h.invoice_no || "",
                 invoice_date: safeDate(h.invoice_date || TODAY),
+                client_dc_no: h.client_dc_no || "",
                 dc_no: "",
                 dc_date: safeDate(h.dc_date),
                 order_no: "",
                 order_date: "",
-                dispatch_through: "",
+                dispatch_through: h.dispatch_through || "",
                 discount: h.discount || 0,
                 transport: h.transport || 0,
             });

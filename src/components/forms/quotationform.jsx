@@ -90,9 +90,7 @@ const [currentrow , setcurrentrow] = useState({
 useEffect(() =>{
     const fetchclients = async () =>{
         try{
-            const url = search
-            ? `${Api_url}/clients/search?q=${encodeURIComponent(search)}`
-            : `${Api_url}/clients`;
+            const url = `${Api_url}/clients/search?q=${encodeURIComponent(search || "")}`;
 
             const res = await fetch(url);
             const data = await res.json();
@@ -262,6 +260,8 @@ const resetall = async () =>{
  setQuotationNo('');
  setordertype('');
  setloadquotation('');
+ setCustomerState('');
+ setCustomerGst('');
 
  try{
   const res = await fetch(`${Api_url}/next-Qt-billno`)
@@ -447,6 +447,11 @@ const loadQuotation = async (qtNo) => {
 
     // Set table items
     setTableItems(data.items || []);
+
+    // Set customer state and GST for proper GST calculation
+    setCustomerState(data.client?.state || "");
+    setCustomerGst(data.client?.gst_number || "");
+
     setloadquotation(qtNo);
 
   } catch (error) {

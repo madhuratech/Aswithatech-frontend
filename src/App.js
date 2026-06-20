@@ -60,6 +60,8 @@ import SalesViewReport from "./components/ui/salesviewreport";
 import PurchaseViewReport from "./components/ui/purchaseviewreport";
 import CreditNote from "./components/forms/creditnoteform";
 import PerformanceInvoiceForm2 from "./components/forms/performainvoiceform2";
+import PerformanceInvoiceView2 from "./components/pages/Sales/performanceinvoiceview2";
+import PerformanceInvoiceReport2 from "./components/pages/Sales/performanceinvoicereport2";
 
 // Service
 import ServiceModule from "./components/pages/Services/ServiceModule";
@@ -156,6 +158,8 @@ function App() {
             <Route path="sales-view-report" element={<SalesViewReport />} />
             
             <Route path="performance-invoice-2" element={<PerformanceInvoiceForm2 />} />
+            <Route path="pi2-format/:invoiceNo" element={<PerformanceInvoiceView2 />} />
+            <Route path="pi2-report" element={<PerformanceInvoiceReport2 />} />
           </Route>
 
           {/* Service Module */}

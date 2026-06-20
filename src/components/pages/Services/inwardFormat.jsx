@@ -34,7 +34,6 @@ const InwardFormat = ({ dcNumber }) => {
         {/* Title */}
         <div className="flex justify-between items-center px-8 py-3 font-bold text-[18px] border-b-2 border-black">
           <h1>INWARD ENTRY</h1>
-          <h1>(ORIGINAL COPY)</h1>
         </div>
 
         {/* Company Header */}

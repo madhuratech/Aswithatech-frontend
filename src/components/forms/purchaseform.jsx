@@ -1,15 +1,33 @@
-import React,{useEffect}from "react";
+import React,{useEffect, useRef}from "react";
 import { Search, X } from "lucide-react";
 import { useState } from "react";
 import { errorToast,successToast } from "../ui/nottifications";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
 
 const PurchaseForm = ({ onclose, editItem, purchase, refresh }) => {
 
       const { showPasswordModal, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
 
       const [search, setSearch] = useState("");
+      const modalRef = useRef(null);
+      const searchRef = useRef(null);
+
+      useOutsideClick([
+        { ref: modalRef, onClose: onclose },
+        { ref: searchRef, onClose: () => setShowDropdown(false) }
+      ]);
+
+      useEffect(() => {
+        const handleKeyDown = (e) => {
+          if (e.key === "Escape") {
+            onclose();
+          }
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+      }, [onclose]);
       const[result,setResult] = useState([]);
       const [itemname, setItemName] = useState("");
       const [showDropdown, setShowDropdown] = useState(false);
@@ -132,7 +150,7 @@ const purchaseSelect = (selectedPurchase) => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 overflow-y-auto">
 
    {/* Model */}
-            <div className="bg-white w-[500px] mt-[150px]  ml-20 rounded-xl shadow-lg p-6 flex flex-col mb-[80px]">
+            <div ref={modalRef} className="bg-white w-[500px] mt-[150px]  ml-20 rounded-xl shadow-lg p-6 flex flex-col mb-[80px]">
                 <div className="flex justify-content gap-6">
                      <div>
                         <h2 className="text-xl font-semibold text-gray-900"> Add New Purchase Item</h2>
@@ -148,7 +166,7 @@ const purchaseSelect = (selectedPurchase) => {
 
          {/* Forms */}
 
-             <div className="mt-5">
+             <div className="mt-5" ref={searchRef}>
              <label className="text-sm font-medium">Search Item</label>
             <div className="flex items-center mt-1 border rounded-xl px-3 py-2 bg-gray-50">
             <Search size={16} className="text-gray-400"/>

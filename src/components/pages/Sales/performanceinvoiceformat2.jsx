@@ -18,10 +18,15 @@ const PerformanceInvoiceLayout2 = ({ InvNumber }) => {
 
   const formatOrderDate = (dateStr) => {
     if (!dateStr) return "";
-    if (String(dateStr).includes(",")) {
-      return String(dateStr).split(",").map((d) => formatOrderDate(d.trim())).filter(Boolean).join(", ");
+    const str = typeof dateStr === "object" ? dateStr.toISOString().split("T")[0] : String(dateStr);
+    if (str.includes(",")) {
+      return str.split(",").map((d) => formatOrderDate(d.trim())).filter(Boolean).join(", ");
     }
-    return dateStr;
+    const parts = str.split("-");
+    if (parts.length === 3 && parts[0].length === 4) {
+      return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+    return str;
   };
 
   useEffect(() => {
@@ -62,9 +67,11 @@ const PerformanceInvoiceLayout2 = ({ InvNumber }) => {
     return (
       <div className="invoice-page">
         {/* Copy label */}
-        <div className="text-right px-4 pt-1 flex-shrink-0">
-          <span className="text-[13px] font-bold uppercase tracking-wider">{copyLabel}</span>
-        </div>
+        {copyLabel && copyLabel.trim() !== "" && (
+          <div className="text-right px-4 pt-1 flex-shrink-0">
+            <span className="text-[13px] font-bold uppercase tracking-wider">{copyLabel}</span>
+          </div>
+        )}
 
         <div className="invoice-page-inner w-[200mm] h-[270mm] border-2 border-black bg-white relative flex flex-col"
           style={{ boxSizing: "border-box", overflow: "hidden" }}>
@@ -131,7 +138,6 @@ const PerformanceInvoiceLayout2 = ({ InvNumber }) => {
                   { label: "DC NO",    value: dcNoVal },
                   { label: "DC DATE",  value: dcDateVal },
                   { label: "DESPATCH", value: invoice?.dispatch_through },
-                  { label: "PYMT",     value: invoice?.payment_terms },
                 ].map((row, i) => (
                   <div key={i} className="flex text-[11px] font-bold uppercase leading-[20px]">
                     <div className="w-[70px] shrink-0">{row.label}</div>
@@ -322,10 +328,10 @@ const PerformanceInvoiceLayout2 = ({ InvNumber }) => {
       `}</style>
       <div className="invoice-print-root bg-white w-full flex flex-col items-center print:bg-white">
         <div className="invoice-copy-wrapper py-4 print:py-0">
-          <InvoicePage copyLabel="[ORIGINAL FOR RECIPIENT]" />
+          <InvoicePage copyLabel="" />
         </div>
         <div className="invoice-copy-wrapper py-4 print:py-0">
-          <InvoicePage copyLabel="[DUPLICATE COPY]" />
+          <InvoicePage copyLabel="" />
         </div>
       </div>
     </>
