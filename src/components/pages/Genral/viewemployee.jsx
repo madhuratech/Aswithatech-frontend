@@ -1,5 +1,6 @@
 import React from "react";
 import { X, Eye } from "lucide-react";
+import API_BASE_URL from "../../../config/api";
 
 const ViewEmployee = ({ onClose, employee }) => {
   return (
@@ -85,7 +86,7 @@ const ViewEmployee = ({ onClose, employee }) => {
                   <div key={doc.id} className="flex items-center gap-2 text-xs">
                     <button
                       type="button"
-                      onClick={() => window.open(`http://localhost:3000/api/employees/${employee.id}/document/${doc.id}`, "_blank")}
+                      onClick={() => window.open(`${API_BASE_URL}/employees/${employee.id}/document/${doc.id}`, "_blank")}
                       className="text-blue-600 hover:underline flex items-center gap-1"
                     >
                       <Eye size={12} /> {doc.file_name}

@@ -5,8 +5,9 @@ import toast from "react-hot-toast";
 import html2pdf from "html2pdf.js";
 import * as XLSX from "xlsx";
 import { useOutsideClick } from "../../../hooks/useOutsideClick";
+import API_BASE_URL from "../../../config/api";
 
-const Api_url = "http://localhost:3000/api/standbydcentry";
+const Api_url = `${API_BASE_URL}/standbydcentry`;
 
 const fmtDate = (str) => {
   if (!str) return "-";
@@ -36,7 +37,7 @@ const StandbyDetailsReport = () => {
 
   const fetchCustomers = useCallback(async () => {
       try {
-          const res = await fetch("http://localhost:3000/api/customers/all");
+          const res = await fetch(`${API_BASE_URL}/customers/all`);
           const clientData = await res.json();
           setCustomers(Array.isArray(clientData) ? clientData : []);
       } catch {

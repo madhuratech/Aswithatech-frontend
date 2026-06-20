@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { toWords } from "number-to-words";
 import { splitAddress } from "../../../utils/AddressBlock";
+import API_BASE_URL from "../../../config/api";
 
 const Creditnoteview = ({ cnNumber }) => {
   const [creditnote, setCreditnote] = useState({
@@ -14,7 +15,7 @@ const Creditnoteview = ({ cnNumber }) => {
     const fetchData = async () => {
       try {
         const res = await fetch(
-          `http://localhost:3000/api/creditnotes/full/${encodeURIComponent(cnNumber)}`
+          `${API_BASE_URL}/creditnotes/full/${encodeURIComponent(cnNumber)}`
         );
         const data = await res.json();
         setCreditnote({

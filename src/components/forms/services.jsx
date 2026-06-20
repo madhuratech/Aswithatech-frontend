@@ -5,6 +5,7 @@ import { X } from "lucide-react";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
+import API_BASE_URL from "../../config/api";
 
 const Spare = ({onClose , refreshSpare,editMode,service }) => {
   const {
@@ -37,7 +38,7 @@ const Spare = ({onClose , refreshSpare,editMode,service }) => {
   const [hsn, setHsn] = useState(998314); 
   
 
-  const Api_urls = "http://localhost:3000/api/Services";
+  const Api_urls = `${API_BASE_URL}/Services`;
 
 
  useEffect(() => {

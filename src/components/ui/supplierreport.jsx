@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from "react";
 import { X, Square, Minus, Printer } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import html2pdf from "html2pdf.js";
+import API_BASE_URL from "../../config/api";
 
 const SupplierModel = ({ onMinimize, onClose, title, setIsMinimizedInternal }) => {
   const [data, setData] = useState([]);
@@ -25,7 +26,7 @@ const SupplierModel = ({ onMinimize, onClose, title, setIsMinimizedInternal }) =
     supplier_name: ""
   });
 
-  const Api_urls = "http://localhost:3000/api/suppliers";
+  const Api_urls = `${API_BASE_URL}/suppliers`;
 
   const gentratereport = useCallback(async () => {
     try {

@@ -6,6 +6,7 @@ import{Plus,
   import toast from "react-hot-toast";
 import AddNewCustomerModal from "../../forms/addnewclient";
 import Addpassword from "../../forms/addeditpassword";  
+import API_BASE_URL from "../../../config/api";
 
 const Customer = () =>{
      const [customers, setCustomers] = useState([]);
@@ -16,7 +17,7 @@ const Customer = () =>{
 
   // Fetch all data
   const fetchCustomers = async () => {
-  const res = await fetch("http://localhost:3000/api/customers/all");
+  const res = await fetch(`${API_BASE_URL}/customers/all`);
   const data = await res.json();
   setCustomers(data);
 };
@@ -56,7 +57,7 @@ const editCustomer = (customer) => {
  
   try{
     const res = await fetch(
-      `http://localhost:3000/api/customers/delete/${id}`,
+      `${API_BASE_URL}/customers/delete/${id}`,
       { method: "DELETE" }
     );
     if(!res.ok) throw new Error("Delete Failed");

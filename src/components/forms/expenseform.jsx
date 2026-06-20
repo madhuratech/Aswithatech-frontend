@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
+import API_BASE_URL from "../../config/api";
 
 const ExpenseForm = ({onClose,refresh}) => {
 const [openIndex, setOpenIndex] = useState(null);
@@ -36,7 +37,7 @@ const [formData, setFormData] = useState([
  const toastId = loadingToast("Adding Expense...");
 
  try{
-   await axios.post("http://localhost:3000/api/expenses/new", formData);
+   await axios.post(`${API_BASE_URL}/expenses/new`, formData);
    toast.dismiss(toastId);
    successToast("Expense Added");
    onClose();

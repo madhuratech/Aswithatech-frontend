@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { DcAddressBlock } from "../../../utils/AddressBlock";
+import API_BASE_URL from "../../../config/api";
 
 // Formats qty: 5.00 → 5, 5.50 → 5.5, 10.25 → 10.25
 const fmtQty = (val) => {
@@ -15,7 +16,7 @@ const DeliveryChallan = ({ dcNumber }) => {
     if (!dcNumber || dcNumber === "") return;
     const fetchData = async () => {
       try {
-        const res = await fetch(`http://localhost:3000/api/servicedcentry/full/${encodeURIComponent(dcNumber)}`);
+        const res = await fetch(`${API_BASE_URL}/servicedcentry/full/${encodeURIComponent(dcNumber)}`);
         const result = await res.json();
         setData({ ...result, items: result.items || [], client: result.client || {} });
       } catch (error) {

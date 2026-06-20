@@ -3,6 +3,7 @@ import { X, PackagePlus } from "lucide-react";
 import { successToast, errorToast, loadingToast } from "./nottifications";
 import toast from "react-hot-toast";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
+import API_BASE_URL from "../../config/api";
 
 const DEFAULT_HSN = { spare: "853210", service: "998314" };
 
@@ -46,10 +47,10 @@ const ProductQuickAddModal = ({ onClose, onSuccess, defaultType = "spare" }) => 
     try {
       let url, body;
       if (productType === "spare") {
-        url = "http://localhost:3000/api/Sparemodels/new";
+        url = `${API_BASE_URL}/Sparemodels/new`;
         body = { spare_name: productName.trim(), hsn_number: hsn || null };
       } else {
-        url = "http://localhost:3000/api/Services/new";
+        url = `${API_BASE_URL}/Services/new`;
         body = { service_name: productName.trim(), hsn_number: hsn || null };
       }
 

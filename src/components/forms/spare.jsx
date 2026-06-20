@@ -5,6 +5,7 @@ import { X } from "lucide-react";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
+import API_BASE_URL from "../../config/api";
 
 const SpareModel = ({ onClose, refreshSpare, editMode, spare }) => { 
   const {
@@ -37,7 +38,7 @@ const SpareModel = ({ onClose, refreshSpare, editMode, spare }) => {
   const [hsn, setHsn] = useState(853210); 
   
 
-  const Api_urls = "http://localhost:3000/api/Sparemodels";
+  const Api_urls = `${API_BASE_URL}/Sparemodels`;
   
 
  useEffect(() => {

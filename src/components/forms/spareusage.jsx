@@ -8,6 +8,7 @@ import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import flatpickr from "flatpickr";
 import { toDmy, toYmd } from "../../utils/dateFormat";
+import API_BASE_URL from "../../config/api";
 
 // Debounce helper for search
 function debounce(func, delay) {
@@ -93,7 +94,7 @@ const SpareUsage = () => {
   // Fetch next sequential Usage SNO
   const fetchNextSno = async () => {
     try {
-      const res = await fetch("http://localhost:3000/api/spareusage/next-sno");
+      const res = await fetch(`${API_BASE_URL}/spareusage/next-sno`);
       const data = await res.json();
       if (data.nextSno) {
         setUsageNo(data.nextSno);
@@ -106,7 +107,7 @@ const SpareUsage = () => {
   // Fetch all spare usage list records
   const fetchUsageList = async () => {
     try {
-      const res = await fetch("http://localhost:3000/api/spareusage/all");
+      const res = await fetch(`${API_BASE_URL}/spareusage/all`);
       const data = await res.json();
       if (Array.isArray(data)) {
         setUsageList(data);
@@ -122,7 +123,7 @@ const SpareUsage = () => {
     fetchUsageList();
 
     // Fetch PCB Stocks for Models
-    fetch("http://localhost:3000/api/pcb-stock/all")
+    fetch(`${API_BASE_URL}/pcb-stock/all`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -132,7 +133,7 @@ const SpareUsage = () => {
       .catch((err) => console.error("Error loading PCB stock:", err));
 
     // Fetch Employees
-    fetch("http://localhost:3000/api/employees/all")
+    fetch(`${API_BASE_URL}/employees/all`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.employees)) {
@@ -142,7 +143,7 @@ const SpareUsage = () => {
       .catch((err) => console.error("Error loading employees:", err));
 
     // Fetch Spares from master
-    fetch("http://localhost:3000/api/Sparemodels/all")
+    fetch(`${API_BASE_URL}/Sparemodels/all`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -216,8 +217,8 @@ const SpareUsage = () => {
     );
     try {
       const url = isEditing
-        ? `http://localhost:3000/api/spareusage/${usageNo}`
-        : "http://localhost:3000/api/spareusage/new";
+        ? `${API_BASE_URL}/spareusage/${usageNo}`
+        : `${API_BASE_URL}/spareusage/new`;
       const method = isEditing ? "PUT" : "POST";
 
       const res = await fetch(url, {
@@ -255,7 +256,7 @@ const SpareUsage = () => {
 
     const toastId = toast.loading("Deleting Spare Usage...");
     try {
-      const res = await fetch(`http://localhost:3000/api/spareusage/${targetSno}`, {
+      const res = await fetch(`${API_BASE_URL}/spareusage/${targetSno}`, {
         method: "DELETE",
       });
       if (res.ok) {
@@ -280,7 +281,7 @@ const SpareUsage = () => {
   // Load details of an entry for edit
   const handleLoadEntry = async (selectedSno) => {
     try {
-      const res = await fetch(`http://localhost:3000/api/spareusage/${selectedSno}`);
+      const res = await fetch(`${API_BASE_URL}/spareusage/${selectedSno}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to load");
 
@@ -312,9 +313,9 @@ const SpareUsage = () => {
     try {
       let url = "";
       if (!val.trim()) {
-        url = "http://localhost:3000/api/spareusage/search?q=";
+        url = `${API_BASE_URL}/spareusage/search?q=`;
       } else {
-        url = `http://localhost:3000/api/spareusage/search?q=${encodeURIComponent(val)}`;
+        url = `${API_BASE_URL}/spareusage/search?q=${encodeURIComponent(val)}`;
       }
       const res = await fetch(url);
       const data = await res.json();

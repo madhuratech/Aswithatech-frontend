@@ -4,6 +4,7 @@ import html2pdf from "html2pdf.js";
 import JobDeliveryChallan from "../pages/Services/jobDcFormat";
 import StandbyDeliveryChallan from "../pages/Services/standbyDcFormat";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
+import API_BASE_URL from "../../config/api";
 
 const ServiceWindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, children, onFilterChange, initialViewMode, initialView, filters: externalFilters }) => {
     const [isMaximized, setIsMaximized] = useState(false);
@@ -44,26 +45,26 @@ const ServiceWindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinim
     }, [isOpen, initialViewMode, initialView]);
 
     const Api_urls = type === "Inward Report"
-        ? "http://localhost:3000/api/Inwardentries"
+        ? `${API_BASE_URL}/Inwardentries`
         : type === "DC Format View"
             ? docType === "Job DC"
-                ? "http://localhost:3000/api/jobdcentry"
+                ? `${API_BASE_URL}/jobdcentry`
                 : docType === "Job Return DC"
-                    ? "http://localhost:3000/api/jobreturndc"
+                    ? `${API_BASE_URL}/jobreturndc`
                     : docType === "Standby DC"
-                        ? "http://localhost:3000/api/standbydcentry"
+                        ? `${API_BASE_URL}/standbydcentry`
                         : docType === "Standby Return DC"
-                            ? "http://localhost:3000/api/standbyreturndc"
-                            : "http://localhost:3000/api/jobdcentry"
+                            ? `${API_BASE_URL}/standbyreturndc`
+                            : `${API_BASE_URL}/jobdcentry`
             : type === "Standby DC Format"
-                ? "http://localhost:3000/api/standbydcentry"
+                ? `${API_BASE_URL}/standbydcentry`
                 : type === "Job DC Format"
-                    ? "http://localhost:3000/api/jobdcentry"
+                    ? `${API_BASE_URL}/jobdcentry`
                     : type === "Job Return DC Format"
-                        ? "http://localhost:3000/api/jobreturndc"
+                        ? `${API_BASE_URL}/jobreturndc`
                         : type === "Standby Return DC Format"
-                            ? "http://localhost:3000/api/standbyreturndc"
-                            : "http://localhost:3000/api/servicedcentry";
+                            ? `${API_BASE_URL}/standbyreturndc`
+                            : `${API_BASE_URL}/servicedcentry`;
 
     const [filters, setFilters] = useState({
         fromDate: "",
@@ -93,7 +94,7 @@ const ServiceWindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinim
                 } else if (type === "dc" || type === "Inward Report") {
                     searchurl = `${Api_urls}/IE/search?q=`;
                 } else if (type === "Invoice Format") {
-                    searchurl = `http://localhost:3000/api/serviceinvoice/search-invoice?q=`;
+                    searchurl = `${API_BASE_URL}/serviceinvoice/search-invoice?q=`;
                 }
 
                 if (!searchurl) return;

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { toWords } from "number-to-words";
+import API_BASE_URL from "../../../config/api";
 
 const TaxPurchaseFormat = ({ billNo }) => {
   const [entry, setEntry] = useState({ items: [] });
@@ -13,7 +14,7 @@ const TaxPurchaseFormat = ({ billNo }) => {
     if (!billNo) return;
     const fetchData = async () => {
       try {
-        const res  = await fetch(`http://localhost:3000/api/taxpurchases/${billNo}`);
+        const res  = await fetch(`${API_BASE_URL}/taxpurchases/${billNo}`);
         const data = await res.json();
         setEntry({ ...data, items: data.items || [] });
       } catch (err) {

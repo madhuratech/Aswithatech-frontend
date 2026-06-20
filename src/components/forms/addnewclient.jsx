@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
+import API_BASE_URL from "../../config/api";
 
 
 
@@ -86,8 +87,8 @@ const AddNewCustomerModal = ({ onClose, customer, refresh }) => {
 
   try {
     const url = customer
-      ? `http://localhost:3000/api/customers/update/${customer.id}`
-      : "http://localhost:3000/api/customers/new";
+      ? `${API_BASE_URL}/customers/update/${customer.id}`
+      : `${API_BASE_URL}/customers/new`;
 
     const method = customer ? "PUT" : "POST";
 
@@ -173,9 +174,9 @@ useEffect(() => {
       let url = "";
 
       if (searchTerm.trim() === "") {
-  url = "http://localhost:3000/api/customers/all";
+  url = `${API_BASE_URL}/customers/all`;
 } else {
-  url = `http://localhost:3000/api/customers/search?q=${searchTerm}`;
+  url = `${API_BASE_URL}/customers/search?q=${searchTerm}`;
 }
       const res = await fetch(url);
       const data = await res.json();

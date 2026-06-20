@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { toWords } from "number-to-words";
 import { InvoiceAddressBlock } from "../../../utils/AddressBlock";
+import API_BASE_URL from "../../../config/api";
 
 const InvoiceFormat = ({ dcNumber }) => {
   const [invoice, setInvoice] = useState({ items: [], client: {}, header: {} });
@@ -13,7 +14,7 @@ const InvoiceFormat = ({ dcNumber }) => {
     const fetchData = async () => {
       try {
         const res = await fetch(
-          `http://localhost:3000/api/serviceinvoice/invoice/${encodeURIComponent(dcNumber)}`
+          `${API_BASE_URL}/serviceinvoice/invoice/${encodeURIComponent(dcNumber)}`
         );
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const data = await res.json();

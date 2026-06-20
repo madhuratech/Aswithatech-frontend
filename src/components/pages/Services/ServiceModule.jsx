@@ -11,6 +11,7 @@ import ServiceWindowModal from "../../ui/servicewindowModal";
 import DeliveryChallan from "./dcFormat";
 import InvoiceFormat from "./invoiceFormat";
 import InwardReport from "./InwardReport";
+import API_BASE_URL from "../../../config/api";
 
  const SalesCard = ({ title, subtitle, icon: Icon, bgColor, iconColor, onClick }) => {
     return (
@@ -55,19 +56,19 @@ const ServiceModule = () => {
 
     try {
         if (title === "DC Format") {
-          const res = await fetch("http://localhost:3000/api/servicedcentry/DC/search?q=");
+          const res = await fetch(`${API_BASE_URL}/servicedcentry/DC/search?q=`);
           const data = await res.json();
           number = data[0]?.dc_number || data[0]?.inward_dc_no || "";
           setFilters((prev) => ({ ...prev, dcNumber: number }));
           setSelectedDC(number);
         } else if (type === "dc") {
-          const res = await fetch("http://localhost:3000/api/servicedcentry/IE/search?q=");
+          const res = await fetch(`${API_BASE_URL}/servicedcentry/IE/search?q=`);
           const data = await res.json();
           number = data[0]?.dc_number || data[0]?.inward_dc_no || "";
           setFilters((prev) => ({ ...prev, dcNumber: number }));
           setSelectedDC(number);
         } else if (type === "invoice") {
-          const res = await fetch("http://localhost:3000/api/serviceinvoice/search-invoice?q=");
+          const res = await fetch(`${API_BASE_URL}/serviceinvoice/search-invoice?q=`);
           const data = await res.json();
           number = data[0]?.invoice_no || "";
           setFilters((prev) => ({ ...prev, dcNumber: number }));

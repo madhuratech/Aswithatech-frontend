@@ -9,9 +9,10 @@ import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import flatpickr from "flatpickr";
 import { toDmy, toYmd } from "../../utils/dateFormat";
+import API_BASE_URL from "../../config/api";
 
 const TODAY = new Date().toISOString().split("T")[0];
-const Api_url = "http://localhost:3000/api/standbydcentry";
+const Api_url = `${API_BASE_URL}/standbydcentry`;
 
 const REMARKS_OPTIONS = ["Serviced", "Re Serviced", "For Sale", "Beyond", "For Testing Purpose"];
 
@@ -115,7 +116,7 @@ const StandbyDcEntryForm = () => {
 
     const fetchSpares = async () => {
         try {
-            const res = await fetch("http://localhost:3000/api/Sparemodels/all");
+            const res = await fetch(`${API_BASE_URL}/Sparemodels/all`);
             setSpares(await res.json());
         } catch {
             setSpares([]);
@@ -124,7 +125,7 @@ const StandbyDcEntryForm = () => {
 
     const fetchServices = async () => {
         try {
-            const res = await fetch("http://localhost:3000/api/Services/all");
+            const res = await fetch(`${API_BASE_URL}/Services/all`);
             setServices(await res.json());
         } catch {
             setServices([]);
@@ -135,8 +136,8 @@ const StandbyDcEntryForm = () => {
         const fetchCustomers = async () => {
             try {
                 const url = customerSearch
-                    ? `http://localhost:3000/api/customers/search?q=${encodeURIComponent(customerSearch)}`
-                    : `http://localhost:3000/api/customers/all`;
+                    ? `${API_BASE_URL}/customers/search?q=${encodeURIComponent(customerSearch)}`
+                    : `${API_BASE_URL}/customers/all`;
                 const res = await fetch(url);
                 const data = await res.json();
                 setCustomers(Array.isArray(data) ? data : []);

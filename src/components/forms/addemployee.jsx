@@ -6,6 +6,7 @@ import { successToast, errorToast, loadingToast } from "../ui/nottifications";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
+import API_BASE_URL from "../../config/api";
 
 const MAX_FILES = 5;
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -72,7 +73,7 @@ const AddEmployee = ({ onClose, refreshEmployees, employee }) => {
 
   useEffect(() => {
     if (!employee) {
-      fetch("http://localhost:3000/api/employees/next-id")
+      fetch(`${API_BASE_URL}/employees/next-id`)
         .then(r => r.json())
         .then(data => {
           if (data.empId) {
@@ -170,8 +171,8 @@ const AddEmployee = ({ onClose, refreshEmployees, employee }) => {
 
     try {
       const url = employee
-        ? `http://localhost:3000/api/employees/edit/${employee.id}`
-        : `http://localhost:3000/api/employees/new`;
+        ? `${API_BASE_URL}/employees/edit/${employee.id}`
+        : `${API_BASE_URL}/employees/new`;
 
       const method = employee ? "PUT" : "POST";
 

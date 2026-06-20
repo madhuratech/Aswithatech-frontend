@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import PurchaseItems from "../../forms/purchaseform";
 import { ArrowLeft, Plus, SquarePen, Trash2 } from "lucide-react";
 import { errorToast, successToast } from "../../ui/nottifications";
+import API_BASE_URL from "../../../config/api";
 
 const Stock = () => {
   const navigate = useNavigate();
@@ -12,7 +13,7 @@ const Stock = () => {
   const [editOpen,setEditOpen] = React.useState(false);
   
 
-  const Api_Urls = "http://localhost:3000/api/purchaseitems";
+  const Api_Urls = `${API_BASE_URL}/purchaseitems`;
 
   // Fetch purchase items
    const FetchPurchaseItems = async () => {

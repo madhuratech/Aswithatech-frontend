@@ -9,8 +9,9 @@ import DeliveryChallan from "../pages/Sales/salesdcformat";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
+import API_BASE_URL from "../../config/api";
 
-const API = "http://localhost:3000/api/salesdc";
+const API = `${API_BASE_URL}/salesdc`;
 const TODAY = new Date().toISOString().split("T")[0];
 const DESPATCH_OPTIONS = ["Courier", "Transport", "By Hand"];
 const REMARKS_OPTIONS = ["Serviced", "Re Serviced", "For Sale", "Beyond", "For Testing Purpose","Buy Back"];

@@ -3,6 +3,7 @@ import SpareModel from "../../forms/spare";
 import {Plus,Trash2,SquarePen} from "lucide-react";
 import {  errorToast} from "../../ui/nottifications";
 import Addpassword from "../../forms/addeditpassword";
+import API_BASE_URL from "../../../config/api";
 // import toast from "react-hot-toast";
 
 const Servicedata = () =>{
@@ -14,7 +15,7 @@ const Servicedata = () =>{
 const [editOpen,setEditOpen] = useState(false);
 const [selectedSpare,setSelectedSpare] = useState(null);
  
- const Api_urls = "http://localhost:3000/api/Sparemodels";
+ const Api_urls = `${API_BASE_URL}/Sparemodels`;
 
 //  Fetch Data;
 

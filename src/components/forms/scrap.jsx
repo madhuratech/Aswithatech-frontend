@@ -7,6 +7,7 @@ import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import flatpickr from "flatpickr";
 import { toDmy, toYmd } from "../../utils/dateFormat";
+import API_BASE_URL from "../../config/api";
 
 // Debounce helper
 function debounce(func, delay) {
@@ -89,7 +90,7 @@ const ScrapPcb = () => {
   // Fetch next generated Scrap Number
   const fetchNextSno = async () => {
     try {
-      const res = await fetch("http://localhost:3000/api/scrappcb/next-sno");
+      const res = await fetch(`${API_BASE_URL}/scrappcb/next-sno`);
       const data = await res.json();
       if (data.nextSno) {
         setScrapNo(data.nextSno);
@@ -102,7 +103,7 @@ const ScrapPcb = () => {
   // Fetch all scrap list records for the table
   const fetchScrapList = async () => {
     try {
-      const res = await fetch("http://localhost:3000/api/scrappcb/all");
+      const res = await fetch(`${API_BASE_URL}/scrappcb/all`);
       const data = await res.json();
       if (Array.isArray(data)) {
         setScrapList(data);
@@ -118,7 +119,7 @@ const ScrapPcb = () => {
     fetchScrapList();
 
     // Fetch PCB Stocks
-    fetch("http://localhost:3000/api/pcb-stock/all")
+    fetch(`${API_BASE_URL}/pcb-stock/all`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -128,7 +129,7 @@ const ScrapPcb = () => {
       .catch((err) => console.error("Error loading PCB stock:", err));
 
     // Fetch Employees
-    fetch("http://localhost:3000/api/employees/all")
+    fetch(`${API_BASE_URL}/employees/all`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.employees)) {
@@ -194,8 +195,8 @@ const ScrapPcb = () => {
     );
     try {
       const url = isEditing
-        ? `http://localhost:3000/api/scrappcb/${scrapNo}`
-        : "http://localhost:3000/api/scrappcb/new";
+        ? `${API_BASE_URL}/scrappcb/${scrapNo}`
+        : `${API_BASE_URL}/scrappcb/new`;
       const method = isEditing ? "PUT" : "POST";
 
       const res = await fetch(url, {
@@ -233,7 +234,7 @@ const ScrapPcb = () => {
 
     const toastId = toast.loading("Deleting Scrap Entry...");
     try {
-      const res = await fetch(`http://localhost:3000/api/scrappcb/${targetSno}`, {
+      const res = await fetch(`${API_BASE_URL}/scrappcb/${targetSno}`, {
         method: "DELETE",
       });
       if (res.ok) {
@@ -258,7 +259,7 @@ const ScrapPcb = () => {
   // Load selected scrap entry details for edit
   const handleLoadEntry = async (selectedSno) => {
     try {
-      const res = await fetch(`http://localhost:3000/api/scrappcb/${selectedSno}`);
+      const res = await fetch(`${API_BASE_URL}/scrappcb/${selectedSno}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to load");
 
@@ -289,9 +290,9 @@ const ScrapPcb = () => {
     try {
       let url = "";
       if (!val.trim()) {
-        url = "http://localhost:3000/api/scrappcb/search?q=";
+        url = `${API_BASE_URL}/scrappcb/search?q=`;
       } else {
-        url = `http://localhost:3000/api/scrappcb/search?q=${encodeURIComponent(val)}`;
+        url = `${API_BASE_URL}/scrappcb/search?q=${encodeURIComponent(val)}`;
       }
       const res = await fetch(url);
       const data = await res.json();

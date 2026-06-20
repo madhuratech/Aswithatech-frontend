@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
+import API_BASE_URL from "../../../config/api";
   Users,
   UserCog,
   Wrench,
@@ -32,11 +33,11 @@ const Reports = () => {
   const fetchCounts = async () => {
     try {
       const [custRes, empRes, svcRes, sprRes, expRes] = await Promise.all([
-        fetch("http://localhost:3000/api/customers/all"),
-        fetch("http://localhost:3000/api/employees/all"),
-        fetch("http://localhost:3000/api/Services/all"),
-        fetch("http://localhost:3000/api/Sparemodels/all"),
-        fetch("http://localhost:3000/api/expenses/summary"),
+        fetch(`${API_BASE_URL}/customers/all`),
+        fetch(`${API_BASE_URL}/employees/all`),
+        fetch(`${API_BASE_URL}/Services/all`),
+        fetch(`${API_BASE_URL}/Sparemodels/all`),
+        fetch(`${API_BASE_URL}/expenses/summary`),
       ]);
 
       const customers = await custRes.json();

@@ -4,13 +4,14 @@ import toast from "react-hot-toast";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
+import API_BASE_URL from "../../config/api";
 
-const API_URL = "http://localhost:3000/api/pendings";
+const API_URL = `${API_BASE_URL}/pendings`;
 
 const ITEM_TYPE_ENDPOINTS = {
-  Spare:    { url: "http://localhost:3000/api/Sparemodels/all",   field: "spare_name"   },
-  Service:  { url: "http://localhost:3000/api/Services/all",      field: "service_name" },
-  Purchase: { url: "http://localhost:3000/api/purchaseitems/all", field: "item_name"    },
+  Spare:    { url: `${API_BASE_URL}/Sparemodels/all`,   field: "spare_name"   },
+  Service:  { url: `${API_BASE_URL}/Services/all`,      field: "service_name" },
+  Purchase: { url: `${API_BASE_URL}/purchaseitems/all`, field: "item_name"    },
   Product:  null,
 };
 
@@ -54,7 +55,7 @@ const PendingForm = () => {
   };
 
   useEffect(() => {
-    fetch("http://localhost:3000/api/customers/all")
+    fetch(`${API_BASE_URL}/customers/all`)
       .then((r) => r.json())
       .then((d) => { if (Array.isArray(d) && d.length > 0) setClientList(d); })
       .catch(console.error);

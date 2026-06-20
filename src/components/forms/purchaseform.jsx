@@ -5,6 +5,7 @@ import { errorToast,successToast } from "../ui/nottifications";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
+import API_BASE_URL from "../../config/api";
 
 const PurchaseForm = ({ onclose, editItem, purchase, refresh }) => {
 
@@ -35,7 +36,7 @@ const PurchaseForm = ({ onclose, editItem, purchase, refresh }) => {
     
 
 
-  const Api_Urls = "http://localhost:3000/api/purchaseitems";
+  const Api_Urls = `${API_BASE_URL}/purchaseitems`;
 
 
 

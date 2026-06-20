@@ -3,6 +3,7 @@ import { X, Minus, Square, Printer } from "lucide-react";
 import html2pdf from "html2pdf.js";
 import { useNavigate } from "react-router-dom";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
+import API_BASE_URL from "../../config/api";
 
 const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, children, onFilterChange, initialViewMode, initialView, filters: externalFilters }) => {
   const navigate = useNavigate();
@@ -45,7 +46,7 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
 
 
 
-  const Api_urls = "http://localhost:3000/api/quotations"
+  const Api_urls = `${API_BASE_URL}/quotations`
 
 
   const [filters, setFilters] = useState({
@@ -93,15 +94,15 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
     const searchurl = (type === "qt" || type === "Quotation Format")
       ? `${Api_urls}/QT/search?q=`
       : (type === "Invoice Format")
-        ? `http://localhost:3000/api/salesinvoices/INV/search?q=`
+        ? `${API_BASE_URL}/salesinvoices/INV/search?q=`
         : (type === "DC Format")
-          ? `http://localhost:3000/api/salesdc/DC/search?q=`
+          ? `${API_BASE_URL}/salesdc/DC/search?q=`
           : (type === "Credit Note Format")
-            ? `http://localhost:3000/api/creditnotes/cn/search?q=`
+            ? `${API_BASE_URL}/creditnotes/cn/search?q=`
             : (type === "Direct Invoice Format")
-              ? `http://localhost:3000/api/directinvoices/INV/search?q=`
+              ? `${API_BASE_URL}/directinvoices/INV/search?q=`
               : (type === "PI2 Format")
-                ? `http://localhost:3000/api/performanceinvoices2/INV/search?q=`
+                ? `${API_BASE_URL}/performanceinvoices2/INV/search?q=`
                 : null;
 
     if (searchurl) {
@@ -157,15 +158,15 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
       }
 
       const url = (type === "Invoice Format")
-        ? `http://localhost:3000/api/salesinvoices/report/filters?${params.toString()}`
+        ? `${API_BASE_URL}/salesinvoices/report/filters?${params.toString()}`
         : (type === "Direct Invoice Format")
-          ? `http://localhost:3000/api/directinvoices/report/filters?${params.toString()}`
+          ? `${API_BASE_URL}/directinvoices/report/filters?${params.toString()}`
           : (type === "PI2 Format")
-            ? `http://localhost:3000/api/performanceinvoices2/report/filters?${params.toString()}`
+            ? `${API_BASE_URL}/performanceinvoices2/report/filters?${params.toString()}`
             : (type === "DC Format")
-              ? `http://localhost:3000/api/salesdc/report/filters?${params.toString()}`
+              ? `${API_BASE_URL}/salesdc/report/filters?${params.toString()}`
               : (type === "Credit Note Format")
-                ? `http://localhost:3000/api/creditnotes/report/filters?${params.toString()}`
+                ? `${API_BASE_URL}/creditnotes/report/filters?${params.toString()}`
                 : `${Api_urls}/report/filters?${params.toString()}`;
       const response = await fetch(url);
 
@@ -203,15 +204,15 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
       params.append("cnNumber", filters.QtNumber);
     }
     const url = (type === "Invoice Format")
-      ? `http://localhost:3000/api/salesinvoices/report/excel?${params.toString()}`
+      ? `${API_BASE_URL}/salesinvoices/report/excel?${params.toString()}`
       : (type === "Direct Invoice Format")
-        ? `http://localhost:3000/api/directinvoices/report/excel?${params.toString()}`
+        ? `${API_BASE_URL}/directinvoices/report/excel?${params.toString()}`
         : (type === "PI2 Format")
-          ? `http://localhost:3000/api/performanceinvoices2/report/excel?${params.toString()}`
+          ? `${API_BASE_URL}/performanceinvoices2/report/excel?${params.toString()}`
           : (type === "DC Format")
-            ? `http://localhost:3000/api/salesdc/report/excel?${params.toString()}`
+            ? `${API_BASE_URL}/salesdc/report/excel?${params.toString()}`
             : (type === "Credit Note Format")
-              ? `http://localhost:3000/api/creditnotes/report/excel?${params.toString()}`
+              ? `${API_BASE_URL}/creditnotes/report/excel?${params.toString()}`
               : `${Api_urls}/report/excel?${params.toString()}`;
     window.open(url, "_blank");
 
@@ -301,7 +302,7 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
 
   const handleDeleteDC = async (dcNo) => {
     try {
-      const res = await fetch(`http://localhost:3000/api/salesdc/delete/${dcNo}`, { method: 'DELETE' });
+      const res = await fetch(`${API_BASE_URL}/salesdc/delete/${dcNo}`, { method: 'DELETE' });
       if (res.ok) {
         setReportData(prev => prev.filter(r => r.dc_no !== dcNo));
         setDeleteConfirm({ open: false, dcNo: null });

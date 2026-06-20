@@ -6,11 +6,12 @@ import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import flatpickr from "flatpickr";
 import { toDmy, toYmd } from "../../utils/dateFormat";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
+import API_BASE_URL from "../../config/api";
 
 const ReceiptAdvance = () => {
   const navigate = useNavigate();
   const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
-  const Api_url = "http://localhost:3000/api/receipts";
+  const Api_url = `${API_BASE_URL}/receipts`;
   const clientDropdownRef = useRef(null);
   const loadReceiptDropdownRef = useRef(null);
 

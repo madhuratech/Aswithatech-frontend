@@ -10,6 +10,7 @@ import flatpickr from "flatpickr";
 import { toDmy, toYmd } from "../../utils/dateFormat";
 import SaleswindowModel from "../ui/saleswindowModal";
 import InvoiceFormat from "../pages/Sales/invoiceformat";
+import API_BASE_URL from "../../config/api";
 
 const PerformanceInvoiceForm  = () => {
   const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
@@ -48,7 +49,7 @@ const PerformanceInvoiceForm  = () => {
 
   //API
 
-  const Api_url = "http://localhost:3000/api/directinvoices"
+  const Api_url = `${API_BASE_URL}/directinvoices`
 
   const DESPATCH_OPTIONS = ["Courier", "Hand Delivery", "Transport", "By Bus", "By Train", "Parcel Service", "Customer Pickup"];
 

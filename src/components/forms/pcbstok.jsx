@@ -7,6 +7,7 @@ import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import flatpickr from "flatpickr";
 import { toDmy, toYmd } from "../../utils/dateFormat";
+import API_BASE_URL from "../../config/api";
 
 // Debounce helper
 function debounce(func, delay) {
@@ -21,7 +22,7 @@ const PCBStock = () => {
   const navigate = useNavigate();
   const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
 
-  const Api_url = "http://localhost:3000/api/pcb-stock";
+  const Api_url = `${API_BASE_URL}/pcb-stock`;
 
   // Form states
   const [pcbCode, setPcbCode] = useState("");
@@ -64,7 +65,7 @@ const PCBStock = () => {
   // Fetch next generated PCB Code
   const fetchNextCode = async () => {
     try {
-      const res = await fetch("http://localhost:3000/api/pcb-stock/next-code");
+      const res = await fetch(`${API_BASE_URL}/pcb-stock/next-code`);
       const data = await res.json();
       if (data.nextCode) {
         setPcbCode(data.nextCode);
@@ -193,8 +194,8 @@ const PCBStock = () => {
     );
     try {
       const url = isEditing
-        ? `http://localhost:3000/api/pcb-stock/${pcbCode}`
-        : "http://localhost:3000/api/pcb-stock/new";
+        ? `${API_BASE_URL}/pcb-stock/${pcbCode}`
+        : `${API_BASE_URL}/pcb-stock/new`;
       const method = isEditing ? "PUT" : "POST";
 
       const res = await fetch(url, {
@@ -231,7 +232,7 @@ const PCBStock = () => {
 
     const toastId = toast.loading("Deleting PCB Stock...");
     try {
-      const res = await fetch(`http://localhost:3000/api/pcb-stock/${pcbCode}`, {
+      const res = await fetch(`${API_BASE_URL}/pcb-stock/${pcbCode}`, {
         method: "DELETE",
       });
       if (res.ok) {
@@ -257,7 +258,7 @@ const PCBStock = () => {
   const handleSearchCode = async (val) => {
     try {
       const res = await fetch(
-        `http://localhost:3000/api/pcb-stock/search?q=${encodeURIComponent(val)}`
+        `${API_BASE_URL}/pcb-stock/search?q=${encodeURIComponent(val)}`
       );
       const data = await res.json();
       setSearchList(data);
@@ -272,7 +273,7 @@ const PCBStock = () => {
   const handleLoadEntry = async (selectedCode) => {
     try {
       const res = await fetch(
-        `http://localhost:3000/api/pcb-stock/${selectedCode}`
+        `${API_BASE_URL}/pcb-stock/${selectedCode}`
       );
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to load");

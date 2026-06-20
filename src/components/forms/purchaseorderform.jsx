@@ -10,8 +10,9 @@ import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import flatpickr from "flatpickr";
 import { toDmy, toYmd } from "../../utils/dateFormat";
+import API_BASE_URL from "../../config/api";
 
-const API = "http://localhost:3000/api/purchaseorders";
+const API = `${API_BASE_URL}/purchaseorders`;
 const TODAY = new Date().toISOString().split("T")[0];
 const UOM_LIST = ["Nos", "Set", "Pkt", "Kg", "Mtr", "Ltr", "Box", "Unit"];
 

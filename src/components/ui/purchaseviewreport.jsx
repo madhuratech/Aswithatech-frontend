@@ -3,8 +3,9 @@ import { X, Square, Minus, Printer } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import html2pdf from "html2pdf.js";
 import * as XLSX from "xlsx";
+import API_BASE_URL from "../../config/api";
 
-const API_PURCHASE = "http://localhost:3000/api/taxpurchases";
+const API_PURCHASE = `${API_BASE_URL}/taxpurchases`;
 
 const fmt = (val) => Number(val || 0).toFixed(2);
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString("en-IN") : "");

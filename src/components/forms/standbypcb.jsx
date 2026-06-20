@@ -10,6 +10,7 @@ import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import flatpickr from "flatpickr";
 import { toDmy, toYmd } from "../../utils/dateFormat";
+import API_BASE_URL from "../../config/api";
 
 const StandbyPCB = () => {
   const navigate = useNavigate();
@@ -133,7 +134,7 @@ const StandbyPCB = () => {
   // Fetch Next Standby No
   const fetchNextNo = async () => {
     try {
-      const res = await fetch("http://localhost:3000/api/standby-pcb/next-no");
+      const res = await fetch(`${API_BASE_URL}/standby-pcb/next-no`);
       const data = await res.json();
       if (data.nextNo) setStandbyNo(data.nextNo);
     } catch (err) {
@@ -144,7 +145,7 @@ const StandbyPCB = () => {
   // Fetch All Standby entries
   const fetchAllStandby = async () => {
     try {
-      const res = await fetch("http://localhost:3000/api/standby-pcb/all");
+      const res = await fetch(`${API_BASE_URL}/standby-pcb/all`);
       const data = await res.json();
       setAllStandbyList(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -158,13 +159,13 @@ const StandbyPCB = () => {
     fetchAllStandby();
 
     // Fetch Customers
-    fetch("http://localhost:3000/api/customers/all")
+    fetch(`${API_BASE_URL}/customers/all`)
       .then((res) => res.json())
       .then((data) => setCustomers(Array.isArray(data) ? data : []))
       .catch((err) => console.error("Error fetching clients list:", err));
 
     // Fetch PCBs
-    fetch("http://localhost:3000/api/pcb-stock/all")
+    fetch(`${API_BASE_URL}/pcb-stock/all`)
       .then((res) => res.json())
       .then((data) => setPcbStockList(Array.isArray(data) ? data : []))
       .catch((err) => console.error("Error fetching PCB stock:", err));
@@ -235,8 +236,8 @@ const StandbyPCB = () => {
     );
     try {
       const url = isEditing
-        ? `http://localhost:3000/api/standby-pcb/${standbyNo}`
-        : "http://localhost:3000/api/standby-pcb/new";
+        ? `${API_BASE_URL}/standby-pcb/${standbyNo}`
+        : `${API_BASE_URL}/standby-pcb/new`;
       const method = isEditing ? "PUT" : "POST";
 
       const res = await fetch(url, {
@@ -266,7 +267,7 @@ const StandbyPCB = () => {
   const handleLoadEntry = async (sNo) => {
     try {
       const res = await fetch(
-        `http://localhost:3000/api/standby-pcb/${sNo}`
+        `${API_BASE_URL}/standby-pcb/${sNo}`
       );
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to load record");
@@ -307,7 +308,7 @@ const StandbyPCB = () => {
 
     const toastId = toast.loading("Deleting Standby PCB...");
     try {
-      const res = await fetch(`http://localhost:3000/api/standby-pcb/${activeNo}`, {
+      const res = await fetch(`${API_BASE_URL}/standby-pcb/${activeNo}`, {
         method: "DELETE",
       });
       if (res.ok) {
@@ -369,7 +370,7 @@ const StandbyPCB = () => {
       params.append("reportType", reportType);
 
       const res = await fetch(
-        `http://localhost:3000/api/standby-pcb/report/filters?${params.toString()}`
+        `${API_BASE_URL}/standby-pcb/report/filters?${params.toString()}`
       );
       const data = await res.json();
       setReportData(Array.isArray(data) ? data : []);

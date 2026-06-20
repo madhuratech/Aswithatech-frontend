@@ -9,11 +9,12 @@ import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import flatpickr from "flatpickr";
 import { toDmy, toYmd } from "../../utils/dateFormat";
+import API_BASE_URL from "../../config/api";
 
 const ReceiptEntry = () => {
   const navigate = useNavigate();
   const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
-  const Api_url = "http://localhost:3000/api/receipts";
+  const Api_url = `${API_BASE_URL}/receipts`;
 
   // ── header ────────────────────────────────────────────────────
   const [header, setHeader] = useState({
@@ -89,7 +90,7 @@ const ReceiptEntry = () => {
   }, []);
 
   useEffect(() => {
-    fetch("http://localhost:3000/api/billpayment/banks")
+    fetch(`${API_BASE_URL}/billpayment/banks`)
       .then((r) => r.json())
       .then((data) => {
         const list = Array.isArray(data) ? data

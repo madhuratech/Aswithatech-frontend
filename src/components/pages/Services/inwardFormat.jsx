@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import logo from "../../../asset/Logo.jpeg";
+import API_BASE_URL from "../../../config/api";
 
 const InwardFormat = ({ dcNumber }) => {
   const [data, setData] = useState({ header: {}, items: [] });
@@ -9,7 +10,7 @@ const InwardFormat = ({ dcNumber }) => {
     const fetchData = async () => {
       try {
         const res = await fetch(
-          `http://localhost:3000/api/Inwardentries/edit/${encodeURIComponent(dcNumber)}`
+          `${API_BASE_URL}/Inwardentries/edit/${encodeURIComponent(dcNumber)}`
         );
         const result = await res.json();
         setData({ header: result.header || {}, items: result.items || [] });

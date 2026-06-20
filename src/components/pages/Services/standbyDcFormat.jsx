@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Phone } from "lucide-react";
 import { DcAddressBlock } from "../../../utils/AddressBlock";
+import API_BASE_URL from "../../../config/api";
 
 const fmtQty = (val) => {
   const n = Number(val);
@@ -15,7 +16,7 @@ const StandbyDeliveryChallan = ({ dcNumber }) => {
     if (!dcNumber || dcNumber === "") return;
     const fetchData = async () => {
       try {
-        const res = await fetch(`http://localhost:3000/api/standbydcentry/full/${encodeURIComponent(dcNumber)}`);
+        const res = await fetch(`${API_BASE_URL}/standbydcentry/full/${encodeURIComponent(dcNumber)}`);
         const result = await res.json();
         setData({ ...result, items: result.items || [], client: result.client || {} });
       } catch (error) {

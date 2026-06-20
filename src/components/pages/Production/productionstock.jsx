@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Box, RefreshCw, Trash2, Wrench } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import API_BASE_URL from "../../../config/api";
 
 /**
  * ModuleCard - A reusable card for main production modules
@@ -50,7 +51,7 @@ const ProductionStock = () => {
     });
 
     useEffect(() => {
-        fetch("http://localhost:3000/api/pcb-stock/summary")
+        fetch(`${API_BASE_URL}/pcb-stock/summary`)
             .then((r) => r.json())
             .then((data) => setSummary(data))
             .catch(console.error);

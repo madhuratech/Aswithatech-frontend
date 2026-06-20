@@ -7,6 +7,7 @@ import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import flatpickr from "flatpickr";
 import { toDmy, toYmd } from "../../utils/dateFormat";
+import API_BASE_URL from "../../config/api";
 
 const Supplieradvance = () => {
 
@@ -35,7 +36,7 @@ const Supplieradvance = () => {
    const suppAdvDateFp = useRef(null);
 
    //Api
-   const Api_urls = "http://localhost:3000/api/suppliers";
+   const Api_urls = `${API_BASE_URL}/suppliers`;
 
    const [formData, setFormData] = useState({
        receipt_no:'',
@@ -118,7 +119,7 @@ const Supplieradvance = () => {
        })
        .catch((error) => {
        console.warn("Retrying with backup client URL...");
-       fetch("http://localhost:3000/api/customers/all")
+       fetch(`${API_BASE_URL}/customers/all`)
        .then(res => res.json())
        .then(data =>{setclientName(Array.isArray(data) ? data : []);      
        }) 

@@ -4,8 +4,9 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import html2pdf from "html2pdf.js";
 import * as XLSX from "xlsx";
+import API_BASE_URL from "../../config/api";
 
-const API = "http://localhost:3000/api/receipts";
+const API = `${API_BASE_URL}/receipts`;
 
 const CustomerLedger = ({ onClose, onMinimize, title = "Customer Ledger" }) => {
   const navigate = useNavigate();

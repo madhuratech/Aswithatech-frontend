@@ -10,6 +10,7 @@ import flatpickr from "flatpickr";
 import { toDmy, toYmd } from "../../utils/dateFormat";
 import SaleswindowModel from "../ui/saleswindowModal";
 import PerformanceInvoiceLayout2 from "../pages/Sales/performanceinvoiceformat2";
+import API_BASE_URL from "../../config/api";
 
 const PerformanceInvoiceForm2 = () => {
   const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
@@ -40,7 +41,7 @@ const PerformanceInvoiceForm2 = () => {
   const [isMinimized, setIsMinimized] = useState(false);
   const [savedNo, setSavedNo] = useState(null);
 
-  const Api_url = "http://localhost:3000/api/performanceinvoices2";
+  const Api_url = `${API_BASE_URL}/performanceinvoices2`;
 
   const DESPATCH_OPTIONS = ["Courier", "Hand Delivery", "Transport", "By Bus", "By Train", "Parcel Service", "Customer Pickup"];
 

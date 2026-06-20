@@ -10,9 +10,10 @@ import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import flatpickr from "flatpickr";
 import { toDmy, toYmd } from "../../utils/dateFormat";
+import API_BASE_URL from "../../config/api";
 
 const TODAY = new Date().toISOString().split("T")[0];
-const API = "http://localhost:3000/api/serviceinvoice";
+const API = `${API_BASE_URL}/serviceinvoice`;
 
 const INIT_FORM = {
     customer_name: "",

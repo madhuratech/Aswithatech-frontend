@@ -1,6 +1,7 @@
 import { useState,useEffect } from 'react';
 import ExpenseForm from "../../forms/expenseform";
 import { Plus } from "lucide-react";
+import API_BASE_URL from "../../../config/api";
 const ExpenseData = () => {
 
 const[open,setOpen] = useState(false);
@@ -10,7 +11,7 @@ const[expenses , setexpenses] = useState([]);
 //Get All Expenses;
  
 const Fetchexpenses = async() =>{
- const res = await fetch('http://localhost:3000/api/expenses/all')
+ const res = await fetch(`${API_BASE_URL}/expenses/all`)
  const data = await res.json();
 setexpenses(data);
 }

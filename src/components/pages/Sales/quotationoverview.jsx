@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { toWords } from "number-to-words";
 import { QuotationAddressBlock } from "../../../utils/AddressBlock";
+import API_BASE_URL from "../../../config/api";
 
 const QuotationLayout = ({ QtNumber }) => {
   const [purchase, setPurchase] = useState({
@@ -17,7 +18,7 @@ const QuotationLayout = ({ QtNumber }) => {
     const fetchData = async () => {
       try {
         const res = await fetch(
-          `http://localhost:3000/api/quotations/full/${encodeURIComponent(QtNumber)}`
+          `${API_BASE_URL}/quotations/full/${encodeURIComponent(QtNumber)}`
         );
         const data = await res.json();
         setPurchase({

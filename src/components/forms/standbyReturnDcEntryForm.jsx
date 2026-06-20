@@ -7,9 +7,10 @@ import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import flatpickr from "flatpickr";
 import { toDmy, toYmd } from "../../utils/dateFormat";
+import API_BASE_URL from "../../config/api";
 
 const TODAY = new Date().toISOString().split("T")[0];
-const Api_url = "http://localhost:3000/api/standbyreturndc";
+const Api_url = `${API_BASE_URL}/standbyreturndc`;
 const REMARKS_OPTIONS = ["Serviced", "Re Serviced", "For Sale", "Beyond", "For Testing Purpose"];
 const UOM_LIST = ["NOS", "KG", "MTR", "NO", "SET", "PKT"];
 
@@ -323,7 +324,7 @@ const StandbyReturnDcEntryForm = () => {
             setEditIndex(null);
 
             if (data.standby_dc_no) {
-                const sourceRes = await fetch(`http://localhost:3000/api/standbydcentry/editdc/${encodeURIComponent(data.standby_dc_no)}`);
+                const sourceRes = await fetch(`${API_BASE_URL}/standbydcentry/editdc/${encodeURIComponent(data.standby_dc_no)}`);
                 if (sourceRes.ok) {
                     const sourceData = await sourceRes.json();
                     setSelectedJobItems(sourceData.items || []);

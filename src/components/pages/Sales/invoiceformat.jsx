@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { toWords } from "number-to-words";
 import { InvoiceAddressBlock } from "../../../utils/AddressBlock";
+import API_BASE_URL from "../../../config/api";
 
 const InvoiceLayout = ({ InvNumber }) => {
   const [invoice, setInvoice] = useState({
@@ -39,7 +40,7 @@ const InvoiceLayout = ({ InvNumber }) => {
     const fetchData = async () => {
       try {
         const res = await fetch(
-          `http://localhost:3000/api/salesinvoices/full/${encodeURIComponent(InvNumber)}`
+          `${API_BASE_URL}/salesinvoices/full/${encodeURIComponent(InvNumber)}`
         );
 
         if (!res.ok) {

@@ -9,8 +9,9 @@ import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import flatpickr from "flatpickr";
 import { toDmy, toYmd } from "../../utils/dateFormat";
+import API_BASE_URL from "../../config/api";
 
-const API = "http://localhost:3000/api/billpayment";
+const API = `${API_BASE_URL}/billpayment`;
 const TODAY = new Date().toISOString().split("T")[0];
 const PAYMENT_MODES = ["Cash", "Bank Transfer", "Cheque", "Online", "By Hand"];
 

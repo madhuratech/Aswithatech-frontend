@@ -13,6 +13,7 @@ import WindowModal from "../../ui/WindowModal";
 import PurchaseOrderFormat from "./purchaseorderview";
 import Debitnoteview from "./debitnoteview";
 import Billwiseformat from "./bilwisepaymentformat";
+import API_BASE_URL from "../../../config/api";
 
 /* 🔹 Card */
 const PurchaseCard = ({
@@ -67,7 +68,7 @@ const openReport = async (title, type, mode = "po") => {
 
   try {
     if (type === "po") {
-      const res = await fetch("http://localhost:3000/api/purchaseorders/po/search?q=");
+      const res = await fetch(`${API_BASE_URL}/purchaseorders/po/search?q=`);
       const data = await res.json();
       number = data[0]?.po_number || "";
 
@@ -75,7 +76,7 @@ const openReport = async (title, type, mode = "po") => {
     }
 
     if (type === "dn") {
-      const res = await fetch("http://localhost:3000/api/debitnotes/dn/search?q=");
+      const res = await fetch(`${API_BASE_URL}/debitnotes/dn/search?q=`);
       const data = await res.json();
       number = data[0]?.dn_number || "";
 
@@ -83,7 +84,7 @@ const openReport = async (title, type, mode = "po") => {
     }
 
     if (type === "billwise") {
-      const res = await fetch("http://localhost:3000/api/billpayment/allbills");
+      const res = await fetch(`${API_BASE_URL}/billpayment/allbills`);
       const data = await res.json();
       number = data[0]?.bill_no || "";
 

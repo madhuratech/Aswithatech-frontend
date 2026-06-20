@@ -5,6 +5,7 @@ import Addpassword from "../../forms/addeditpassword";
 import { Plus, SquarePen, Eye, Trash2 } from "lucide-react";
 import { successToast, errorToast } from "../../ui/nottifications";
 import toast from "react-hot-toast";
+import API_BASE_URL from "../../../config/api";
 
 const Employee = () => {
   const [open, setOpen] = React.useState(false);
@@ -20,7 +21,7 @@ const Employee = () => {
   const [currentDocIndex, setCurrentDocIndex] = React.useState(0);
 
   const fetchEmployees = async () => {
-    const res = await fetch("http://localhost:3000/api/employees/all");
+    const res = await fetch(`${API_BASE_URL}/employees/all`);
     const data = await res.json();
     setEmployeeData(data.employees || []);
   };
@@ -76,7 +77,7 @@ const Employee = () => {
     );
 
     try {
-      const res = await fetch(`http://localhost:3000/api/employees/delete/${empId}`, {
+      const res = await fetch(`${API_BASE_URL}/employees/delete/${empId}`, {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Delete failed");
@@ -101,7 +102,7 @@ const Employee = () => {
     }
 
     try {
-      const res = await fetch(`http://localhost:3000/api/employees/search?q=${encodeURIComponent(query)}`);
+      const res = await fetch(`${API_BASE_URL}/employees/search?q=${encodeURIComponent(query)}`);
       const data = await res.json();
 
       if (Array.isArray(data)) {

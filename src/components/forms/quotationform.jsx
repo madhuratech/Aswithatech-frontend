@@ -13,6 +13,7 @@ import QuotationFormat from '../pages/Sales/quotationoverview'
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import flatpickr from "flatpickr";
 import { toDmy, toYmd } from "../../utils/dateFormat";
+import API_BASE_URL from "../../config/api";
 
 const Quotation = () => {
   const [tableItems, setTableItems] = useState([]);
@@ -55,7 +56,7 @@ const Quotation = () => {
       const [dcModalMinimized, setDcModalMinimized] = useState(false);
       const [viewDcNo, setViewDcNo] = useState("");
 
-const Api_url = "http://localhost:3000/api/quotations"
+const Api_url = `${API_BASE_URL}/quotations`
 
 // FormState
  const[formdata , setformdata] = useState({

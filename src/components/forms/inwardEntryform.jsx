@@ -9,9 +9,10 @@ import ProductQuickAddModal from "../ui/ProductQuickAddModal";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
+import API_BASE_URL from "../../config/api";
 
 const TODAY = new Date().toISOString().split("T")[0];
-const Api_url = "http://localhost:3000/api/Inwardentries";
+const Api_url = `${API_BASE_URL}/Inwardentries`;
 
 const INIT_FORM = {
     supplier_name: "",

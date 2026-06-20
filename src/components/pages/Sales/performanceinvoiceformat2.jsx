@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { toWords } from "number-to-words";
 import { InvoiceAddressBlock } from "../../../utils/AddressBlock";
+import API_BASE_URL from "../../../config/api";
 
 const PerformanceInvoiceLayout2 = ({ InvNumber }) => {
   const [invoice, setInvoice] = useState({ items: [], client: {}, header: {} });
@@ -34,7 +35,7 @@ const PerformanceInvoiceLayout2 = ({ InvNumber }) => {
     const fetchData = async () => {
       try {
         const res = await fetch(
-          `http://localhost:3000/api/performanceinvoices2/full/${encodeURIComponent(InvNumber)}`
+          `${API_BASE_URL}/performanceinvoices2/full/${encodeURIComponent(InvNumber)}`
         );
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const data = await res.json();

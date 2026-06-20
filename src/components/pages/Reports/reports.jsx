@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FileText, Clock, IndianRupee, Users, AlertTriangle, ArrowRight } from "lucide-react";
+import API_BASE_URL from "../../../config/api";
 
 const Reports = () => {
   const navigate = useNavigate();
@@ -8,7 +9,7 @@ const Reports = () => {
   const [pendingCustomers, setPendingCustomers] = useState("...");
 
   useEffect(() => {
-    fetch("http://localhost:3000/api/pendings/list")
+    fetch(`${API_BASE_URL}/pendings/list`)
       .then((r) => r.json())
       .then((d) => {
         if (!Array.isArray(d)) return;

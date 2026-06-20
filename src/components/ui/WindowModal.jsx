@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { X, Minus, Square, Printer } from "lucide-react";
 import html2pdf from "html2pdf.js";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
+import API_BASE_URL from "../../config/api";
 
 const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, children, onFilterChange, initialViewMode }) => {
   const [isMaximized, setIsMaximized] = useState(false);
@@ -41,10 +42,10 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
 
   const Api_urls =
     type === "po"
-      ? "http://localhost:3000/api/purchaseorders"
+      ? `${API_BASE_URL}/purchaseorders`
       : type === "dn"
-        ? "http://localhost:3000/api/debitnotes"
-        : "http://localhost:3000/api/billpayment";
+        ? `${API_BASE_URL}/debitnotes`
+        : `${API_BASE_URL}/billpayment`;
 
   const [filters, setFilters] = useState({
     fromDate: "",

@@ -3,6 +3,7 @@ import { X, UserPlus } from "lucide-react";
 import { successToast, errorToast, loadingToast } from "./nottifications";
 import toast from "react-hot-toast";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
+import API_BASE_URL from "../../config/api";
 
 const GST_STATE_CODE = {
   "01": "Jammu and Kashmir", "02": "Himachal Pradesh", "03": "Punjab",
@@ -69,7 +70,7 @@ const CustomerQuickAddModal = ({ onClose, onSuccess }) => {
       const payload = Object.fromEntries(
         Object.entries({ ...form, customer_type: "new" }).map(([k, v]) => [k, v === "" ? null : v])
       );
-      const res = await fetch("http://localhost:3000/api/customers/new", {
+      const res = await fetch(`${API_BASE_URL}/customers/new`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

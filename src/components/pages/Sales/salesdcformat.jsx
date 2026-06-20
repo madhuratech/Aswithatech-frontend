@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { DcAddressBlock } from "../../../utils/AddressBlock";
+import API_BASE_URL from "../../../config/api";
 
 const fmtQty = (val) => {
   const n = Number(val);
@@ -14,7 +15,7 @@ const SalesDCFormat = ({ dcNumber }) => {
     if (!dcNumber || dcNumber === "") return;
     const fetchData = async () => {
       try {
-        const res = await fetch(`http://localhost:3000/api/salesdc/full/${encodeURIComponent(dcNumber)}`);
+        const res = await fetch(`${API_BASE_URL}/salesdc/full/${encodeURIComponent(dcNumber)}`);
         const result = await res.json();
         setData(result);
       } catch (error) {

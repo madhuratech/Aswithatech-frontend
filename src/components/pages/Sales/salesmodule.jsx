@@ -7,6 +7,7 @@ import InvoiceFormat from "./invoiceformat";
 import SalesDCFormat from "./salesdcformat";
 import CreditNoteView from "./creditnote";
 import PerformanceInvoiceLayout2 from "./performanceinvoiceformat2";
+import API_BASE_URL from "../../../config/api";
 const SalesCard = ({ title, subtitle, icon: Icon, bgColor, iconColor, onClick }) => {
     return (
         <div
@@ -55,7 +56,7 @@ const openReport = async (type) => {
         if (type === "Quotation Format") {
 
             const res = await fetch(
-              "http://localhost:3000/api/quotations/QT/search?q="
+              `${API_BASE_URL}/quotations/QT/search?q=`
             );
 
             const data = await res.json();
@@ -66,7 +67,7 @@ const openReport = async (type) => {
         if (type === "Invoice Format") {
 
             const res = await fetch(
-              "http://localhost:3000/api/salesinvoices/INV/search?q="
+              `${API_BASE_URL}/salesinvoices/INV/search?q=`
             );
 
             const data = await res.json();
@@ -77,7 +78,7 @@ const openReport = async (type) => {
         if (type === "DC Format") {
 
             const res = await fetch(
-              "http://localhost:3000/api/salesdc/DC/search?q="
+              `${API_BASE_URL}/salesdc/DC/search?q=`
             );
 
             const data = await res.json();
@@ -87,7 +88,7 @@ const openReport = async (type) => {
         if (type === "Credit Note Format") {
 
             const res = await fetch(
-              "http://localhost:3000/api/creditnotes/cn/search?q="
+              `${API_BASE_URL}/creditnotes/cn/search?q=`
             );  
 
             const data = await res.json();
@@ -97,7 +98,7 @@ const openReport = async (type) => {
 
         if (type === "Direct Invoice Format") {
             const res = await fetch(
-              "http://localhost:3000/api/directinvoices/INV/search?q="
+              `${API_BASE_URL}/directinvoices/INV/search?q=`
             );
             const data = await res.json();
             latestNumber = data[0]?.invoice_no || "";
@@ -105,7 +106,7 @@ const openReport = async (type) => {
 
         if (type === "PI2 Format") {
             const res = await fetch(
-              "http://localhost:3000/api/performanceinvoices2/INV/search?q="
+              `${API_BASE_URL}/performanceinvoices2/INV/search?q=`
             );
             const data = await res.json();
             latestNumber = data[0]?.invoice_no || "";

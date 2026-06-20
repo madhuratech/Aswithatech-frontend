@@ -3,8 +3,9 @@ import { X, Square, Minus, Printer } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import html2pdf from "html2pdf.js";
 import Logo from "../../asset/Logo.jpeg";
+import API_BASE_URL from "../../config/api";
 
-const API = "http://localhost:3000/api/taxpurchases";
+const API = `${API_BASE_URL}/taxpurchases`;
 
 const COMPANY = {
   name: "ASWITHA TECH",

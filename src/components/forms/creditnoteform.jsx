@@ -11,6 +11,7 @@ import { isTamilNadu, calcGstAmounts } from "../../utils/gstUtils";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import flatpickr from "flatpickr";
 import { toDmy, toYmd } from "../../utils/dateFormat";
+import API_BASE_URL from "../../config/api";
 
 // Debounse function;
 function debounce(func, delay) {
@@ -63,7 +64,7 @@ const Creditnote = () => {
     const creditBillDateFp = useRef(null);
   
 
-  const Api_urls = "http://localhost:3000/api/creditnotes";
+  const Api_urls = `${API_BASE_URL}/creditnotes`;
 
 //  Form state;
 
@@ -176,7 +177,7 @@ useEffect(() =>{
   })
   .catch((error) => {
     console.warn("Retrying with backup client URL...");
-    fetch("http://localhost:3000/api/customers/all")
+    fetch(`${API_BASE_URL}/customers/all`)
     .then(res => res.json())
     .then(data =>{setclientName(Array.isArray(data) ? data : []);      
     })

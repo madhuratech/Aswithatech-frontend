@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FileText, Search, Eye, Printer } from "lucide-react";
+import API_BASE_URL from "../../../config/api";
 
 const PerformanceInvoiceReport2 = () => {
   const navigate = useNavigate();
@@ -11,7 +12,7 @@ const PerformanceInvoiceReport2 = () => {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
-  const API_URL = "http://localhost:3000/api/performanceinvoices2";
+  const API_URL = `${API_BASE_URL}/performanceinvoices2`;
 
   useEffect(() => {
     const fetchAll = async () => {

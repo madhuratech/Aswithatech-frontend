@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState, useRef } from "react"
 import { X, Square, Minus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
+import API_BASE_URL from "../../config/api";
 
 const fmt = (n) => Number(n || 0).toFixed(2);
 
@@ -39,8 +40,8 @@ const PurchaseReport = ({ onMinimize, onClose, setIsMinimizedInternal, title }) 
   const [filters, setFilters] = useState({ fromdate: "", todate: "", bill_no: "", supplier_name: "" });
 
   const baseApi = reportMode === "billwise"
-    ? "http://localhost:3000/api/billpayment"
-    : "http://localhost:3000/api/taxpurchases";
+    ? `${API_BASE_URL}/billpayment`
+    : `${API_BASE_URL}/taxpurchases`;
 
   const generateReport = useCallback(async () => {
     try {

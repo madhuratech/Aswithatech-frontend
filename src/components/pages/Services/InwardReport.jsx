@@ -2,8 +2,9 @@ import React, { useState, useRef, useEffect } from "react";
 import { X, Square, Minus, Printer } from "lucide-react";
 import html2pdf from "html2pdf.js";
 import * as XLSX from "xlsx";
+import API_BASE_URL from "../../../config/api";
 
-const API = "http://localhost:3000/api/Inwardentries";
+const API = `${API_BASE_URL}/Inwardentries`;
 
 const InwardReport = ({ onClose, onMinimize, title = "Inward Details Report" }) => {
   const contentRef = useRef(null);

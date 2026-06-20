@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { toWords } from "number-to-words";
 import { QuotationAddressBlock } from "../../../utils/AddressBlock";
+import API_BASE_URL from "../../../config/api";
 
 const POLayout = ({ poNumber }) => {
   const [purchase, setPurchase] = useState({
@@ -17,7 +18,7 @@ const POLayout = ({ poNumber }) => {
     const fetchData = async () => {
       try {
         const res = await fetch(
-          `http://localhost:3000/api/purchaseorders/full/${poNumber}`
+          `${API_BASE_URL}/purchaseorders/full/${poNumber}`
         );
         const data = await res.json();
         setPurchase({

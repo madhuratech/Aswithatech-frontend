@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { toWords } from "number-to-words";
 import { splitAddress } from "../../../utils/AddressBlock";
+import API_BASE_URL from "../../../config/api";
 
 const Billwiseformat = ({ billNo, title }) => {
   const [purchase, setPurchase] = useState({
@@ -8,7 +9,7 @@ const Billwiseformat = ({ billNo, title }) => {
     client: {},
   });
 
-  const Api_url = "http://localhost:3000/api/billpayment";
+  const Api_url = `${API_BASE_URL}/billpayment`;
 
   const amountInwords = (num) =>
     toWords(Math.round(num)).replace(/^\w/, (c) => c.toUpperCase()) + " Rupees Only";

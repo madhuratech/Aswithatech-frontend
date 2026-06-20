@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { toWords } from "number-to-words";
 import { splitAddress } from "../../../utils/AddressBlock";
+import API_BASE_URL from "../../../config/api";
 
 const Debitnoteview = ({ dnNumber }) => {
   const [debitnote, setDebitnote] = useState({
@@ -17,7 +18,7 @@ const Debitnoteview = ({ dnNumber }) => {
     const fetchData = async () => {
       try {
         const res = await fetch(
-          `http://localhost:3000/api/debitnotes/full/${dnNumber}`
+          `${API_BASE_URL}/debitnotes/full/${dnNumber}`
         );
         const data = await res.json();
         setDebitnote({
