@@ -1,3 +1,4 @@
+import API_BASE_URL from "../../../config/api";
 import {
   Plus,
   ClipboardList,
@@ -11,9 +12,7 @@ import ServiceWindowModal from "../../ui/servicewindowModal";
 import DeliveryChallan from "./dcFormat";
 import InvoiceFormat from "./invoiceFormat";
 import InwardReport from "./InwardReport";
-import API_BASE_URL from "../../../config/api";
-
- const SalesCard = ({ title, subtitle, icon: Icon, bgColor, iconColor, onClick }) => {
+const SalesCard = ({ title, subtitle, icon: Icon, bgColor, iconColor, onClick }) => {
     return (
       <div
         onClick={onClick}

@@ -1,9 +1,8 @@
+import API_BASE_URL from "../../config/api";
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { X, Square, Minus, Printer } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import html2pdf from "html2pdf.js";
-import API_BASE_URL from "../../config/api";
-
 const SupplierModel = ({ onMinimize, onClose, title, setIsMinimizedInternal }) => {
   const [data, setData] = useState([]);
   const [isMaximized, setIsMaximized] = useState(false);
@@ -51,6 +50,7 @@ const SupplierModel = ({ onMinimize, onClose, title, setIsMinimizedInternal }) =
     } finally {
       setLoading(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
   // Fetch functions for dropdowns
@@ -77,6 +77,7 @@ const SupplierModel = ({ onMinimize, onClose, title, setIsMinimizedInternal }) =
 
   useEffect(() => {
     gentratereport();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gentratereport]);
 
   const handleClose = () => {

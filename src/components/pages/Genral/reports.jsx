@@ -1,7 +1,7 @@
+import API_BASE_URL from "../../../config/api";
 import React, { useEffect, useState } from "react";
 import {
-import API_BASE_URL from "../../../config/api";
-  Users,
+Users,
   UserCog,
   Wrench,
   Box,

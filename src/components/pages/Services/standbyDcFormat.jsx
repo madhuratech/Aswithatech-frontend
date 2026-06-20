@@ -1,8 +1,7 @@
+import API_BASE_URL from "../../../config/api";
 import React, { useEffect, useState } from "react";
 import { Phone } from "lucide-react";
 import { DcAddressBlock } from "../../../utils/AddressBlock";
-import API_BASE_URL from "../../../config/api";
-
 const fmtQty = (val) => {
   const n = Number(val);
   if (isNaN(n)) return val || "";

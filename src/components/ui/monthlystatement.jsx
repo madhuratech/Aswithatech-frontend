@@ -1,9 +1,8 @@
+import API_BASE_URL from "../../config/api";
 import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { X, Square, Minus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
-import API_BASE_URL from "../../config/api";
-
 const fmt = (n) => Number(n || 0).toFixed(2);
 
 const PurchaseReport = ({ onMinimize, onClose, setIsMinimizedInternal, title }) => {
@@ -35,6 +34,7 @@ const PurchaseReport = ({ onMinimize, onClose, setIsMinimizedInternal, title }) 
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onClose]);
 
   const [filters, setFilters] = useState({ fromdate: "", todate: "", bill_no: "", supplier_name: "" });
@@ -53,6 +53,7 @@ const PurchaseReport = ({ onMinimize, onClose, setIsMinimizedInternal, title }) 
       const res = await fetch(`${endpoint}?${params}`);
       setData(await res.json());
     } catch (e) { console.error(e); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reportMode, filters, baseApi]);
 
   useEffect(() => { generateReport(); }, [generateReport]);
@@ -113,6 +114,7 @@ const PurchaseReport = ({ onMinimize, onClose, setIsMinimizedInternal, title }) 
         return { month, bills, totals };
       });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, reportMode]);
 
   const overall = useMemo(() => {
@@ -142,6 +144,7 @@ const PurchaseReport = ({ onMinimize, onClose, setIsMinimizedInternal, title }) 
         grand_total: acc.grand_total + g.totals.grand_total
       }), { subtotal: 0, cgst: 0, sgst: 0, igst: 0, other_charges: 0, discount: 0, grand_total: 0 });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupedData, reportMode]);
 
   const handleExport = () => {

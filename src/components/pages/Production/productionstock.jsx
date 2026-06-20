@@ -1,8 +1,7 @@
+import API_BASE_URL from "../../../config/api";
 import React, { useEffect, useState } from "react";
 import { Box, RefreshCw, Trash2, Wrench } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import API_BASE_URL from "../../../config/api";
-
 /**
  * ModuleCard - A reusable card for main production modules
  */

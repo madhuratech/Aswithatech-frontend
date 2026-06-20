@@ -1,9 +1,8 @@
+import API_BASE_URL from "../../config/api";
 import React, { useEffect, useState, useRef } from "react";
 import { X, Minus, Square, Printer } from "lucide-react";
 import html2pdf from "html2pdf.js";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
-import API_BASE_URL from "../../config/api";
-
 const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, children, onFilterChange, initialViewMode }) => {
   const [isMaximized, setIsMaximized] = useState(false);
   const [reportData, setReportData] = useState([]);

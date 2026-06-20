@@ -1,3 +1,4 @@
+import API_BASE_URL from "../../config/api";
 import React, { useState, useEffect, useRef } from "react";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import { useDropdownKeyNav } from "../../hooks/useDropdownKeyNav";
@@ -7,8 +8,6 @@ import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import flatpickr from "flatpickr";
 import { toDmy, toYmd } from "../../utils/dateFormat";
-import API_BASE_URL from "../../config/api";
-
 // Debounce helper
 function debounce(func, delay) {
   let timeoutId;
@@ -60,6 +59,7 @@ const PCBStock = () => {
   useEffect(() => {
     const today = new Date().toISOString().split("T")[0];
     setPurchaseDate(today);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fetch next generated PCB Code
@@ -77,6 +77,7 @@ const PCBStock = () => {
 
   useEffect(() => {
     fetchNextCode();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -97,6 +98,7 @@ const PCBStock = () => {
     if (pcbPurchaseDateFp.current && purchaseDate) {
       pcbPurchaseDateFp.current.setDate(toDmy(purchaseDate));
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [purchaseDate]);
 
   // Auto-calculated variables
@@ -129,6 +131,7 @@ const PCBStock = () => {
      }
     }
     fetchClients();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   },[suppliersearch]);
 
   // Reset / Clear Form

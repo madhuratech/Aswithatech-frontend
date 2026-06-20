@@ -1,8 +1,7 @@
+import API_BASE_URL from "../../../config/api";
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FileText, Search, Eye, Printer } from "lucide-react";
-import API_BASE_URL from "../../../config/api";
-
 const PerformanceInvoiceReport2 = () => {
   const navigate = useNavigate();
   const [invoices, setInvoices] = useState([]);
@@ -28,6 +27,7 @@ const PerformanceInvoiceReport2 = () => {
       }
     };
     fetchAll();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -57,6 +57,7 @@ const PerformanceInvoiceReport2 = () => {
     }
 
     setFiltered(result);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, fromDate, toDate, invoices]);
 
   const formatDate = (dateStr) => {

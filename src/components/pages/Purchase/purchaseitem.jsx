@@ -1,10 +1,9 @@
+import API_BASE_URL from "../../../config/api";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import PurchaseItems from "../../forms/purchaseform";
 import { ArrowLeft, Plus, SquarePen, Trash2 } from "lucide-react";
 import { errorToast, successToast } from "../../ui/nottifications";
-import API_BASE_URL from "../../../config/api";
-
 const Stock = () => {
   const navigate = useNavigate();
   const [openForm, setOpenForm] = React.useState(false);
@@ -28,6 +27,7 @@ const Stock = () => {
 
   React.useEffect(() => {
     FetchPurchaseItems();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
 //edit purchase item

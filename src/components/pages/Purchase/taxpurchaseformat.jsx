@@ -1,7 +1,6 @@
+import API_BASE_URL from "../../../config/api";
 import React, { useEffect, useState } from "react";
 import { toWords } from "number-to-words";
-import API_BASE_URL from "../../../config/api";
-
 const TaxPurchaseFormat = ({ billNo }) => {
   const [entry, setEntry] = useState({ items: [] });
 

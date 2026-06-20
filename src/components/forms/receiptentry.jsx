@@ -1,3 +1,4 @@
+import API_BASE_URL from "../../config/api";
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Trash2, CheckCircle, Eye } from "lucide-react";
@@ -9,8 +10,6 @@ import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import flatpickr from "flatpickr";
 import { toDmy, toYmd } from "../../utils/dateFormat";
-import API_BASE_URL from "../../config/api";
-
 const ReceiptEntry = () => {
   const navigate = useNavigate();
   const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
@@ -80,6 +79,7 @@ const ReceiptEntry = () => {
   useEffect(() => {
     const today = new Date().toISOString().split("T")[0];
     setHeader((p) => ({ ...p, receipt_date: today }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -87,6 +87,7 @@ const ReceiptEntry = () => {
       .then((r) => r.json())
       .then((d) => setHeader((p) => ({ ...p, receipt_no: d.receipt_no || "" })))
       .catch(console.error);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -99,6 +100,7 @@ const ReceiptEntry = () => {
         setBanks(list);
       })
       .catch(console.error);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── client search ─────────────────────────────────────────────
@@ -108,6 +110,7 @@ const ReceiptEntry = () => {
       ? `${Api_url}/clients/search?q=${encodeURIComponent(q)}`
       : `${Api_url}/clients`;
     fetch(url).then((r) => r.json()).then(setClientList).catch(console.error);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [header.customer_name]);
 
   useEffect(() => {
@@ -128,6 +131,7 @@ const ReceiptEntry = () => {
     if (rcptDateFp.current && header.receipt_date) {
       rcptDateFp.current.setDate(toDmy(header.receipt_date));
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [header.receipt_date]);
 
   useOutsideClick([

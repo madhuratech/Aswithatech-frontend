@@ -1,3 +1,4 @@
+import API_BASE_URL from "../../../config/api";
 import React,{useEffect,useState} from "react";
 import{Plus,
   Pencil,
@@ -6,8 +7,6 @@ import{Plus,
   import toast from "react-hot-toast";
 import AddNewCustomerModal from "../../forms/addnewclient";
 import Addpassword from "../../forms/addeditpassword";  
-import API_BASE_URL from "../../../config/api";
-
 const Customer = () =>{
      const [customers, setCustomers] = useState([]);
      const[editingCustomer,setEditingCustomer] = useState(null)

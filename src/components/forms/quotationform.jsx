@@ -1,3 +1,4 @@
+import API_BASE_URL from "../../config/api";
 import React, { useEffect, useState, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
@@ -13,8 +14,6 @@ import QuotationFormat from '../pages/Sales/quotationoverview'
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import flatpickr from "flatpickr";
 import { toDmy, toYmd } from "../../utils/dateFormat";
-import API_BASE_URL from "../../config/api";
-
 const Quotation = () => {
   const [tableItems, setTableItems] = useState([]);
   const [clients , setclients] = useState([]);
@@ -102,6 +101,7 @@ useEffect(() =>{
         }
     }
     fetchclients();
+// eslint-disable-next-line react-hooks/exhaustive-deps
 },[search, clientRefreshKey]);
 
 // Get Quotation Number
@@ -125,6 +125,7 @@ useEffect(() =>{
   };
 
   fetcquotationnumber();
+// eslint-disable-next-line react-hooks/exhaustive-deps
 }, []);
 
 // New date
@@ -134,6 +135,7 @@ useEffect(() => {
         ...prev,
         quotation_date: today
     }));
+// eslint-disable-next-line react-hooks/exhaustive-deps
 },[]);
 
   useEffect(() => {
@@ -154,6 +156,7 @@ useEffect(() => {
     if (quoteDateFp.current && formdata.quotation_date) {
       quoteDateFp.current.setDate(toDmy(formdata.quotation_date));
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formdata.quotation_date]);
 
 // Item Type
@@ -199,6 +202,7 @@ useEffect(() => {
   };
 
     fetchItems();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   },[ordertype, itemsearch, itemRefreshKey, shouldAutoSelect]);
 
 // Select items

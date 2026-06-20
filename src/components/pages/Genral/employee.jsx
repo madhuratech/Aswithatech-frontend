@@ -1,3 +1,4 @@
+import API_BASE_URL from "../../../config/api";
 import React, { useState } from "react";
 import EmployeeForm from "../../forms/addemployee";
 import ViewEmployee from "../Genral/viewemployee";
@@ -5,8 +6,6 @@ import Addpassword from "../../forms/addeditpassword";
 import { Plus, SquarePen, Eye, Trash2 } from "lucide-react";
 import { successToast, errorToast } from "../../ui/nottifications";
 import toast from "react-hot-toast";
-import API_BASE_URL from "../../../config/api";
-
 const Employee = () => {
   const [open, setOpen] = React.useState(false);
   const [employeeData, setEmployeeData] = React.useState([]);

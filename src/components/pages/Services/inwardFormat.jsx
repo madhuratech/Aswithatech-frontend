@@ -1,7 +1,6 @@
+import API_BASE_URL from "../../../config/api";
 import React, { useEffect, useState } from "react";
 import logo from "../../../asset/Logo.jpeg";
-import API_BASE_URL from "../../../config/api";
-
 const InwardFormat = ({ dcNumber }) => {
   const [data, setData] = useState({ header: {}, items: [] });
 

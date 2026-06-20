@@ -1,3 +1,4 @@
+import API_BASE_URL from "../../config/api";
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { SquarePen, Trash2 } from "lucide-react";
@@ -10,8 +11,6 @@ import flatpickr from "flatpickr";
 import { toDmy, toYmd } from "../../utils/dateFormat";
 import SaleswindowModel from "../ui/saleswindowModal";
 import PerformanceInvoiceLayout2 from "../pages/Sales/performanceinvoiceformat2";
-import API_BASE_URL from "../../config/api";
-
 const PerformanceInvoiceForm2 = () => {
   const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
   const navigate = useNavigate();
@@ -81,6 +80,7 @@ const PerformanceInvoiceForm2 = () => {
       }
     };
     fetchclients();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
 
   useEffect(() => {
@@ -96,11 +96,13 @@ const PerformanceInvoiceForm2 = () => {
       }
     };
     fetchinvoicenumber();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     const today = new Date().toISOString().split("T")[0];
     setFormdata((prev) => ({ ...prev, invoice_date: today }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const perfInvoiceDateRef = useRef(null);
@@ -137,6 +139,7 @@ const PerformanceInvoiceForm2 = () => {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -157,6 +160,7 @@ const PerformanceInvoiceForm2 = () => {
     if (perfInvoiceDateFp.current && formData.invoice_date) {
       perfInvoiceDateFp.current.setDate(toDmy(formData.invoice_date));
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.invoice_date]);
 
   // DC Date
@@ -179,6 +183,7 @@ const PerformanceInvoiceForm2 = () => {
     if (dcDateFp.current && formData.dc_date) {
       dcDateFp.current.setDate(formData.dc_date, false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.dc_date]);
 
   // Order Date (multiple dates)
@@ -204,6 +209,7 @@ const PerformanceInvoiceForm2 = () => {
         false
       );
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.order_date]);
 
   const typechange = (type) => {
@@ -238,6 +244,7 @@ const PerformanceInvoiceForm2 = () => {
       }
     };
     fetchItems();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ordertype, itemsearch]);
 
   const selectitem = (selectedItems) => {

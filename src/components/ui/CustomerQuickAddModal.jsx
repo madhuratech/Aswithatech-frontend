@@ -1,10 +1,9 @@
+import API_BASE_URL from "../../config/api";
 import React, { useState, useRef, useEffect } from "react";
 import { X, UserPlus } from "lucide-react";
 import { successToast, errorToast, loadingToast } from "./nottifications";
 import toast from "react-hot-toast";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
-import API_BASE_URL from "../../config/api";
-
 const GST_STATE_CODE = {
   "01": "Jammu and Kashmir", "02": "Himachal Pradesh", "03": "Punjab",
   "04": "Chandigarh", "05": "Uttarakhand", "06": "Haryana", "07": "Delhi",

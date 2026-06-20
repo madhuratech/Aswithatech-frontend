@@ -1,8 +1,7 @@
+import API_BASE_URL from "../../../config/api";
 import React, { useEffect, useState } from "react";
 import { toWords } from "number-to-words";
 import { splitAddress } from "../../../utils/AddressBlock";
-import API_BASE_URL from "../../../config/api";
-
 const Billwiseformat = ({ billNo, title }) => {
   const [purchase, setPurchase] = useState({
     items: [],
@@ -44,8 +43,10 @@ const Billwiseformat = ({ billNo, title }) => {
     };
 
     fetchdata();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [billNo]);
 
+  // eslint-disable-next-line no-unused-vars
   const gst = Number(purchase?.cgst || 0) + Number(purchase?.sgst || 0);
 
   const renderBillwisePage = (copyLabel) => {

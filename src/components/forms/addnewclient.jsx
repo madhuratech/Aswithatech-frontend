@@ -1,3 +1,4 @@
+import API_BASE_URL from "../../config/api";
 import React, { useEffect, useState, useRef } from "react";
 import { useScrollLock } from "../../hooks/useScrollLock";
 import { X } from "lucide-react";
@@ -6,10 +7,6 @@ import toast from "react-hot-toast";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
-import API_BASE_URL from "../../config/api";
-
-
-
 const AddNewCustomerModal = ({ onClose, customer, refresh }) => {
   const {
     showPasswordModal,

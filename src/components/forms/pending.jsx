@@ -1,11 +1,10 @@
+import API_BASE_URL from "../../config/api";
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
-import API_BASE_URL from "../../config/api";
-
 const API_URL = `${API_BASE_URL}/pendings`;
 
 const ITEM_TYPE_ENDPOINTS = {

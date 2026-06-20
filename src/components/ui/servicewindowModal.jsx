@@ -1,11 +1,10 @@
+import API_BASE_URL from "../../config/api";
 import React, { useEffect, useState, useRef } from "react";
 import { X, Minus, Square, Printer } from "lucide-react";
 import html2pdf from "html2pdf.js";
 import JobDeliveryChallan from "../pages/Services/jobDcFormat";
 import StandbyDeliveryChallan from "../pages/Services/standbyDcFormat";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
-import API_BASE_URL from "../../config/api";
-
 const ServiceWindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, children, onFilterChange, initialViewMode, initialView, filters: externalFilters }) => {
     const [isMaximized, setIsMaximized] = useState(false);
     const [reportData, setReportData] = useState([]);

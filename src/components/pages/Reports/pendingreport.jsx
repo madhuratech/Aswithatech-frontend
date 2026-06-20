@@ -1,7 +1,6 @@
+import API_BASE_URL from "../../../config/api";
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import API_BASE_URL from "../../../config/api";
-
 const API_URL = `${API_BASE_URL}/pendings`;
 
 const fmtDate = (str) => {

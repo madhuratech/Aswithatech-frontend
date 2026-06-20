@@ -1,3 +1,4 @@
+import API_BASE_URL from "../../config/api";
 import React, { useState, useEffect, useRef } from "react";
 import { X, Eye, Trash2 } from "lucide-react";
 import { useScrollLock } from "../../hooks/useScrollLock";
@@ -6,8 +7,6 @@ import { successToast, errorToast, loadingToast } from "../ui/nottifications";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
-import API_BASE_URL from "../../config/api";
-
 const MAX_FILES = 5;
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = [

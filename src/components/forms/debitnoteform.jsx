@@ -1,3 +1,4 @@
+import API_BASE_URL from "../../config/api";
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Addpassword from "./addeditpassword";
@@ -9,8 +10,6 @@ import { isTamilNadu, calcGstAmounts } from "../../utils/gstUtils";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import flatpickr from "flatpickr";
 import { toDmy, toYmd } from "../../utils/dateFormat";
-import API_BASE_URL from "../../config/api";
-
 // Debounse function;
 function debounce(func, delay) {
   let timeoutId;
@@ -150,6 +149,7 @@ useEffect(() =>{
     .then(data => {
       setdnNumber(data.dnNumber)   
     });
+// eslint-disable-next-line react-hooks/exhaustive-deps
 },[]);
 
 
@@ -179,6 +179,7 @@ useEffect(() =>{
 
   })
   .finally(() => setloadingclients(false));
+// eslint-disable-next-line react-hooks/exhaustive-deps
 },[]);
 
 
@@ -316,6 +317,7 @@ const clearRow = () => {
       grandTotal: Math.round(rawTotal),
     });
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tabledata, deliveryCharge, customerState, customerGst, gstPct]);
 
 
@@ -477,6 +479,7 @@ useOutsideClick([
 useEffect(() =>{
   const today = new Date().toISOString().split('T')[0];
   setFormData(prev => ({...prev,dn_date:today}));
+// eslint-disable-next-line react-hooks/exhaustive-deps
 },[]);
 
 useEffect(() => {
@@ -497,6 +500,7 @@ useEffect(() => {
   if (dnDateFp.current && Formdata.dn_date) {
     dnDateFp.current.setDate(toDmy(Formdata.dn_date));
   }
+// eslint-disable-next-line react-hooks/exhaustive-deps
 }, [Formdata.dn_date]);
 
 useEffect(() => {
@@ -517,6 +521,7 @@ useEffect(() => {
   if (debitBillDateFp.current && Formdata.bill_date) {
     debitBillDateFp.current.setDate(toDmy(Formdata.bill_date));
   }
+// eslint-disable-next-line react-hooks/exhaustive-deps
 }, [Formdata.bill_date]);
 
 

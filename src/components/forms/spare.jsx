@@ -1,3 +1,4 @@
+import API_BASE_URL from "../../config/api";
 import { useState,useEffect, useRef } from 'react';
 import React from "react";
 import { successToast,errorToast } from "../ui/nottifications";
@@ -5,8 +6,6 @@ import { X } from "lucide-react";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
-import API_BASE_URL from "../../config/api";
-
 const SpareModel = ({ onClose, refreshSpare, editMode, spare }) => { 
   const {
     showPasswordModal,

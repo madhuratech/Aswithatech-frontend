@@ -1,3 +1,4 @@
+import API_BASE_URL from "../../../config/api";
 import React, { useState } from "react";
 import { FileText, Truck, FileCheck, Receipt, FileMinus, CreditCard,FileBarChart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -7,7 +8,6 @@ import InvoiceFormat from "./invoiceformat";
 import SalesDCFormat from "./salesdcformat";
 import CreditNoteView from "./creditnote";
 import PerformanceInvoiceLayout2 from "./performanceinvoiceformat2";
-import API_BASE_URL from "../../../config/api";
 const SalesCard = ({ title, subtitle, icon: Icon, bgColor, iconColor, onClick }) => {
     return (
         <div

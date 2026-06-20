@@ -1,8 +1,7 @@
+import API_BASE_URL from "../../../config/api";
 import React, { useEffect, useState } from "react";
 import { toWords } from "number-to-words";
 import { splitAddress } from "../../../utils/AddressBlock";
-import API_BASE_URL from "../../../config/api";
-
 const Debitnoteview = ({ dnNumber }) => {
   const [debitnote, setDebitnote] = useState({
     items: [],

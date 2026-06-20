@@ -1,9 +1,9 @@
+import API_BASE_URL from "../../../config/api";
 import React,{useEffect, useState} from "react";
 import SpareModel from "../../forms/spare";
 import {Plus,Trash2,SquarePen} from "lucide-react";
 import {  errorToast} from "../../ui/nottifications";
 import Addpassword from "../../forms/addeditpassword";
-import API_BASE_URL from "../../../config/api";
 // import toast from "react-hot-toast";
 
 const Servicedata = () =>{
@@ -35,6 +35,7 @@ const Fetchspare = async () => {
 
 useEffect(()=>{
     Fetchspare();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
 

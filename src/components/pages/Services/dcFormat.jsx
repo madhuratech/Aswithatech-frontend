@@ -1,7 +1,6 @@
+import API_BASE_URL from "../../../config/api";
 import React, { useEffect, useState } from "react";
 import { DcAddressBlock } from "../../../utils/AddressBlock";
-import API_BASE_URL from "../../../config/api";
-
 // Formats qty: 5.00 → 5, 5.50 → 5.5, 10.25 → 10.25
 const fmtQty = (val) => {
   const n = Number(val);

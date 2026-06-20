@@ -1,10 +1,9 @@
+import API_BASE_URL from "../../config/api";
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { X, Square, Minus, Printer } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import html2pdf from "html2pdf.js";
 import * as XLSX from "xlsx";
-import API_BASE_URL from "../../config/api";
-
 const API_SALES = `${API_BASE_URL}/salesinvoices`;
 
 const fmt = (val) => Number(val || 0).toFixed(2);

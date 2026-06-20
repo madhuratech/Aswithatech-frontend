@@ -1,3 +1,4 @@
+import API_BASE_URL from "../../config/api";
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { SquarePen,Trash2 } from "lucide-react";
@@ -10,8 +11,6 @@ import flatpickr from "flatpickr";
 import { toDmy, toYmd } from "../../utils/dateFormat";
 import SaleswindowModel from "../ui/saleswindowModal";
 import InvoiceFormat from "../pages/Sales/invoiceformat";
-import API_BASE_URL from "../../config/api";
-
 const PerformanceInvoiceForm  = () => {
   const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
   const navigate = useNavigate();
@@ -98,6 +97,7 @@ const PerformanceInvoiceForm  = () => {
       }
     }
     fetchclients();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   },[search]);
 
   // Get Invoice Number
@@ -120,6 +120,7 @@ const PerformanceInvoiceForm  = () => {
       }
     }
     fetchinvoicenumber();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
   // get New Date
@@ -130,6 +131,7 @@ const PerformanceInvoiceForm  = () => {
       ...prev,
       invoice_date: today
     }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
   const perfInvoiceDateRef = useRef(null);
@@ -166,6 +168,7 @@ const PerformanceInvoiceForm  = () => {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -186,6 +189,7 @@ const PerformanceInvoiceForm  = () => {
     if (perfInvoiceDateFp.current && formData.invoice_date) {
       perfInvoiceDateFp.current.setDate(toDmy(formData.invoice_date));
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.invoice_date]);
 
 
@@ -214,6 +218,7 @@ useEffect(() => {
   if (dcDateFp.current && formData.dc_date) {
     dcDateFp.current.setDate(formData.dc_date, false);
   }
+// eslint-disable-next-line react-hooks/exhaustive-deps
 }, [formData.dc_date]);
 
 
@@ -244,6 +249,7 @@ useEffect(() => {
       false
     );
   }
+// eslint-disable-next-line react-hooks/exhaustive-deps
 }, [formData.order_date]);
 
   // Item Type
@@ -289,6 +295,7 @@ useEffect(() => {
     };
     fetchItems();
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   },[ordertype,itemsearch]);
 
 

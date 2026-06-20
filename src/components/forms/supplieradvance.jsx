@@ -1,3 +1,4 @@
+import API_BASE_URL from "../../config/api";
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
@@ -7,8 +8,6 @@ import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import flatpickr from "flatpickr";
 import { toDmy, toYmd } from "../../utils/dateFormat";
-import API_BASE_URL from "../../config/api";
-
 const Supplieradvance = () => {
 
    const navigate = useNavigate();
@@ -107,6 +106,7 @@ const Supplieradvance = () => {
                }));
            }
        })
+   // eslint-disable-next-line react-hooks/exhaustive-deps
    },[]);
 
    // loadclients
@@ -125,6 +125,7 @@ const Supplieradvance = () => {
        }) 
      })
        .finally(() => setloadclients(false));
+   // eslint-disable-next-line react-hooks/exhaustive-deps
    },[]);
 
 
@@ -151,6 +152,7 @@ const Supplieradvance = () => {
         }
       };
       purchasetotal();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     },[formData.supplier_name]);
 
    // Save Supplier Advance
@@ -224,6 +226,7 @@ const Supplieradvance = () => {
    useEffect(() => {
        const today = new Date().toISOString().split('T')[0];
        setFormData(prev => ({ ...prev, date: today }));
+   // eslint-disable-next-line react-hooks/exhaustive-deps
    }, []);
 
    useEffect(() => {
@@ -244,6 +247,7 @@ const Supplieradvance = () => {
         if (suppAdvDateFp.current && formData.date) {
             suppAdvDateFp.current.setDate(toDmy(formData.date));
         }
+   // eslint-disable-next-line react-hooks/exhaustive-deps
    }, [formData.date]);
 
    // delete recipt number;
@@ -299,6 +303,7 @@ const Supplieradvance = () => {
          console.error("Error fetching banks:", err);
          setBanks([]); 
        });
+   // eslint-disable-next-line react-hooks/exhaustive-deps
    }, []);
 
    // Filter

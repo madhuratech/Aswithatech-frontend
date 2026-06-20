@@ -1,3 +1,4 @@
+import API_BASE_URL from "../../config/api";
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { SquarePen, Trash2,UserPlus, PackagePlus } from "lucide-react";
@@ -9,8 +10,6 @@ import ProductQuickAddModal from "../ui/ProductQuickAddModal";
 import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
-import API_BASE_URL from "../../config/api";
-
 const TODAY = new Date().toISOString().split("T")[0];
 const Api_url = `${API_BASE_URL}/Inwardentries`;
 

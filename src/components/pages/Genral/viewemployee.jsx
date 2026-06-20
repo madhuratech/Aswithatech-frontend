@@ -1,7 +1,6 @@
+import API_BASE_URL from "../../../config/api";
 import React from "react";
 import { X, Eye } from "lucide-react";
-import API_BASE_URL from "../../../config/api";
-
 const ViewEmployee = ({ onClose, employee }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 overflow-y-auto">

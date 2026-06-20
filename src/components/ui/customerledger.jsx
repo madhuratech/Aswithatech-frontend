@@ -1,11 +1,10 @@
+import API_BASE_URL from "../../config/api";
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { X, Square, Minus, Printer } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import html2pdf from "html2pdf.js";
 import * as XLSX from "xlsx";
-import API_BASE_URL from "../../config/api";
-
 const API = `${API_BASE_URL}/receipts`;
 
 const CustomerLedger = ({ onClose, onMinimize, title = "Customer Ledger" }) => {
@@ -30,6 +29,7 @@ const CustomerLedger = ({ onClose, onMinimize, title = "Customer Ledger" }) => {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onClose]);
 
   const initialLedgerType = location.state?.ledgerType || "ledger";
@@ -90,11 +90,13 @@ const CustomerLedger = ({ onClose, onMinimize, title = "Customer Ledger" }) => {
   useEffect(() => {
     fetchCustomers("");
     loadReport("", "", "", initialLedgerType);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialLedgerType]);
 
   // Manual GENERATE REPORT button
   const generateReport = useCallback(() => {
     loadReport(filters.customer_name, filters.fromDate, filters.toDate, ledgerType);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters, ledgerType]);
 
   // Customer dropdown — auto-reload immediately on change

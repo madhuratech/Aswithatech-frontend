@@ -1,3 +1,4 @@
+import API_BASE_URL from "../../config/api";
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -6,8 +7,6 @@ import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import flatpickr from "flatpickr";
 import { toDmy, toYmd } from "../../utils/dateFormat";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
-import API_BASE_URL from "../../config/api";
-
 const ReceiptAdvance = () => {
   const navigate = useNavigate();
   const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
@@ -29,6 +28,7 @@ const ReceiptAdvance = () => {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const [formData, setFormData] = useState({
@@ -63,6 +63,7 @@ const ReceiptAdvance = () => {
       .then((r) => r.json())
       .then((d) => setFormData((prev) => ({ ...prev, receipt_no: d.receipt_no || "" })))
       .catch(console.error);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -74,6 +75,7 @@ const ReceiptAdvance = () => {
       .then((r) => r.json())
       .then(setClientList)
       .catch(console.error);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.customer_name]);
 
   useEffect(() => {
@@ -94,6 +96,7 @@ const ReceiptAdvance = () => {
     if (receiptDateFp.current && formData.receipt_date) {
       receiptDateFp.current.setDate(toDmy(formData.receipt_date));
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.receipt_date]);
 
   const grandTotal =
