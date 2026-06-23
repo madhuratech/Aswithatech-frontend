@@ -1,5 +1,5 @@
 import API_BASE_URL from "../../config/api";
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { successToast,errorToast, loadingToast } from '../ui/nottifications';
@@ -16,13 +16,24 @@ const [openIndex, setOpenIndex] = useState(null);
 const [formData, setFormData] = useState([
   {
     expense_date: "",
+    employee_id: null,
+    employee_name: "",
     category: "",
     amount: "",
     expense_description: ""
   }
 ]);
 
+const [employeeList, setEmployeeList] = useState([]);
+
   const categoryRefs = useRef([]);
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/expenses/expense-employees`)
+      .then(res => res.json())
+      .then(data => setEmployeeList(Array.isArray(data) ? data : []))
+      .catch(() => setEmployeeList([]));
+  }, []);
 
   useOutsideClick(
     formData.map((_, i) => ({
@@ -31,24 +42,27 @@ const [formData, setFormData] = useState([
     }))
   );
 
- const Saveexpenses = async(e) =>{
- e.preventDefault();
- const toastId = loadingToast("Adding Expense...");
+const Saveexpenses = async (e) => {
+  e.preventDefault();
 
- try{
-   await axios.post(`${API_BASE_URL}/expenses/new`, formData);
-   toast.dismiss(toastId);
-   successToast("Expense Added");
-   onClose();
-   refresh();
- }catch(err){
-  console.log("ERROR:", err);
-  errorToast(err.response?.data?.message || err.message || "Fail To Add");
-}
+  console.log("Sending expense data:", formData);
+
+  const toastId = loadingToast("Adding Expense...");
+
+  try {
+    await axios.post(`${API_BASE_URL}/expenses/new`, formData);
+    toast.dismiss(toastId);
+    successToast("Expense Added");
+    onClose();
+    refresh();
+  } catch (err) {
+    console.log(err);
+    errorToast(err.response?.data?.message || err.message || "Fail To Add");
+  }
 };
 
 const addForm = () => {
-  setFormData([...formData, { expense_date: "", category: "", amount: "", expense_description: "" }]);
+  setFormData([...formData, { expense_date: "", employee_id: null, employee_name: "", category: "", amount: "", expense_description: "" }]);
 };
 
 const removeForm = (index) => {
@@ -68,6 +82,12 @@ const handleChange = (index, field, value) => {
     Saveexpenses(e);
   };
 
+  // Today date;
+
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
+    setFormData(prev => prev.map(form => ({ ...form, expense_date: today })));
+  }, []);
   return (
      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 overflow-y-auto">
            <div className="bg-white w-[650px] mt-[180px] rounded-xl shadow-lg p-6 flex flex-col mb-[80px]">
@@ -91,6 +111,31 @@ const handleChange = (index, field, value) => {
                         className="mt-1 w-full rounded-lg bg-gray-100 px-3 py-2 text-sm outline-none cursor-pointer"
                         placeholder='Select Date' value={form.expense_date} onChange={(e)=> handleChange(index, "expense_date", e.target.value)}/> 
                     </div>
+
+                      <div>
+                        <label htmlFor="">Employee Name</label>
+                        <select
+                          value={form.employee_id ?? ""}
+                          onChange={(e) => {
+                          const selectedEmp = employeeList.find(
+                          emp => String(emp.id) === e.target.value
+                           );
+                            console.log("Selected employee:", selectedEmp);
+                            const updatedForms = [...formData];
+                            updatedForms[index] = {
+                            ...updatedForms[index],
+                             employee_id: selectedEmp?.id || null,
+                             employee_name: selectedEmp?.employee_name || ""
+                            };
+                           setFormData(updatedForms);}}
+                          className="mt-1 w-full rounded-lg bg-gray-100 px-3 py-2 text-sm outline-none cursor-pointer"
+                        >
+                          <option value="">Select Employee</option>
+                          {employeeList.map((emp, i) => (
+                            <option key={i} value={emp.id}>{emp.employee_name}</option>
+                          ))}
+                        </select>
+                      </div>
 
                       <div ref={el => { categoryRefs.current[index] = el; }} className="relative">
                         <label htmlFor="">Category</label>

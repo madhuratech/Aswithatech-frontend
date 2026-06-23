@@ -13,7 +13,7 @@ import { toDmy, toYmd } from "../../utils/dateFormat";
 const TODAY = new Date().toISOString().split("T")[0];
 const Api_url = `${API_BASE_URL}/standbydcentry`;
 
-const REMARKS_OPTIONS = ["Serviced", "Re Serviced", "For Sale", "Beyond", "For Testing Purpose"];
+const REMARKS_OPTIONS = ["Stand By", "For Testing Purpose",];
 
 const INIT_FORM = {
     standby_dc_no: "",

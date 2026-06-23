@@ -579,12 +579,6 @@ const BillwisePayment = () => {
                     <div key={i} onClick={() => handleBillSelect(b)}
                       className="px-4 py-3 hover:bg-blue-50 cursor-pointer border-b border-gray-50 last:border-0">
                       <div className="text-[13px] font-bold text-gray-900">{b.bill_no}</div>
-                      <div className="flex gap-4 text-[11px] text-gray-400 mt-0.5">
-                        <span>Amount: ₹{Number(b.bill_amount).toFixed(2)}</span>
-                        <span className="text-orange-500 font-semibold">
-                          Paid: ₹{Number(b.total_paid).toFixed(2)}
-                        </span>
-                      </div>
                     </div>
                   ))}
                 </div>

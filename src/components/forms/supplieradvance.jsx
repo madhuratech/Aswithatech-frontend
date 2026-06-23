@@ -412,30 +412,8 @@ const Supplieradvance = () => {
            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">
              Step 1 — Advance Info
            </p>
+
            <div className="grid grid-cols-3 gap-5">
-             {/* Receipt No */}
-             <div>
-               <label className={labelCls}>Receipt No</label>
-               <input
-                 type="text"
-                 value={formData.receipt_no}
-                 readOnly
-                 className={roInputCls}
-               />
-             </div>
-
-             {/* Date */}
-              <div>
-                <label className={labelCls}>Date</label>
-                <input
-                  ref={suppAdvDateRef}
-                  type="text"
-                  placeholder="Select Date"
-                  className={inputCls}
-                  readOnly
-                />
-              </div>
-
              {/* Supplier Name (Autocomplete) */}
              <div className="relative text-black" ref={clientRef}>
                <label className={labelCls}>Supplier Name <span className="text-red-500">*</span></label>
@@ -474,6 +452,28 @@ const Supplieradvance = () => {
                  </div>
                )}
              </div>
+             {/* Receipt No */}
+             <div>
+               <label className={labelCls}>Receipt No</label>
+               <input
+                 type="text"
+                 value={formData.receipt_no}
+                 readOnly
+                 className={roInputCls}
+               />
+             </div>
+
+             {/* Date */}
+              <div>
+                <label className={labelCls}>Date</label>
+                <input
+                  ref={suppAdvDateRef}
+                  type="text"
+                  placeholder="Select Date"
+                  className={inputCls}
+                  readOnly
+                />
+              </div>
            </div>
          </div>
 

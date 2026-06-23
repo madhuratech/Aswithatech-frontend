@@ -75,6 +75,8 @@ const Reports = () => {
     { title: "Total Expenses", value: formatCurrency(expenseSummary.totalAmount), icon: DollarSign, bg: "bg-[#FEF2F2]", text: "text-[#DC2626]", subtitle: `${data.expenses} entries` },
   ];
 
+ 
+
   return (
     <div className="bg-white rounded-xl border p-6 overflow-y-auto h-[70vh]">
       <div className="flex items-center justify-between mb-6">

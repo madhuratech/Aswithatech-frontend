@@ -1,10 +1,12 @@
 import API_BASE_URL from "../../../config/api";
-import React, { useEffect, useState } from "react";
-import { Box, RefreshCw, Trash2, Wrench } from "lucide-react";
+import React, { useEffect, useState, useRef } from "react";
+import { Box, RefreshCw, Trash2, Wrench, ChevronDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-/**
- * ModuleCard - A reusable card for main production modules
- */
+import PCBStockReportModal from "../../ui/reports/PCBStockReportModal";
+import StandbyPCBStockReportModal from "../../ui/reports/StandbyPCBStockReportModal";
+import ScrapDamageReportModal from "../../ui/reports/ScrapDamageReportModal";
+import SpareUsageReportModal from "../../ui/reports/SpareUsageReportModal";
+
 const ModuleCard = ({ title, subtitle, icon: Icon, bgColor, iconColor, onClick }) => {
     return (
         <div
@@ -24,9 +26,6 @@ const ModuleCard = ({ title, subtitle, icon: Icon, bgColor, iconColor, onClick }
     );
 };
 
-/**
- * StatSmallCard - A smaller card for inventory statistics
- */
 const StatSmallCard = ({ title, value, valueColor = "text-gray-900" }) => {
     return (
         <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
@@ -48,6 +47,19 @@ const ProductionStock = () => {
         standby_issued: "-",
         under_repair: "-",
     });
+    const [showDropdown, setShowDropdown] = useState(false);
+    const [activeModal, setActiveModal] = useState(null);
+    const dropdownRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+                setShowDropdown(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     useEffect(() => {
         fetch(`${API_BASE_URL}/pcb-stock/summary`)
@@ -91,6 +103,13 @@ const ProductionStock = () => {
         },
     ];
 
+    const reportItems = [
+        { label: "PCB Stock Report", modalKey: "pcb" },
+        { label: "Standby PCB Stock Report", modalKey: "standby" },
+        { label: "Scrap / Damaged PCB Report", modalKey: "scrap" },
+        { label: "Spare Usage Report", modalKey: "spare" },
+    ];
+
     const stats = [
         { title: "Total PCB Stock", value: summary.total_pcb_stock, color: "text-gray-900" },
         { title: "Standby Available", value: summary.standby_available, color: "text-green-600" },
@@ -100,7 +119,6 @@ const ProductionStock = () => {
 
     return (
         <div className="pb-10 p-10 min-h-screen">
-            {/* Header Section */}
             <div className="mb-10">
                 <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
                     Production & Stock
@@ -110,8 +128,7 @@ const ProductionStock = () => {
                 </p>
             </div>
 
-            {/* Module Navigation Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mb-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mb-6">
                 {modules.map((mod, index) => (
                     <ModuleCard
                         key={index}
@@ -125,7 +142,39 @@ const ProductionStock = () => {
                 ))}
             </div>
 
-            {/* Stats Summary Section */}
+            {/* Production Reports Dropdown */}
+            <div className="max-w-5xl mb-10 relative" ref={dropdownRef}>
+                <button
+                    onClick={() => setShowDropdown(!showDropdown)}
+                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md hover:border-blue-200 transition-all text-sm font-semibold text-gray-700"
+                >
+                    <ChevronDown size={16} className={`transition-transform ${showDropdown ? "rotate-180" : ""}`} />
+                    Production Reports
+                </button>
+                {showDropdown && (
+                <div className="absolute left-0 mt-2 w-72 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1">
+                 {reportItems.map((item, i) => (
+                 <button
+                key={i}
+                onClick={() => {
+                    setActiveModal(item.modalKey);
+                    setShowDropdown(false);
+                }}
+                className="block w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+            >
+                {item.label}
+            </button>
+        ))}
+    </div>
+)}
+            </div>
+
+            {/* Modals */}
+            <PCBStockReportModal isOpen={activeModal === "pcb"} onClose={() => setActiveModal(null)} />
+            <StandbyPCBStockReportModal isOpen={activeModal === "standby"} onClose={() => setActiveModal(null)} />
+            <ScrapDamageReportModal isOpen={activeModal === "scrap"} onClose={() => setActiveModal(null)} />
+            <SpareUsageReportModal isOpen={activeModal === "spare"} onClose={() => setActiveModal(null)} />
+
             <div className="max-w-6xl">
                 <h2 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">
                     Inventory Summary

@@ -25,7 +25,7 @@ import BillwisePayment from "./components/forms/bilwisepayment";
 import Billwiseformat from "./components/pages/Purchase/bilwisepaymentformat";
 import Servicemodel from "./components/pages/Genral/servicesdata";
 import MonthlyReport from "./components/ui/monthlystatement";
-import ExpenseReport from "./components/pages/Genral/reports";
+import ExpenseLedger from "./components/ui/expenseledger";
 import ContactPage from "./components/pages/Contact/contact";
 
 
@@ -104,7 +104,7 @@ function App() {
             <Route path="spare" element={<Spare />} />
             <Route path="expense" element={<ExpenseData />} />
             <Route path="employee" element={<Employee />} />
-            <Route path="expense-report" element={<ExpenseReport />} />
+            <Route path="expense-report" element={<ExpenseLedger />} />
           </Route>
 
           {/* purchase module */}

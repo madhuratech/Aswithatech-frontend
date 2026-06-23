@@ -258,22 +258,7 @@ const ReceiptAdvance = () => {
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div className="space-y-4">
-              <div>
-                <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Receipt No</label>
-                <input
-                  type="text"
-                  value={formData.receipt_no}
-                  readOnly
-                  className="mt-1 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-black"
-                />
-              </div>
-              <div>
-                <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Date</label>
-                <input ref={receiptDateRef}
-                  className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-black"
-                />
-              </div>
-              <div className="relative" ref={clientDropdownRef}>
+<div className="relative" ref={clientDropdownRef}>
                 <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Customer Name</label>
                 <input
                   type="text"
@@ -303,9 +288,8 @@ const ReceiptAdvance = () => {
                   </div>
                 )}
               </div>
-            </div>
 
-            <div className="space-y-4">
+              
               <div>
                 <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Payment Type</label>
                 <input
@@ -314,6 +298,30 @@ const ReceiptAdvance = () => {
                   value={formData.payment_type}
                   onChange={(e) => setFormData({ ...formData, payment_type: e.target.value })}
                   className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-black"
+                />
+              </div>
+              <div>
+                <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Received Amount</label>
+                <input
+                  type="number"
+                  placeholder="0.00"
+                  value={formData.received_amount}
+                  onChange={(e) => setFormData({ ...formData, received_amount: e.target.value })}
+                  className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-black"
+                />
+              </div>
+              
+            </div>
+
+            <div className="space-y-4">
+              
+              <div>
+                <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Receipt No</label>
+                <input
+                  type="text"
+                  value={formData.receipt_no}
+                  readOnly
+                  className="mt-1 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-black"
                 />
               </div>
               <div>
@@ -340,12 +348,8 @@ const ReceiptAdvance = () => {
 
             <div className="space-y-4">
               <div>
-                <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Received Amount</label>
-                <input
-                  type="number"
-                  placeholder="0.00"
-                  value={formData.received_amount}
-                  onChange={(e) => setFormData({ ...formData, received_amount: e.target.value })}
+                <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Date</label>
+                <input ref={receiptDateRef}
                   className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-black"
                 />
               </div>

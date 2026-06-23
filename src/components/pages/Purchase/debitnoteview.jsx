@@ -2,6 +2,13 @@ import API_BASE_URL from "../../../config/api";
 import React, { useEffect, useState } from "react";
 import { toWords } from "number-to-words";
 import { splitAddress } from "../../../utils/AddressBlock";
+
+const fmtDate = (val) => {
+  if (!val) return "";
+  const d = new Date(val);
+  if (isNaN(d)) return String(val);
+  return d.toLocaleDateString("en-GB"); // DD/MM/YYYY
+};
 const Debitnoteview = ({ dnNumber }) => {
   const [debitnote, setDebitnote] = useState({
     items: [],
@@ -96,7 +103,7 @@ const Debitnoteview = ({ dnNumber }) => {
                 <div className="flex text-[13px] font-bold">
                   <div className="w-[80px]">Dn Date</div>
                   <div className="w-[20px] text-center">:</div>
-                  <div className="flex-1">{debitnote?.dn_date}</div>
+                  <div className="flex-1">{fmtDate(debitnote?.dn_date)}</div>
                 </div>
                 <div className="flex text-[13px] font-bold">
                   <div className="w-[80px]">Bill No</div>
@@ -106,7 +113,7 @@ const Debitnoteview = ({ dnNumber }) => {
                 <div className="flex text-[13px] font-bold">
                   <div className="w-[80px]">Bill Date</div>
                   <div className="w-[20px] text-center">:</div>
-                  <div className="flex-1">{debitnote?.bill_date}</div>
+                  <div className="flex-1">{fmtDate(debitnote?.bill_date) || debitnote?.bill_date || "—"}</div>
                 </div>
               </div>
             </div>
@@ -125,9 +132,9 @@ const Debitnoteview = ({ dnNumber }) => {
             <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
               <thead>
                 <tr className="bg-gray-50 border-b border-black">
-                  <th className="border-r-2  border-black p-2 w-[7%] text-center text-[12px]">S.No</th>
-                  <th className="border-r-2 border-black p-2 w-[55%] text-center text-[12px]">Description of Goods</th>
-                  <th className="border-r-2 border-black p-2 w-[10%] text-center text-[12px]">Quantity</th>
+                  <th className="border-r-2 border-black p-2 w-[7%] text-center text-[12px]">S.No</th>
+                  <th className="border-r-2 border-black p-2 w-[38%] text-center text-[12px]">Description of Goods</th>
+                  <th className="border-r-2 border-black p-2 w-[8%] text-center text-[12px]">Qty</th>
                   <th className="border-r-2 border-black p-2 w-[15%] text-center text-[12px]">Rate</th>
                   <th className="p-2 w-[15%] text-center text-[12px]">Amount</th>
                 </tr>
@@ -136,7 +143,7 @@ const Debitnoteview = ({ dnNumber }) => {
                 {debitnote.items.map((item, index) => (
                   <tr key={index}>
                     <td className="border-r-2 border-black p-2 text-center text-[12px]">{index + 1}</td>
-                    <td className="border-r-2 border-black px-3 py-2 text-[12px] font-medium">{item.item_name}</td>
+                    <td className="border-r-2 border-black px-3 py-2 text-[12px] font-medium">{item.item_name}{String(item.part_no ?? "").replace(/\.?0+$/, "")}</td>
                     <td className="border-r-2 border-black p-2 text-center text-[12px]">{item.quantity}</td>
                     <td className="border-r-2 border-black p-2 text-right text-[12px] pr-4">{Number(item.price).toFixed(2)}</td>
                     <td className="p-2 text-right text-[12px] font-bold pr-4">{Number(item.amount).toFixed(2)}</td>
@@ -160,30 +167,30 @@ const Debitnoteview = ({ dnNumber }) => {
 
           {/* SUMMARY SECTION */}
           <div className="border-t-2 border-black flex">
-            <div className="w-[60%] border-r-2 border-black"></div>
+            <div className="w-[60%] border-r-2 ml-[71px] border-black"></div>
             <div className="w-[40%]">
               <div className="flex  border-black">
-                <div className="w-[50%] p-2 text-[12px] font-bold border-r-2 border-black">SUB Total</div>
-                <div className="w-[50%] p-2 text-[12px] font-bold text-right pr-4">{Number(debitnote.subtotal || 0).toFixed(2)}</div>
+                <div className="w-[50%] p-2 text-[12px] font-bold border-r-2 ml-[30px] border-black">SUB Total</div>
+                <div className="w-[50%] p-2 text-[12px] font-bold text-right  pr-4">{Number(debitnote.subtotal || 0).toFixed(2)}</div>
               </div>
               <div className="flex  border-black">
-                <div className="w-[50%] p-2 text-[12px] font-bold border-r-2 border-black">SGST @18.00%</div>
+                <div className="w-[50%] p-2 text-[12px] font-bold border-r-2 ml-[30px] border-black">SGST @18.00%</div>
                 <div className="w-[50%] p-2 text-[12px] font-bold text-right pr-4">{Number(debitnote.sgst || 0).toFixed(2)}</div>
               </div>
               <div className="flex  border-black">
-                <div className="w-[50%] p-2 text-[12px] font-bold border-r-2 border-black">CGST @18.00%</div>
+                <div className="w-[50%] p-2 text-[12px] font-bold border-r-2 ml-[30px] border-black">CGST @18.00%</div>
                 <div className="w-[50%] p-2 text-[12px] font-bold text-right pr-4">{Number(debitnote.cgst || 0).toFixed(2)}</div>
               </div>
               <div className="flex  border-black">
-                <div className="w-[50%] p-2 text-[12px] font-bold border-r-2 border-black">IGST @18.00%</div>
+                <div className="w-[50%] p-2 text-[12px] font-bold border-r-2 ml-[30px] border-black">IGST @18.00%</div>
                 <div className="w-[50%] p-2 text-[12px] font-bold text-right pr-4">{Number(debitnote.igst || 0).toFixed(2)}</div>
               </div>
               <div className="flex  border-black">
-                <div className="w-[50%] p-2 text-[12px] font-bold border-r-2 border-black">Delivery Charge</div>
+                <div className="w-[50%] p-2 text-[12px] font-bold border-r-2 ml-[30px] border-black">Delivery Charge</div>
                 <div className="w-[50%] p-2 text-[12px] font-bold text-right pr-4">{Number(debitnote.delivery_charge || 0).toFixed(2)}</div>
               </div>
               <div className="flex bg-gray-50">
-                <div className="w-[50%] p-2 text-[13px] font-extrabold border-r-2 border-black">NET TOTAL</div>
+                <div className="w-[50%] p-2 text-[13px] font-extrabold border-r-2 ml-[30px] border-black">NET TOTAL</div>
                 <div className="w-[50%] p-2 text-[13px] font-extrabold text-right pr-4">{Number(debitnote.grandTotal || 0).toFixed(2)}</div>
               </div>
             </div>

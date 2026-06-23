@@ -3,10 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { SquarePen, Trash2 } from "lucide-react";
-import SaleswindowModel from "../ui/saleswindowModal";
-import TaxPurchaseFormat from "../pages/Purchase/taxpurchaseformat";
 import { isTamilNadu, calcGstAmounts } from "../../utils/gstUtils";
-import Addpassword from "./addeditpassword";
 import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import flatpickr from "flatpickr";
@@ -40,7 +37,7 @@ const INIT_ITEM = {
 
 const PurchaseEntry = () => {
   const navigate = useNavigate();
-  const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
+  const { requirePassword } = usePasswordProtection();
 
   // ── core state ────────────────────────────────────────────────────────
   const [billNo, setBillNo]               = useState("");
@@ -73,9 +70,8 @@ const PurchaseEntry = () => {
   const [busy, setBusy] = useState({ save: false });
 
   // ── success modal ─────────────────────────────────────────────────────
-  const [savedBill, setSavedBill]         = useState(null);
-  const [showWindow, setShowWindow]       = useState(false);
-  const [isMinimized, setIsMinimized]     = useState(false);
+
+
 
   // ── refs ──────────────────────────────────────────────────────────────
   const supplierRef = useRef(null);
@@ -345,7 +341,7 @@ const PurchaseEntry = () => {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Save failed");
-      setSavedBill(billNo);
+      toast.success("Tax Purchase Entry Saved Successfully");
     } catch (err) {
       toast.error(err.message || "Failed to save.");
     } finally {
@@ -389,38 +385,6 @@ const PurchaseEntry = () => {
     <div className="min-h-screen bg-gray-50/70 p-6 font-sans">
 
       {/* ── Success Modal ─────────────────────────────────────────── */}
-      {savedBill && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4">
-          <div className="bg-white rounded-2xl p-8 shadow-2xl text-center w-full max-w-md animate-in fade-in zoom-in duration-200">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-9 h-9 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h2 className="text-[22px] font-black text-gray-900 mb-1">
-              Tax Purchase Entry Saved Successfully
-            </h2>
-            <p className="text-[13px] text-gray-400 mb-6">
-              Bill No: <span className="font-bold text-gray-700">{savedBill}</span>
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowWindow(true)}
-                className="flex-1 py-3 bg-blue-600 text-white rounded-xl text-[14px] font-bold hover:bg-blue-700 transition-colors"
-              >
-                View
-              </button>
-              <button
-                onClick={() => { setSavedBill(null); resetAll(); }}
-                className="flex-1 py-3 bg-gray-900 text-white rounded-xl text-[14px] font-bold hover:bg-black transition-colors"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Back */}
       <button
         onClick={() => navigate(-1)}
@@ -922,28 +886,7 @@ const PurchaseEntry = () => {
             </div>
           </div>
         </div>
-
-        {/* ── WindowModal for View ──────────────────────────── */}
-        <SaleswindowModel
-          title="Tax Purchase Entry Format"
-          isOpen={showWindow}
-          type="Tax Purchase"
-          onClose={() => setShowWindow(false)}
-          isMinimized={isMinimized}
-          onMinimize={() => { setIsMinimized(true); setShowWindow(false); }}
-          initialView="qt"
-          filters={{ QtNumber: savedBill }}
-        >
-          <TaxPurchaseFormat billNo={savedBill} />
-        </SaleswindowModel>
-
       </div>
-      {showPasswordModal && (
-        <Addpassword
-          onSuccess={handlePasswordSuccess}
-          onCancel={handlePasswordCancel}
-        />
-      )}
     </div>
   );
 };

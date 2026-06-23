@@ -1,10 +1,8 @@
 import API_BASE_URL from "../../../config/api";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Printer, FileDown, Table } from "lucide-react";
+import { Search } from "lucide-react";
 import toast from "react-hot-toast";
-import html2pdf from "html2pdf.js";
-import * as XLSX from "xlsx";
 import { useOutsideClick } from "../../../hooks/useOutsideClick";
 const Api_url = `${API_BASE_URL}/jobdcentry`;
 
@@ -102,73 +100,7 @@ const JobDetailsReport = () => {
       setShowCustDropdown(false);
   };
 
-  const handlePrint = () => {
-      const win = window.open("", "", "width=1200,height=750");
-      win.document.write(`
-        <html><head><title>Job Pending Details Report</title>
-        <style>
-          body { margin: 0; padding: 20px; font-family: Arial, sans-serif; font-size: 11px; }
-          h2 { font-size: 16px; margin: 0 0 5px; text-transform: uppercase; text-align: center; }
-          p { margin: 0 0 15px; text-align: center; color: #555; }
-          table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-          th { background: #f2f2f2; border: 1px solid #ccc; padding: 6px 8px; font-size: 10px; font-weight: bold; text-align: left; }
-          td { border: 1px solid #ddd; padding: 6px 8px; font-size: 10px; }
-          .text-center { text-align: center; }
-          .font-bold { font-weight: bold; }
-        </style>
-        </head><body>
-          <h2>Job Pending Details Report</h2>
-          <p>Generated on ${new Date().toLocaleDateString("en-GB")}</p>
-          ${printAreaRef.current.innerHTML}
-        </body></html>
-      `);
-      win.document.close();
-      win.focus();
-      setTimeout(() => win.print(), 500);
-  };
 
-  const exportPDF = () => {
-      if (!printAreaRef.current) return;
-      html2pdf()
-        .set({
-          margin: [10, 10, 10, 10],
-          filename: `Job_Pending_Details_Report_${new Date().toISOString().split("T")[0]}.pdf`,
-          image: { type: "jpeg", quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true },
-          jsPDF: { unit: "mm", format: "a4", orientation: "landscape" },
-        })
-        .from(printAreaRef.current)
-        .save();
-  };
-
-  const exportExcel = () => {
-      const wb = XLSX.utils.book_new();
-      const header = [
-        [
-          "SNO",
-          "NAME",
-          "DC NO",
-          "DC DATE",
-          "ITEM NAME",
-          "ORDER QTY",
-          "DESPATCH QTY",
-          "PENDING QTY"
-        ],
-      ];
-      const rows = data.map((r, i) => [
-        i + 1,
-        r.name,
-        r.dc_no,
-        r.dc_date ? new Date(r.dc_date).toLocaleDateString('en-GB') : "—",
-        r.item_name || "—",
-        r.order_qty,
-        r.despatch_qty,
-        r.pending_qty
-      ]);
-      const ws = XLSX.utils.aoa_to_sheet([...header, ...rows]);
-      XLSX.utils.book_append_sheet(wb, ws, "Job Pending Report");
-      XLSX.writeFile(wb, `Job_Pending_Details_Report_${new Date().toISOString().split("T")[0]}.xlsx`);
-  };
 
   const filteredCustomers = customers.filter(c =>
       c.customer_name.toLowerCase().includes(custSearch.toLowerCase())
@@ -277,32 +209,6 @@ const JobDetailsReport = () => {
               CLEAR FILTERS
             </button>
           </div>
-
-          {data.length > 0 && (
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={handlePrint}
-                className="border bg-white hover:bg-gray-50 text-gray-800 font-bold py-2 px-4.5 rounded-lg text-[13px] flex items-center gap-1.5 transition"
-              >
-                <Printer size={15} /> PRINT
-              </button>
-              <button
-                type="button"
-                onClick={exportPDF}
-                className="border bg-white hover:bg-gray-50 text-red-600 font-bold py-2 px-4.5 rounded-lg text-[13px] flex items-center gap-1.5 transition"
-              >
-                <FileDown size={15} /> EXPORT PDF
-              </button>
-              <button
-                type="button"
-                onClick={exportExcel}
-                className="border bg-white hover:bg-gray-50 text-green-700 font-bold py-2 px-4.5 rounded-lg text-[13px] flex items-center gap-1.5 transition"
-              >
-                <Table size={15} /> EXPORT EXCEL
-              </button>
-            </div>
-          )}
         </div>
       </form>
 

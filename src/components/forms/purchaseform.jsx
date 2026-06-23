@@ -53,7 +53,7 @@ const handleSave = () => {
 };
 
 const savePurchaseItem = async (e) => {
-    e.preventDefault();
+    e?.preventDefault();
   
     if (!itemname || !hsn) {
       errorToast("Please fill all fields");

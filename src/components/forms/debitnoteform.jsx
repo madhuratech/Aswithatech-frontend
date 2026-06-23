@@ -10,6 +10,8 @@ import { isTamilNadu, calcGstAmounts } from "../../utils/gstUtils";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import flatpickr from "flatpickr";
 import { toDmy, toYmd } from "../../utils/dateFormat";
+import SaleswindowModel from "../ui/saleswindowModal";
+import Debitnoteview from "../pages/Purchase/debitnoteview";
 // Debounse function;
 function debounce(func, delay) {
   let timeoutId;
@@ -26,6 +28,10 @@ const Debitnote = () => {
   const [loadDnnumber , setloadDnnumber] = useState("");
   const [ordertype , setordertype] = useState("");
   const [dnNumber , setdnNumber] = useState("");
+  const [savedDn, setSavedDn] = useState(null);
+  const [viewDn, setViewDn] = useState(null);
+  const [showWindow, setShowWindow] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
   const [customerState, setCustomerState] = useState("");
   const [customerGst, setCustomerGst] = useState("");
   const [gstPct, setGstPct] = useState(18);
@@ -62,7 +68,7 @@ const Debitnote = () => {
   client_name:'',
   dn_date:'',
   bill_no:'',
-  bill_date:'',
+  bill_date: new Date().toISOString().split('T')[0],
   remarks:''
  });
 
@@ -102,14 +108,14 @@ const [currentrow , setcurrentrow] = useState({
        setloadDnnumber(data.dn_number || "");
        setDeliveryCharge(data.delivery_charge || 0);
 
-       settabledata(
+        settabledata(
         data.items.map(item => ({
           item_name: item.item_name,
           quantity: item.quantity,
           price: item.price,
           hsn_number: item.hsn_code,
           discount: item.discount || 0,
-          partno: item.part_no,
+          partno: String(item.part_no ?? ""),
           unit: item.unit,
           amount: item.amount
         }))
@@ -382,7 +388,7 @@ const payload = {
     quantity: items.quantity,
     hsn_code: items.hsn_number,
     discount: items.discount,
-    part_no: items.partno,
+    part_no: String(items.partno ?? ""),
     unit: items.unit,
     amount: items.amount
   })),
@@ -392,10 +398,11 @@ const payload = {
   cgst: totals.cgst,
   sgst: totals.sgst,
   igst: totals.igst,
-  grand_total: totals.grandTotal,
+  grandTotal: totals.grandTotal,
   delivery_charge: Number(deliveryCharge || 0),
   narration: Formdata.remarks || "",
   dn_number: dnNumber,
+  gst_rate: gstPct,
 };
       const toastId = toast.loading("Saving purchase order...");
 
@@ -415,9 +422,8 @@ const payload = {
       throw new Error(data.message || "Failed To Create");
 
     }
-    toast.success(method === "PUT" ? "Debit Note updated successfully!" : "Debit Note created successfully!",{id: toastId});
-   
-    resetForm();
+    toast.dismiss(toastId);
+    setSavedDn(data.dn_number || dnNumber);
    
   } catch(error){
     toast.error(error.message, { id: toastId })
@@ -566,7 +572,7 @@ const deleteItem = (index) =>{
 
 }
 
-  // ── Shared styling classes from Sales Invoice ─────────────────────────
+  // â”€â”€ Shared styling classes from Sales Invoice â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const labelCls = "block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5";
   const inputCls = "w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black focus:outline-none focus:border-blue-400 bg-white shadow-sm";
   const roInputCls = "w-full p-2.5 border border-blue-100 rounded-lg text-[13px] font-semibold text-blue-800 bg-blue-50 cursor-not-allowed focus:outline-none";
@@ -575,12 +581,46 @@ const deleteItem = (index) =>{
 
   return (
     <div className="min-h-screen bg-gray-50/70 p-6 font-sans">
+
+      {/* â”€â”€ Success Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {savedDn && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4">
+          <div className="bg-white rounded-2xl p-8 shadow-2xl text-center w-full max-w-md">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-9 h-9 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h2 className="text-[22px] font-black text-gray-900 mb-1">
+              Debit Note Saved Successfully
+            </h2>
+            <p className="text-[13px] text-gray-400 mb-6">
+              DN No: <span className="font-bold text-gray-700">{savedDn}</span>
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setViewDn(savedDn); setShowWindow(true); setSavedDn(null); }}
+                className="flex-1 py-3 bg-blue-600 text-white rounded-xl text-[14px] font-bold hover:bg-blue-700 transition-colors"
+              >
+                View
+              </button>
+              <button
+                onClick={() => { setSavedDn(null); resetForm(); }}
+                className="flex-1 py-3 bg-gray-900 text-white rounded-xl text-[14px] font-bold hover:bg-black transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Back Button */}
       <button
         onClick={() => navigate(-1)}
         className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl bg-white hover:bg-gray-50 text-[14px] font-semibold w-fit mb-6 shadow-sm"
       >
-        ← Go Back
+         Go Back
       </button>
 
       {/* Main Container Card */}
@@ -590,7 +630,7 @@ const deleteItem = (index) =>{
         <div className="flex justify-between items-start mb-8">
           <div>
             <h2 className="text-xl font-black text-gray-900 tracking-tight">Debit Note</h2>
-            <p className="text-[12px] text-gray-400 mt-1">Client → Reference Details → Items → Save</p>
+            <p className="text-[12px] text-gray-400 mt-1">Client  Reference Details  Items  Save</p>
           </div>
           <div className="flex gap-2">
             <button
@@ -620,10 +660,10 @@ const deleteItem = (index) =>{
           </div>
         </div>
 
-        {/* STEP 1 — Client + DN Header */}
+        {/* STEP 1  Client + DN Header */}
         <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-5 border border-gray-100 mb-5">
           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">
-            Step 1 — Debit Note Header
+            Step 1  Debit Note Header
           </p>
           <div className="grid grid-cols-3 gap-5">
             {/* Customer Name */}
@@ -695,10 +735,10 @@ const deleteItem = (index) =>{
           </div>
         </div>
 
-        {/* STEP 2 — Reference Details */}
+        {/* STEP 2  Reference Details */}
         <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-5 border border-gray-100 mb-5">
           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">
-            Step 2 — Reference &amp; Remarks
+            Step 2  Reference &amp; Remarks
           </p>
           <div className="grid grid-cols-4 gap-5">
             {/* Bill No */}
@@ -737,7 +777,7 @@ const deleteItem = (index) =>{
             {/* Order Type */}
             <div>
               <label className={labelCls}>Order Type</label>
-              <div className="flex gap-4 items-center min-h-[43px]">
+              <div className="flex gap-2 items-center min-h-[43px]">
                 <label className="flex items-center gap-2 cursor-pointer text-[13px] font-semibold text-gray-700">
                   <input
                     type="radio"
@@ -764,7 +804,7 @@ const deleteItem = (index) =>{
                     name="orderType"
                     checked={ordertype === "purchase_item"}
                     onChange={() => typechange("purchase_item")}
-                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                    className="w-4 h-4  text-blue-600 border-gray-300 focus:ring-blue-500"
                   />
                   Purchase Item
                 </label>
@@ -773,10 +813,10 @@ const deleteItem = (index) =>{
           </div>
         </div>
 
-        {/* STEP 3 — Add Products & Price */}
+        {/* STEP 3  Add Products & Price */}
         <div className={`transition-all duration-200 mb-5 ${!ordertype ? "opacity-40 pointer-events-none" : ""}`}>
           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">
-            Step 3 — Add Products &amp; Prices
+            Step 3  Add Products &amp; Prices
           </p>
 
           <div className="grid grid-cols-9 gap-3 items-end">
@@ -793,7 +833,7 @@ const deleteItem = (index) =>{
                   debouncedItemSearch(value, ordertype);
                   setShowItemDropdown(true);
                 }}
-                placeholder="Search or enter item…"
+                placeholder="Search or enter item"
                 disabled={!ordertype}
                 className={ordertype ? `${inputCls} bg-gray-50/60` : disInputCls}
               />
@@ -958,7 +998,7 @@ const deleteItem = (index) =>{
               {tabledata.length === 0 ? (
                 <tr>
                   <td colSpan={10} className="py-14 text-center">
-                    <div className="text-gray-300 text-4xl mb-3">🧾</div>
+                    <div className="text-gray-300 text-4xl mb-3"></div>
                     <p className="text-[13px] text-gray-400 font-medium">No items added yet.</p>
                   </td>
                 </tr>
@@ -968,12 +1008,12 @@ const deleteItem = (index) =>{
                     <td className="px-4 py-3 text-[12px] font-semibold text-gray-400 text-center">{index + 1}</td>
                     <td className="px-4 py-3 text-[13px] font-semibold text-gray-800 uppercase">{item.item_name}</td>
                     <td className="px-4 py-3 text-[13px] text-gray-800 text-center">{item.quantity}</td>
-                    <td className="px-4 py-3 text-[13px] text-gray-800 text-center">₹{item.price}</td>
-                    <td className="px-4 py-3 text-[13px] text-gray-800 text-center">₹{item.amount}</td>
+                    <td className="px-4 py-3 text-[13px] text-gray-800 text-center">{item.price}</td>
+                    <td className="px-4 py-3 text-[13px] text-gray-800 text-center">{item.amount}</td>
                     <td className="px-4 py-3 text-[13px] text-gray-800 text-center">{item.discount}</td>
                     <td className="px-4 py-3 text-[13px] text-gray-800 text-center">{item.partno}</td>
                     <td className="px-4 py-3 text-[13px] text-gray-800 text-center uppercase">{item.unit}</td>
-                    <td className="px-4 py-3 text-[13px] font-bold text-gray-900 text-center">₹{item.net_amount}</td>
+                    <td className="px-4 py-3 text-[13px] font-bold text-gray-900 text-center">{item.net_amount}</td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex justify-center gap-3">
                         <button onClick={() => editItem(index)} title="Edit">
@@ -1055,7 +1095,7 @@ const deleteItem = (index) =>{
             <div className="bg-gray-50/50 rounded-xl border border-gray-200 p-6 space-y-3 max-w-sm ml-auto">
               <div className="flex justify-between items-center">
                 <span className="text-[12px] font-black text-gray-500 uppercase">Sub Total</span>
-                <span className="text-[13px] font-bold text-gray-900">₹{totals.subtotal.toFixed(2)}</span>
+                <span className="text-[13px] font-bold text-gray-900">{totals.subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-[12px] font-black text-gray-500 uppercase">Delivery Charge (+)</span>
@@ -1070,7 +1110,7 @@ const deleteItem = (index) =>{
               </div>
               <div className="flex justify-between items-center bg-blue-50 px-2 py-1 rounded">
                 <span className="text-[12px] font-black text-blue-700 uppercase">Taxable Value</span>
-                <span className="text-[13px] font-black text-blue-900">₹{totals.taxableValue.toFixed(2)}</span>
+                <span className="text-[13px] font-black text-blue-900">{totals.taxableValue.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
@@ -1079,28 +1119,28 @@ const deleteItem = (index) =>{
                     className="w-12 p-1 border border-gray-200 rounded text-center text-[11px] font-bold outline-none" />
                 </div>
                 <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${isTamilNadu(customerState, customerGst) ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"}`}>
-                  {isTamilNadu(customerState, customerGst) ? "TN — CGST+SGST" : "IGST"}
+                  {isTamilNadu(customerState, customerGst) ? "TN  CGST+SGST" : "IGST"}
                 </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-[12px] font-black text-gray-500 uppercase">CGST @{totals.cgstPct}%</span>
-                <span className="text-[13px] font-bold text-gray-700">₹{totals.cgst.toFixed(2)}</span>
+                <span className="text-[13px] font-bold text-gray-700">{totals.cgst.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-[12px] font-black text-gray-500 uppercase">SGST @{totals.sgstPct}%</span>
-                <span className="text-[13px] font-bold text-gray-700">₹{totals.sgst.toFixed(2)}</span>
+                <span className="text-[13px] font-bold text-gray-700">{totals.sgst.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-[12px] font-black text-gray-500 uppercase">IGST @{totals.igstPct}%</span>
-                <span className="text-[13px] font-bold text-gray-700">₹{totals.igst.toFixed(2)}</span>
+                <span className="text-[13px] font-bold text-gray-700">{totals.igst.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-[12px] font-black text-gray-500 uppercase">Round Off</span>
-                <span className="text-[13px] font-bold text-gray-700">₹{totals.roundOff.toFixed(2)}</span>
+                <span className="text-[13px] font-bold text-gray-700">{totals.roundOff.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center pt-4 border-t-2 border-gray-300 mt-2">
                 <span className="text-[15px] font-black text-black uppercase">NET TOTAL</span>
-                <span className="text-[24px] font-black text-indigo-700">₹{totals.grandTotal}</span>
+                <span className="text-[24px] font-black text-indigo-700">{totals.grandTotal}</span>
               </div>
             </div>
           </div>
@@ -1112,6 +1152,19 @@ const deleteItem = (index) =>{
       {showPasswordModal && (
         <Addpassword onSuccess={handlePasswordSuccess} onClose={handlePasswordCancel} />
       )}
+
+      <SaleswindowModel
+        title="Debit Note Format"
+        isOpen={showWindow}
+        type="Debit Note Format"
+        onClose={() => { setShowWindow(false); resetForm(); }}
+        isMinimized={isMinimized}
+        onMinimize={() => { setIsMinimized(true); setShowWindow(false); }}
+        initialView="qt"
+        filters={{ QtNumber: viewDn }}
+      >
+        <Debitnoteview dnNumber={viewDn} />
+      </SaleswindowModel>
 
     </div>
   );

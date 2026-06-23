@@ -580,7 +580,7 @@ const JobDcEntryForm = () => {
                             </div>
                         </div>
                         {/* Order No */}
-                        <div>
+                        {/* <div>
                             <label className={labelCls}>Order No <span className="text-red-500">*</span></label>
                             <input
                                 type="text"
@@ -589,9 +589,9 @@ const JobDcEntryForm = () => {
                                 onChange={(e) => setFormData(p => ({ ...p, order_no: e.target.value }))}
                                 className={inputCls}
                             />
-                        </div>
+                        </div> */}
 
-                        <div>
+                        {/* <div>
                             <label className={labelCls}>Order Date</label>
                             <input
                                 type="text"
@@ -600,7 +600,7 @@ const JobDcEntryForm = () => {
                                 onChange={(e) => setFormData(p => ({ ...p, order_date: e.target.value }))}
                                 className={inputCls}
                             />
-                        </div>
+                        </div> */}
 
                     </div>
                 </div>

@@ -1,7 +1,7 @@
 import API_BASE_URL from "../../config/api";
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { SquarePen,Trash2 } from "lucide-react";
+import { SquarePen, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { isTamilNadu, calcGstAmounts } from "../../utils/gstUtils";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
@@ -11,40 +11,40 @@ import flatpickr from "flatpickr";
 import { toDmy, toYmd } from "../../utils/dateFormat";
 import SaleswindowModel from "../ui/saleswindowModal";
 import InvoiceFormat from "../pages/Sales/invoiceformat";
-const PerformanceInvoiceForm  = () => {
+const PerformanceInvoiceForm = () => {
   const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
   const navigate = useNavigate();
-  const [invoiceno , setInvoiceno]=useState("");
-  const[tabledata , setTabledata] = useState([]);
-  const [ordertype , setOrdertype] = useState("");
-  const [customername , setCustomername] = useState([]);
-  const [search , setsearch] = useState();
-  const[items , setitems] = useState([]);
-  const[itemsearch , setitemsearch] = useState();
-  const [dcNoDisplay, setDcNoDisplay]         = useState("");
-  const [dcDateDisplay, setDcDateDisplay]     = useState("");
-  const [orderNoDisplay, setOrderNoDisplay]   = useState("");
+  const [invoiceno, setInvoiceno] = useState("");
+  const [tabledata, setTabledata] = useState([]);
+  const [ordertype, setOrdertype] = useState("");
+  const [customername, setCustomername] = useState([]);
+  const [search, setsearch] = useState();
+  const [items, setitems] = useState([]);
+  const [itemsearch, setitemsearch] = useState();
+  const [dcNoDisplay, setDcNoDisplay] = useState("");
+  const [dcDateDisplay, setDcDateDisplay] = useState("");
+  const [orderNoDisplay, setOrderNoDisplay] = useState("");
   const [orderDateDisplay, setOrderDateDisplay] = useState("");
 
-  const [loadInvoice , setLoadInvoice] = useState("");
+  const [loadInvoice, setLoadInvoice] = useState("");
   const [gstPct, setGstPct] = useState(18);
   const [customerState, setCustomerState] = useState("");
   const [customerGst, setCustomerGst] = useState("");
-  const [invoiceList, setInvoiceList] = useState([]); 
+  const [invoiceList, setInvoiceList] = useState([]);
 
 
 
-  const[clientopen , setclientopen] = useState(false);
+  const [clientopen, setclientopen] = useState(false);
   const [dispatchOpen, setDispatchOpen] = useState(false);
   const [shouldAutoSelect, setShouldAutoSelect] = useState(false);
-  const [itemopen , setitemopen] = useState(false);
-  const [openUom , setopenUom] = useState(false);
-  const [loadInvoiceOpen , setLoadInvoiceOpen] = useState(false);
+  const [itemopen, setitemopen] = useState(false);
+  const [openUom, setopenUom] = useState(false);
+  const [loadInvoiceOpen, setLoadInvoiceOpen] = useState(false);
   const [showInvoiceWindow, setShowInvoiceWindow] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [savedNo, setSavedNo] = useState(null);
 
-   
+
 
   //API
 
@@ -54,27 +54,27 @@ const PerformanceInvoiceForm  = () => {
 
   // States
 
-  const [formData , setFormdata] = useState({
-    customer_name:"",
-    invoice_no:"",
-    invoice_date:"",
-    dc_no:"",
-    dc_date:"",
-    order_no:"",
-    order_date:"",
-    discount:"",
-    payment_terms:"",
-    dispatch_through:"",
+  const [formData, setFormdata] = useState({
+    customer_name: "",
+    invoice_no: "",
+    invoice_date: "",
+    dc_no: "",
+    dc_date: "",
+    order_no: "",
+    order_date: "",
+    discount: "",
+    payment_terms: "",
+    dispatch_through: "",
     transport: "",
   });
 
-  const [currentrow , setcurrentrow] = useState({
+  const [currentrow, setcurrentrow] = useState({
     item_name: "",
     serial_no: "",
     quantity: "",
     price: "",
-    uom:"",
-    hsn_number:""
+    uom: "",
+    hsn_number: ""
   });
 
 
@@ -82,46 +82,46 @@ const PerformanceInvoiceForm  = () => {
 
   // Get All Clients And Search
 
-  useEffect(() =>{
-    const fetchclients = async () =>{
-      try{
+  useEffect(() => {
+    const fetchclients = async () => {
+      try {
         const url = search
-        ? `${Api_url}/clients/search?q=${encodeURIComponent(search)}`
-        : `${Api_url}/clients`;
+          ? `${Api_url}/clients/search?q=${encodeURIComponent(search)}`
+          : `${Api_url}/clients`;
 
         const res = await fetch(url)
         const data = await res.json();
         setCustomername(data);
-      }catch(error){
+      } catch (error) {
         console.log("Error fetching clients:", error)
       }
     }
     fetchclients();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[search]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search]);
 
   // Get Invoice Number
 
-  useEffect(() =>{
-    const fetchinvoicenumber = async() =>{
-      try{
+  useEffect(() => {
+    const fetchinvoicenumber = async () => {
+      try {
         const res = await fetch(`${Api_url}/next-In-billno`);
         const data = await res.json();
-        console.log("INVOCE",data);
+        console.log("INVOCE", data);
 
-        if(data && data.invoice_no){
+        if (data && data.invoice_no) {
           setInvoiceno(data.invoice_no);
 
-        }else{
+        } else {
           console.log("Failed to get invoice number");
         }
-      }catch(error){
+      } catch (error) {
         console.log("Error fetching invoice number:", error)
       }
     }
     fetchinvoicenumber();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // get New Date
 
@@ -131,8 +131,8 @@ const PerformanceInvoiceForm  = () => {
       ...prev,
       invoice_date: today
     }));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const perfInvoiceDateRef = useRef(null);
   const perfInvoiceDateFp = useRef(null);
@@ -168,7 +168,7 @@ const PerformanceInvoiceForm  = () => {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -189,68 +189,68 @@ const PerformanceInvoiceForm  = () => {
     if (perfInvoiceDateFp.current && formData.invoice_date) {
       perfInvoiceDateFp.current.setDate(toDmy(formData.invoice_date));
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.invoice_date]);
 
 
   // Dc Dates
 
   useEffect(() => {
-  dcDateFp.current = flatpickr(dcDateRef.current, {
-    disableMobile: true,
-    monthSelectorType: "static",
-    dateFormat: "d-m-Y",
-    defaultDate: formData.dc_date || new Date(),
-    allowInput: false,
-    onChange: (selectedDates, dateStr) => {
-      setFormdata((prev) => ({
-        ...prev,
-        dc_date: dateStr,
-      }));
-    },
-  });
+    dcDateFp.current = flatpickr(dcDateRef.current, {
+      disableMobile: true,
+      monthSelectorType: "static",
+      dateFormat: "d-m-Y",
+      defaultDate: formData.dc_date || new Date(),
+      allowInput: false,
+      onChange: (selectedDates, dateStr) => {
+        setFormdata((prev) => ({
+          ...prev,
+          dc_date: dateStr,
+        }));
+      },
+    });
 
-  return () => dcDateFp.current?.destroy();
-  // eslint-disable-next-line
-}, []);
+    return () => dcDateFp.current?.destroy();
+    // eslint-disable-next-line
+  }, []);
 
-useEffect(() => {
-  if (dcDateFp.current && formData.dc_date) {
-    dcDateFp.current.setDate(formData.dc_date, false);
-  }
-// eslint-disable-next-line react-hooks/exhaustive-deps
-}, [formData.dc_date]);
+  useEffect(() => {
+    if (dcDateFp.current && formData.dc_date) {
+      dcDateFp.current.setDate(formData.dc_date, false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.dc_date]);
 
 
-// Order Dates
+  // Order Dates
 
-useEffect(() => {
-  orderDateFp.current = flatpickr(orderDateRef.current, {
-    disableMobile: true,
-    monthSelectorType: "static",
-    dateFormat: "d-m-Y",
-    allowInput: false,
-    onChange: (selectedDates, dateStr) => {
-      setFormdata((prev) => ({
-        ...prev,
-        order_date: dateStr,
-      }));
-    },
-  });
+  useEffect(() => {
+    orderDateFp.current = flatpickr(orderDateRef.current, {
+      disableMobile: true,
+      monthSelectorType: "static",
+      dateFormat: "d-m-Y",
+      allowInput: false,
+      onChange: (selectedDates, dateStr) => {
+        setFormdata((prev) => ({
+          ...prev,
+          order_date: dateStr,
+        }));
+      },
+    });
 
-  return () => orderDateFp.current?.destroy();
-  // eslint-disable-next-line
-}, []);
+    return () => orderDateFp.current?.destroy();
+    // eslint-disable-next-line
+  }, []);
 
-useEffect(() => {
-  if (orderDateFp.current && formData.order_date) {
-    orderDateFp.current.setDate(
-      formData.order_date.split(",").map((d) => d.trim()),
-      false
-    );
-  }
-// eslint-disable-next-line react-hooks/exhaustive-deps
-}, [formData.order_date]);
+  useEffect(() => {
+    if (orderDateFp.current && formData.order_date) {
+      orderDateFp.current.setDate(
+        formData.order_date.split(",").map((d) => d.trim()),
+        false
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.order_date]);
 
   // Item Type
 
@@ -263,45 +263,45 @@ useEffect(() => {
 
   // Fetch Item Based category search
 
-  useEffect(() =>{
-    const fetchItems = async() =>{
-      if(!ordertype) return;
+  useEffect(() => {
+    const fetchItems = async () => {
+      if (!ordertype) return;
 
-      try{
+      try {
         const url = itemsearch.trim()
-        ? `${Api_url}/items/search?q=${encodeURIComponent(itemsearch)}&type=${encodeURIComponent(ordertype)}`
-        : `${Api_url}/items/${ordertype}`;
+          ? `${Api_url}/items/search?q=${encodeURIComponent(itemsearch)}&type=${encodeURIComponent(ordertype)}`
+          : `${Api_url}/items/${ordertype}`;
 
         const res = await fetch(url);
         const data = await res.json();
         console.log(data);
-       if (Array.isArray(data)) {
-        setitems(data);
- 
-       if (shouldAutoSelect && data.length > 0) {
-       setcurrentrow((prev) => ({
-         ...prev,
-         item_name: data[0].item_name || '',
-         hsn_number: data[0].hsn_number || '',
-       }));
-        setShouldAutoSelect(false);
-       } 
-     }
+        if (Array.isArray(data)) {
+          setitems(data);
 
-      }catch(error){
+          if (shouldAutoSelect && data.length > 0) {
+            setcurrentrow((prev) => ({
+              ...prev,
+              item_name: data[0].item_name || '',
+              hsn_number: data[0].hsn_number || '',
+            }));
+            setShouldAutoSelect(false);
+          }
+        }
+
+      } catch (error) {
         console.log("Error fetching items:", error);
-        setitems([]); 
+        setitems([]);
       }
     };
     fetchItems();
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[ordertype,itemsearch]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ordertype, itemsearch]);
 
 
   // Select Items
 
-  const selectitem = (selectedItems) =>{
+  const selectitem = (selectedItems) => {
     setcurrentrow({
       ...currentrow,
       item_name: selectedItems.item_name,
@@ -313,12 +313,12 @@ useEffect(() => {
 
   // Add Rows
   const addrows = () => {
-    if(!currentrow.item_name || !currentrow.quantity || !currentrow.price){
+    if (!currentrow.item_name || !currentrow.quantity || !currentrow.price) {
       alert("Please fill all fields");
       return;
     }
 
-    const amount = Number(currentrow.quantity * currentrow.price).toFixed(2); 
+    const amount = Number(currentrow.quantity * currentrow.price).toFixed(2);
     const newrow = {
       ...currentrow,
       amount: amount,
@@ -329,8 +329,8 @@ useEffect(() => {
       serial_no: "",
       quantity: "",
       price: "",
-      uom:"",
-      hsn_number:"",
+      uom: "",
+      hsn_number: "",
     });
   };
 
@@ -342,8 +342,8 @@ useEffect(() => {
       serial_no: "",
       quantity: "",
       price: "",
-      uom:"",
-      hsn_number:""
+      uom: "",
+      hsn_number: ""
     });
   };
 
@@ -409,9 +409,9 @@ useEffect(() => {
     toast.success("Values added to invoice.");
   };
 
-  const SaveInvoice = async () =>{
+  const SaveInvoice = async () => {
     if (!formData.dispatch_through?.trim()) { toast.error("Despatch Through is required."); return; }
-    if(tabledata.length === 0){
+    if (tabledata.length === 0) {
       alert("Please Add Items");
       return;
     }
@@ -451,37 +451,38 @@ useEffect(() => {
       igst: igst,
       round_off: round_off,
       grandtotal: grandtotal,
+      gst_rate: gstPct,
 
     }
-    try{
+    try {
       const method = loadInvoice ? "PUT" : "POST";
-       const url = loadInvoice
-       ? `${Api_url}/update/${encodeURIComponent(loadInvoice)}`
+      const url = loadInvoice
+        ? `${Api_url}/update/${encodeURIComponent(loadInvoice)}`
         : `${Api_url}/new`;
 
-        const res = await fetch(url, {
-          method: method,
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(invoicedata),
-        });
-        
-        const data = await res.json();
-        if(!res.ok){
-          throw new Error(data.message || "Failed");
-        }
+      const res = await fetch(url, {
+        method: method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(invoicedata),
+      });
 
-        setSavedNo(invoiceno);
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "Failed");
+      }
 
-    }catch(error){
-       console.log("Error saving invoice:", error);
-        toast.error("Failed to save invoice");
+      setSavedNo(invoiceno);
+
+    } catch (error) {
+      console.log("Error saving invoice:", error);
+      toast.error("Failed to save invoice");
     }
   }
 
   // Calculation
- const subtotal = tabledata.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const subtotal = tabledata.reduce((sum, item) => sum + Number(item.amount || 0), 0);
   const transport = Number(formData.transport || 0);
   const taxableValue = parseFloat((subtotal + transport).toFixed(2));
   const isIntrastate = isTamilNadu(customerState, customerGst);
@@ -491,83 +492,84 @@ useEffect(() => {
   const grandtotal = Math.round(rawTotal);
 
 
-//  LoadInvoice
+  //  LoadInvoice
 
-const LoadInvoice = async (invoiceNo) => {
-  try {
-    const res = await fetch(
-      `${Api_url}/edit/${encodeURIComponent(invoiceNo)}`
-    );
-    const data = await res.json();
+  const LoadInvoice = async (invoiceNo) => {
+    try {
+      const res = await fetch(
+        `${Api_url}/edit/${encodeURIComponent(invoiceNo)}`
+      );
+      const data = await res.json();
 
-    if (!res.ok) {
-      throw new Error(data.message || "Failed To Load");
+      if (!res.ok) {
+        throw new Error(data.message || "Failed To Load");
+      }
+
+      const formatDate = (date) => {
+        if (!date) return "";
+        const d = new Date(date);
+        return d.toISOString().split("T")[0];
+      };
+
+      const formattedItems = (data.items || []).map(item => ({
+        item_name: item.item_name,
+        serial_no: item.serial_no || "",
+        quantity: item.quantity,
+        price: item.price,
+        uom: item.uom,
+        hsn_number: item.hsn_number,
+        amount: Number(item.quantity) * Number(item.price),
+      }));
+
+      setLoadInvoice(invoiceNo);
+      setInvoiceno(invoiceNo);
+      setCustomerState(data.client?.state || "");
+      setCustomerGst(data.client?.gst_number || "");
+
+      setFormdata({
+        customer_name: data.header.customer_name || "",
+        invoice_no: data.header.invoice_no || "",
+        invoice_date: formatDate(data.header.invoice_date),
+        dc_no: "",
+        dc_date: data.header.dc_date || "",
+        order_no: "",
+        order_date: "",
+        payment_terms: data.header.payment_terms || "",
+        dispatch_through: data.header.dispatch_through || "",
+        transport: data.header.transport || 0,
+      });
+      setDcNoDisplay(data.header.dc_no || "");
+      setDcDateDisplay(data.header.dc_date || "");
+      setOrderNoDisplay(data.header.order_no || "");
+      setOrderDateDisplay(data.header.order_date || "");
+
+      setTabledata(formattedItems);
+      setOrdertype(data.header.ordertype || "");
+
+    } catch (error) {
+      console.error("Load Error:", error);
+      toast.error("Failed to load invoice");
     }
+  };
 
-    const formatDate = (date) => {
-      if (!date) return "";
-      const d = new Date(date);
-      return d.toISOString().split("T")[0];
-    };
+  // Search invoice
 
-    const formattedItems = (data.items || []).map(item => ({
-      item_name: item.item_name,
-      serial_no: item.serial_no || "",
-      quantity: item.quantity,
-      price: item.price,
-      uom: item.uom,
-      hsn_number: item.hsn_number,
-      amount: Number(item.quantity) * Number(item.price),
-    }));
+  const searchINV = async (value) => {
+    try {
+      const res = await fetch(
+        `${Api_url}/INV/search?q=${encodeURIComponent(value || "")}`
+      );
+      const data = await res.json();
+      setInvoiceList(Array.isArray(data) ? data : []);
+    } catch (error) {
 
-    setLoadInvoice(invoiceNo);
-    setInvoiceno(invoiceNo);
-    setCustomerState(data.client?.state || "");
-    setCustomerGst(data.client?.gst_number || "");
-
-    setFormdata({
-      customer_name: data.header.customer_name || "",
-      invoice_no: data.header.invoice_no || "",
-      invoice_date: formatDate(data.header.invoice_date),
-      dc_no: "",
-      dc_date: data.header.dc_date || "",
-      order_no: "",
-      order_date: "",
-      payment_terms: data.header.payment_terms || "",
-      dispatch_through: data.header.dispatch_through || "",
-      transport: data.header.transport || 0,
-    });
-    setDcNoDisplay(data.header.dc_no || "");
-    setDcDateDisplay(data.header.dc_date || "");
-    setOrderNoDisplay(data.header.order_no || "");
-    setOrderDateDisplay(data.header.order_date || "");
-
-    setTabledata(formattedItems);
-    setOrdertype(data.header.ordertype || "");
-
-  } catch (error) {
-    console.error("Load Error:", error);
-    toast.error("Failed to load invoice");
+      console.log("Search Error:", error);
+    }
   }
-};
 
-// Search invoice
+  // Edit 
 
-const searchINV = async (value) => {
-  try{
-    const res = await fetch(
-      `${Api_url}/INV/search?q=${encodeURIComponent(value || "")}`
-    );
-    const data = await res.json();
-  setInvoiceList(Array.isArray(data) ? data : []);}catch(error){
-
-    console.log("Search Error:", error);
-  }
-}
-
-// Edit 
-
-const edititem = (index) => {
+  const edititem = (index) => {
     const item = tabledata[index];
     setcurrentrow({
       item_name: item.item_name || "",
@@ -586,30 +588,30 @@ const edititem = (index) => {
   const deleteitem = (index) => {
     const updatedData = tabledata.filter((_, i) => i !== index);
     setTabledata(updatedData);
-  };  
+  };
 
   // Delete Invoice number
-  
+
   const deletInvoice = async () => {
-    if(!loadInvoice){
+    if (!loadInvoice) {
       alert("Please Select Invoice First")
       return;
     }
-  const confirmDelete = window.confirm(
-    `Are you sure you want to delete ${loadInvoice}?`
-  );
-   if(!confirmDelete) return;
-    try{
-      const res = await fetch(`${Api_url}/delete/${encodeURIComponent(loadInvoice)}`,{
-        method:"DELETE",
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete ${loadInvoice}?`
+    );
+    if (!confirmDelete) return;
+    try {
+      const res = await fetch(`${Api_url}/delete/${encodeURIComponent(loadInvoice)}`, {
+        method: "DELETE",
       });
       const data = await res.json();
-      if(!res.ok){
+      if (!res.ok) {
         throw new Error(data.message || "Failed");
       }
       toast.success("Invoice Deleted Successfully");
       resetall();
-    }catch(error){
+    } catch (error) {
       console.log("Delete Error:", error);
       toast.error("Failed to Delete");
     }
@@ -619,16 +621,16 @@ const edititem = (index) => {
   // Restet all
   const resetall = async () => {
     setFormdata({
-      customer_name:"",
-      invoice_no:"",
-      invoice_date:"",
-      dc_no:"",
-      dc_date:"",
-      order_no:"",
-      order_date:"",
-      discount:"",
-      payment_terms:"",
-      dispatch_through:"",
+      customer_name: "",
+      invoice_no: "",
+      invoice_date: "",
+      dc_no: "",
+      dc_date: "",
+      order_no: "",
+      order_date: "",
+      discount: "",
+      payment_terms: "",
+      dispatch_through: "",
       transport: ""
     });
     setDcNoDisplay("");
@@ -648,11 +650,11 @@ const edititem = (index) => {
       serial_no: "",
       quantity: "",
       price: "",
-      uom:"",
-      hsn_number:""
+      uom: "",
+      hsn_number: ""
     });
- 
-    const res =  await fetch(`${Api_url}/next-In-billno`);
+
+    const res = await fetch(`${Api_url}/next-In-billno`);
     const data = await res.json();
     setInvoiceno(data.invoice_no);
   };
@@ -667,7 +669,7 @@ const edititem = (index) => {
 
       <button onClick={() => navigate(-1)}
         className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl bg-white hover:bg-gray-50 text-[14px] font-semibold w-fit mb-6 shadow-sm">
-        ← Go Back
+        Go Back
       </button>
 
       <div className="max-w-[1400px] mx-auto bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
@@ -676,7 +678,7 @@ const edititem = (index) => {
         <div className="flex justify-between items-start mb-8">
           <div>
             <h2 className="text-xl font-black text-gray-900 tracking-tight">Direct Invoice</h2>
-            <p className="text-[12px] text-gray-400 mt-1">Customer → Products → Save</p>
+            <p className="text-[12px] text-gray-400 mt-1">Customer  Products  Save</p>
           </div>
           <div className="flex gap-2">
             <button onClick={resetall} className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-gray-800 hover:text-white transition-colors">NEW</button>
@@ -685,17 +687,17 @@ const edititem = (index) => {
           </div>
         </div>
 
-        {/* Step 1 — Invoice Header */}
+        {/* Step 1  Invoice Header */}
         <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-5 border border-gray-100 mb-5">
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Step 1 — Invoice Header</p>
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Step 1 Invoice Header</p>
           <div className="grid grid-cols-4 gap-5">
             {/* Customer */}
             <div className="relative col-span-2" ref={customerDropdownRef}>
               <label className={labelCls}>Customer / Company <span className="text-red-500">*</span></label>
-              <input type="text" placeholder="Type to search customers…"
+              <input type="text" placeholder="Type to search customers"
                 value={formData.customer_name}
                 onFocus={() => setclientopen(true)}
-                onChange={(e) => { const v = e.target.value; setFormdata({...formData, customer_name: v}); setsearch(v); }}
+                onChange={(e) => { const v = e.target.value; setFormdata({ ...formData, customer_name: v }); setsearch(v); }}
                 className={inputCls} />
               {clientopen && (
                 <div className={dropdownCls}>
@@ -704,7 +706,7 @@ const edititem = (index) => {
                       onClick={() => {
                         setCustomerState(client.state || "");
                         setCustomerGst(client.gst_number || "");
-                        setFormdata({...formData, customer_name: client.customer_name});
+                        setFormdata({ ...formData, customer_name: client.customer_name });
                         setclientopen(false);
                       }}
                       className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0">
@@ -730,39 +732,39 @@ const edititem = (index) => {
           </div>
         </div>
 
-        {/* Step 2 — DC & Order Details */}
+        {/* Step 2  DC & Order Details */}
         <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-5 border border-gray-100 mb-5">
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Step 2 — DC &amp; Order Details</p>
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Step 2 â€” DC &amp; Order Details</p>
           <div className="grid grid-cols-7 gap-5">
             <div>
               <label className={labelCls}>DC No</label>
               <input type="text" placeholder="Enter DC No" value={formData.dc_no}
-                onChange={(e) => setFormdata({...formData, dc_no: e.target.value})} className={inputCls} />
+                onChange={(e) => setFormdata({ ...formData, dc_no: e.target.value })} className={inputCls} />
             </div>
             <div>
               <label className={labelCls}>DC Date</label>
               <input
-               ref={dcDateRef}
-               value={formData.dc_date}
-               readOnly
-               placeholder="Select DC Date"
-               className={inputCls}
-                />
+                ref={dcDateRef}
+                value={formData.dc_date}
+                readOnly
+                placeholder="Select DC Date"
+                className={inputCls}
+              />
             </div>
             <div>
               <label className={labelCls}>Order No</label>
               <input type="text" placeholder="Order number" value={formData.order_no}
-                onChange={(e) => setFormdata({...formData, order_no: e.target.value})} className={inputCls} />
+                onChange={(e) => setFormdata({ ...formData, order_no: e.target.value })} className={inputCls} />
             </div>
             <div>
               <label className={labelCls}>Order Date</label>
-             <input
-             ref={orderDateRef}
-               value={formData.order_date}
-               readOnly
-               placeholder="Select Order Date(s)"
-                 className={inputCls}
-               />
+              <input
+                ref={orderDateRef}
+                value={formData.order_date}
+                readOnly
+                placeholder="Select Order Date(s)"
+                className={inputCls}
+              />
             </div>
             <div className="relative" ref={dispatchRef}>
               <label className={labelCls}>Despatch Through <span className="text-red-500">*</span></label>
@@ -771,7 +773,7 @@ const edititem = (index) => {
                 className={`${inputCls} flex justify-between items-center cursor-pointer min-h-[43px]`}
               >
                 <span className={formData.dispatch_through ? "text-black" : "text-gray-400 font-medium text-[13px]"}>
-                  {formData.dispatch_through || "Select mode…"}
+                  {formData.dispatch_through || "Select"}
                 </span>
                 <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -781,7 +783,7 @@ const edititem = (index) => {
                 <div className={dropdownCls}>
                   {DESPATCH_OPTIONS.map((opt) => (
                     <div key={opt}
-                      onClick={() => { setFormdata({...formData, dispatch_through: opt}); setDispatchOpen(false); }}
+                      onClick={() => { setFormdata({ ...formData, dispatch_through: opt }); setDispatchOpen(false); }}
                       className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0">
                       {opt}
                     </div>
@@ -792,11 +794,10 @@ const edititem = (index) => {
             <div className="flex items-end">
               <button type="button" onClick={handleShowClick}
                 disabled={!formData.dc_no && !formData.order_no}
-                className={`w-full px-4 py-2.5 rounded-lg text-[13px] font-black uppercase tracking-wider transition-all duration-150 ${
-                  formData.dc_no || formData.order_no
-                    ? "bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-200"
-                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                }`}>
+                className={`w-full px-4 py-2.5 rounded-lg text-[13px] font-black uppercase tracking-wider transition-all duration-150 ${formData.dc_no || formData.order_no
+                  ? "bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-200"
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  }`}>
                 SHOW
               </button>
             </div>
@@ -823,13 +824,13 @@ const edititem = (index) => {
           </div>
         </div>
 
-        {/* Step 3 — Description + Add Products */}
+        {/* Step 3 Description + Add Products */}
         <div className="mb-4">
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Step 3 — Add Products</p>
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Step 3 Add Products</p>
 
           {/* Description type */}
           <div className="flex items-center gap-6 mb-4">
-            {[["service","Service"],["spare","Spares"],["purchase_item","Purchase Items"]].map(([val, lbl]) => (
+            {[["service", "Service"], ["spare", "Spares"], ["purchase_item", "Purchase Items"]].map(([val, lbl]) => (
               <label key={val} className="flex items-center gap-2 text-[12px] font-bold text-gray-700 cursor-pointer">
                 <input type="radio" name="ordertype" checked={ordertype === val} onChange={() => typechange(val)} className="w-4 h-4 accent-black" /> {lbl}
               </label>
@@ -840,10 +841,10 @@ const edititem = (index) => {
             {/* Item Name */}
             <div className="col-span-2 relative" ref={itemDropdownRef}>
               <label className={labelCls}>Item Name <span className="text-red-500">*</span></label>
-              <input type="text" placeholder="Search item…"
+              <input type="text" placeholder="Search item"
                 value={currentrow.item_name}
                 onFocus={() => setitemopen(true)}
-                onChange={(e) => { const v = e.target.value; setcurrentrow({...currentrow, item_name: v}); setitemsearch(v); }}
+                onChange={(e) => { const v = e.target.value; setcurrentrow({ ...currentrow, item_name: v }); setitemsearch(v); }}
                 className={`${inputCls} bg-gray-50/60`} />
               {itemopen && (
                 <div className={dropdownCls}>
@@ -863,21 +864,21 @@ const edititem = (index) => {
             <div>
               <label className={labelCls}>Serial Number</label>
               <input type="text" placeholder="Serial Number" value={currentrow.serial_no || ""}
-                onChange={(e) => setcurrentrow({...currentrow, serial_no: e.target.value})}
+                onChange={(e) => setcurrentrow({ ...currentrow, serial_no: e.target.value })}
                 className={`${inputCls} bg-gray-50/60`} />
             </div>
             {/* Qty */}
             <div>
               <label className={labelCls}>Qty <span className="text-red-500">*</span></label>
               <input type="number" placeholder="0" value={currentrow.quantity}
-                onChange={(e) => setcurrentrow({...currentrow, quantity: e.target.value})}
+                onChange={(e) => setcurrentrow({ ...currentrow, quantity: e.target.value })}
                 className={`${inputCls} bg-gray-50/60`} />
             </div>
             {/* Price */}
             <div>
               <label className={labelCls}>Rate <span className="text-red-500">*</span></label>
               <input type="number" placeholder="0.00" value={currentrow.price}
-                onChange={(e) => setcurrentrow({...currentrow, price: Number(e.target.value) || ''})}
+                onChange={(e) => setcurrentrow({ ...currentrow, price: Number(e.target.value) || '' })}
                 className={`${inputCls} bg-gray-50/60`} />
             </div>
             {/* Amount */}
@@ -892,13 +893,13 @@ const edititem = (index) => {
               <label className={labelCls}>UOM</label>
               <input type="text" placeholder="Select" value={currentrow.uom}
                 onFocus={() => setopenUom(true)}
-                onChange={(e) => setcurrentrow({...currentrow, uom: e.target.value})}
+                onChange={(e) => setcurrentrow({ ...currentrow, uom: e.target.value })}
                 className={`${inputCls} bg-gray-50/60`} />
               {openUom && (
                 <div className={dropdownCls}>
                   {['NOS', 'KG', 'MTR', 'NO'].map((uom) => (
                     <div key={uom}
-                      onClick={(e) => { e.stopPropagation(); setcurrentrow(prev => ({...prev, uom})); setopenUom(false); }}
+                      onClick={(e) => { e.stopPropagation(); setcurrentrow(prev => ({ ...prev, uom })); setopenUom(false); }}
                       className="px-4 py-2 hover:bg-gray-50 cursor-pointer text-[13px] font-medium border-b border-gray-50 last:border-0">
                       {uom}
                     </div>
@@ -910,7 +911,7 @@ const edititem = (index) => {
             <div>
               <label className={labelCls}>HSN</label>
               <input type="text" placeholder="HSN code" value={currentrow.hsn_number}
-                onChange={(e) => setcurrentrow({...currentrow, hsn_number: e.target.value})}
+                onChange={(e) => setcurrentrow({ ...currentrow, hsn_number: e.target.value })}
                 className={`${inputCls} bg-gray-50/60`} />
             </div>
             {/* Buttons */}
@@ -924,54 +925,53 @@ const edititem = (index) => {
         {/* Items Table */}
         <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm mt-3">
           <div className="h-[250px] overflow-y-auto">
-          <table className="w-full border-collapse">
-            <thead className="sticky top-0 z-10 bg-gray-50">
-              <tr className="bg-gray-50 border-b border-gray-200">
-                {["#", "Item Name", "Serial Number", "Quantity", "Price", "Amount", "UOM", "HSN No", "Actions"].map((h, i) => (
-                  <th key={i} className={`px-4 py-3 text-[11px] font-black text-gray-400 uppercase tracking-wide ${i === 0 ? "w-10 text-center" : i === 1 || i === 2 ? "text-left" : "text-center"}`}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {tabledata.length > 0 ? tabledata.map((item, index) => (
-                <tr key={`${item.item_name}-${index}`} className="border-b border-gray-100 hover:bg-gray-50/70 transition-colors">
-                  <td className="px-4 py-3 text-[12px] font-semibold text-gray-400 text-center">{index + 1}</td>
-                  <td className="px-4 py-3 text-[13px] font-semibold text-gray-800 uppercase">{item.item_name}</td>
-                  <td className="px-4 py-3 text-[13px] text-gray-600 text-left">{item.serial_no || "—"}</td>
-                  <td className="px-4 py-3 text-[13px] font-semibold text-gray-800 text-center">{item.quantity}</td>
-                  <td className="px-4 py-3 text-[13px] font-medium text-gray-700 text-center">₹{item.price}</td>
-                  <td className="px-4 py-3 text-[13px] font-bold text-gray-900 text-center">₹{Number(item.amount).toFixed(2)}</td>
-                  <td className="px-4 py-3 text-[13px] text-gray-600 text-center uppercase">{item.uom}</td>
-                  <td className="px-4 py-3 text-[13px] text-gray-600 text-center">{item.hsn_number || "—"}</td>
-                  <td className="px-4 py-3 text-center">
-                    <div className="flex justify-center gap-3">
-                      <button onClick={() => edititem(index)} title="Edit"><SquarePen size={16} className="text-blue-500 hover:text-blue-700 transition-colors" /></button>
-                      <button onClick={() => deleteitem(index)} title="Delete"><Trash2 size={16} className="text-red-400 hover:text-red-600 transition-colors" /></button>
+            <table className="w-full border-collapse">
+              <thead className="sticky top-0 z-10 bg-gray-50">
+                <tr className="bg-gray-50 border-b border-gray-200">
+                  {["#", "Item Name", "Serial Number", "Quantity", "Price", "Amount", "UOM", "HSN No", "Actions"].map((h, i) => (
+                    <th key={i} className={`px-4 py-3 text-[11px] font-black text-gray-400 uppercase tracking-wide ${i === 0 ? "w-10 text-center" : i === 1 || i === 2 ? "text-left" : "text-center"}`}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {tabledata.length > 0 ? tabledata.map((item, index) => (
+                  <tr key={`${item.item_name}-${index}`} className="border-b border-gray-100 hover:bg-gray-50/70 transition-colors">
+                    <td className="px-4 py-3 text-[12px] font-semibold text-gray-400 text-center">{index + 1}</td>
+                    <td className="px-4 py-3 text-[13px] font-semibold text-gray-800 uppercase">{item.item_name}</td>
+                    <td className="px-4 py-3 text-[13px] text-gray-600 text-left">{item.serial_no || ""}</td>
+                    <td className="px-4 py-3 text-[13px] font-semibold text-gray-800 text-center">{item.quantity}</td>
+                    <td className="px-4 py-3 text-[13px] font-medium text-gray-700 text-center">{item.price}</td>
+                    <td className="px-4 py-3 text-[13px] font-bold text-gray-900 text-center">{Number(item.amount).toFixed(2)}</td>
+                    <td className="px-4 py-3 text-[13px] text-gray-600 text-center uppercase">{item.uom}</td>
+                    <td className="px-4 py-3 text-[13px] text-gray-600 text-center">{item.hsn_number || "â€”"}</td>
+                    <td className="px-4 py-3 text-center">
+                      <div className="flex justify-center gap-3">
+                        <button onClick={() => edititem(index)} title="Edit"><SquarePen size={16} className="text-blue-500 hover:text-blue-700 transition-colors" /></button>
+                        <button onClick={() => deleteitem(index)} title="Delete"><Trash2 size={16} className="text-red-400 hover:text-red-600 transition-colors" /></button>
+                      </div>
+                    </td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan="9" className="py-14 text-center">
+                      <p className="text-[13px] text-gray-400 font-medium">No products added yet.</p>
+                      <p className="text-[12px] text-gray-300 mt-1">Select customer â†’ products to begin.</p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+              <tfoot className="sticky bottom-0 z-10 ">
+                <tr>
+                  <td colSpan="9" className="px-4 py-3">
+                    <div className="flex items-center ml-[25%] gap-2">
+                      <span className="text-[13px] font-black text-gray-600 uppercase tracking-wide">TOTAL QTY</span>
+                      <span className="text-[13px] font-black text-gray-500">:</span>
+                      <span className="text-[18px] font-black text-blue-700">{tabledata.reduce((s, r) => s + Number(r.quantity || 0), 0)}</span>
                     </div>
                   </td>
                 </tr>
-              )) : (
-                <tr>
-                  <td colSpan="9" className="py-14 text-center">
-                    <div className="text-gray-300 text-4xl mb-3">🧾</div>
-                    <p className="text-[13px] text-gray-400 font-medium">No products added yet.</p>
-                    <p className="text-[12px] text-gray-300 mt-1">Select customer → products to begin.</p>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-            <tfoot className="sticky bottom-0 z-10 ">
-              <tr>
-                <td colSpan="9" className="px-4 py-3">
-                  <div className="flex items-center ml-[25%] gap-2">
-                    <span className="text-[13px] font-black text-gray-600 uppercase tracking-wide">TOTAL QTY</span>
-                    <span className="text-[13px] font-black text-gray-500">:</span>
-                    <span className="text-[18px] font-black text-blue-700">{tabledata.reduce((s, r) => s + Number(r.quantity || 0), 0)}</span>
-                  </div>
-                </td>
-              </tr>
-            </tfoot>
-          </table>
+              </tfoot>
+            </table>
           </div>
         </div>
 
@@ -1008,17 +1008,17 @@ const edititem = (index) => {
             <div className="bg-gray-50/50 rounded-xl border border-gray-200 p-6 space-y-3 max-w-sm ml-auto">
               <div className="flex justify-between items-center">
                 <span className="text-[12px] font-black text-gray-500 uppercase">Sub Total</span>
-                <span className="text-[13px] font-bold text-gray-900">₹{subtotal.toFixed(2)}</span>
+                <span className="text-[13px] font-bold text-gray-900">{subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-[12px] font-black text-gray-500 uppercase">Transport Charges (+)</span>
                 <input type="number" min="0" value={formData.transport || 0}
-                  onChange={(e) => setFormdata({...formData, transport: e.target.value})}
+                  onChange={(e) => setFormdata({ ...formData, transport: e.target.value })}
                   className="w-28 p-1.5 border-b border-gray-300 bg-transparent text-right font-bold text-black outline-none focus:border-black text-[13px]" />
               </div>
               <div className="flex justify-between items-center bg-blue-50 px-2 py-1 rounded">
                 <span className="text-[12px] font-black text-blue-700 uppercase">Taxable Value</span>
-                <span className="text-[13px] font-black text-blue-900">₹{taxableValue.toFixed(2)}</span>
+                <span className="text-[13px] font-black text-blue-900">{taxableValue.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
@@ -1027,20 +1027,20 @@ const edititem = (index) => {
                     className="w-12 p-1 border border-gray-200 rounded text-center text-[11px] font-bold outline-none" />
                 </div>
                 <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${isIntrastate ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"}`}>
-                  {isIntrastate ? "TN — CGST+SGST" : "IGST"}
+                  {isIntrastate ? "TN CGST+SGST" : "IGST"}
                 </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-[12px] font-black text-gray-500 uppercase">CGST @{cgstPct}%</span>
-                <span className="text-[13px] font-bold text-gray-700">₹{cgst.toFixed(2)}</span>
+                <span className="text-[13px] font-bold text-gray-700">{cgst.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-[12px] font-black text-gray-500 uppercase">SGST @{sgstPct}%</span>
-                <span className="text-[13px] font-bold text-gray-700">₹{sgst.toFixed(2)}</span>
+                <span className="text-[13px] font-bold text-gray-700">{sgst.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-[12px] font-black text-gray-500 uppercase">IGST @{igstPct}%</span>
-                <span className="text-[13px] font-bold text-gray-700">₹{igst.toFixed(2)}</span>
+                <span className="text-[13px] font-bold text-gray-700">{igst.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-[12px] font-black text-gray-500 uppercase">Round Off</span>
@@ -1048,7 +1048,7 @@ const edititem = (index) => {
               </div>
               <div className="flex justify-between items-center pt-4 border-t-2 border-gray-300 mt-2">
                 <span className="text-[15px] font-black text-black uppercase">NET TOTAL</span>
-                <span className="text-[24px] font-black text-indigo-700">₹{grandtotal || 0}</span>
+                <span className="text-[24px] font-black text-indigo-700">{grandtotal || 0}</span>
               </div>
             </div>
           </div>
@@ -1114,4 +1114,4 @@ const edititem = (index) => {
     </div>
   );
 };
-export default PerformanceInvoiceForm ;
+export default PerformanceInvoiceForm;

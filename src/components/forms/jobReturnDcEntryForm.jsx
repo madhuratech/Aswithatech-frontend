@@ -10,7 +10,7 @@ import flatpickr from "flatpickr";
 import { toDmy, toYmd } from "../../utils/dateFormat";
 const TODAY = new Date().toISOString().split("T")[0];
 const Api_url = `${API_BASE_URL}/jobreturndc`;
-const REMARKS_OPTIONS = ["Serviced", "Re Serviced", "For Sale", "Beyond", "For Testing Purpose"];
+const REMARKS_OPTIONS = ["For Service", " For Re Service", "For Testing"];
 const UOM_LIST = ["NOS", "KG", "MTR", "NO", "SET", "PKT"];
 
 const INIT_FORM = {
@@ -62,6 +62,7 @@ const JobReturnDcEntryForm = () => {
     const [uomOpen, setUomOpen] = useState(false);
 
     const [editIndex, setEditIndex] = useState(null);
+    const [saving, setSaving] = useState(false);
 
     const customerRef = useRef(null);
     const jobRef = useRef(null);
@@ -246,20 +247,20 @@ const JobReturnDcEntryForm = () => {
         handleClearData();
     };
 
-    const handleSaveReturnDc = () => {
-        saveReturnDc();
-    };
-
-    const handleDeleteReturnDc = () => {
-        deleteReturnDc();
-    };
-
-    const saveReturnDc = async () => {
+    const handleSaveReturnDc = async () => {
+        if (saving) return;
         if (!formData.return_dc_no) { toast.error("Return DC number is required"); return; }
         if (!formData.job_dc_no) { toast.error("Please select a Job DC"); return; }
         if (!formData.customer_name) { toast.error("Customer Name is required"); return; }
         if (!formData.despatch_through?.trim()) { toast.error("Despatch Through is required."); return; }
         if (!tabledata.length) { toast.error("Please add at least one returned item to the grid"); return; }
+
+        if (!loadReturnNo && allReturnDc.some(dc => dc.return_dc_no === formData.return_dc_no)) {
+            toast.error(`Return DC No '${formData.return_dc_no}' already exists. Please use a different number.`);
+            return;
+        }
+
+        setSaving(true);
 
         const payload = {
             ...formData,
@@ -279,11 +280,18 @@ const JobReturnDcEntryForm = () => {
             if (!res.ok) throw new Error(data.message || "Failed to save Return DC");
 
             setSavedDcNo(formData.return_dc_no);
+            toast.success("Return DC Created Successfully");
+            resetAll();
             fetchAllReturnDc();
-            fetchPendingJobs();
         } catch (error) {
             toast.error(error.message || "Failed to Save Return DC");
+        } finally {
+            setSaving(false);
         }
+    };
+
+    const handleDeleteReturnDc = () => {
+        deleteReturnDc();
     };
 
     const resetAll = () => {
@@ -291,8 +299,10 @@ const JobReturnDcEntryForm = () => {
         setSelectedJobItems([]);
         setLoadReturnNo("");
         settabledata([]);
+        setCurrentrow(INIT_ROW);
         setEditSearch("");
         setEditIndex(null);
+        setSaving(false);
         fetchPendingJobs();
     };
 
@@ -409,7 +419,7 @@ const JobReturnDcEntryForm = () => {
                     <div className="flex gap-1.5">
                         <button onClick={resetAll} className="border px-3 py-1.5 rounded-lg text-[13px] font-bold hover:bg-gray-800 hover:text-white transition-colors">NEW</button>
                         <button onClick={handleEditClick} className="border px-3 py-1.5 rounded-lg text-[13px] font-bold hover:bg-blue-600 hover:text-white transition-colors">EDIT</button>
-                        <button onClick={handleSaveReturnDc} className="border px-3 py-1.5 rounded-lg text-[13px] font-bold hover:bg-green-600 hover:text-white transition-colors">{loadReturnNo ? "UPDATE" : "SAVE"}</button>
+                        <button onClick={handleSaveReturnDc} disabled={saving} className={`border px-3 py-1.5 rounded-lg text-[13px] font-bold transition-colors ${saving ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "hover:bg-green-600 hover:text-white"}`}>{saving ? "SAVING..." : (loadReturnNo ? "UPDATE" : "SAVE")}</button>
                         <button onClick={handleReset} className="border px-3 py-1.5 rounded-lg text-[13px] font-bold hover:bg-gray-600 hover:text-white transition-colors">RESET</button>
                         <button onClick={handleDeleteReturnDc} className="border px-3 py-1.5 rounded-lg text-[13px] font-bold hover:bg-red-600 hover:text-white transition-colors">DELETE</button>
                         <button onClick={handlePrintClick} className="border px-3 py-1.5 rounded-lg text-[13px] font-bold hover:bg-indigo-600 hover:text-white transition-colors">PRINT</button>
@@ -744,17 +754,17 @@ const JobReturnDcEntryForm = () => {
                                 ))
                             )}
                         </tbody>
-                        <tfoot className="sticky bottom-0 z-10 bg-blue-50 border-t-2 border-gray-200">
-                            <tr className="bg-blue-50 border-t-2 border-gray-200">
-                                <td colSpan={7} className="px-4 py-3">
-                                    <div className="flex items-center justify-end gap-2">
-                                        <span className="text-[13px] font-black text-gray-600 uppercase tracking-wide">TOTAL QTY</span>
-                                        <span className="text-[13px] font-black text-gray-500">:</span>
-                                        <span className="text-[18px] font-black text-blue-700">{tabledata.reduce((s, r) => s + Number(r.quantity || 0), 0)}</span>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tfoot>
+                        <tfoot className="sticky bottom-0 z-10">
+                        <tr>
+                            <td colSpan={7} className="px-4 py-3">
+                                <div className="flex items-center ml-[60%] gap-2">
+                                    <span className="text-[13px] font-black text-gray-600 uppercase tracking-wide">TOTAL QTY</span>
+                                    <span className="text-[13px] font-black text-gray-500">:</span>
+                                    <span className="text-[18px] font-black text-blue-700">{tabledata.reduce((s, r) => s + Number(r.quantity || 0), 0)}</span>
+                                </div>
+                            </td>
+                        </tr>
+                    </tfoot>
                     </table>
                     </div>
                 </div>

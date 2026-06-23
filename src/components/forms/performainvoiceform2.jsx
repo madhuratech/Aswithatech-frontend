@@ -356,6 +356,7 @@ const PerformanceInvoiceForm2 = () => {
       igst,
       round_off,
       grandtotal,
+      gst_rate: gstPct,
     };
 
     try {
@@ -513,7 +514,7 @@ const PerformanceInvoiceForm2 = () => {
 
       <button onClick={() => navigate(-1)}
         className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl bg-white hover:bg-gray-50 text-[14px] font-semibold w-fit mb-6 shadow-sm">
-        ← Go Back
+        Go Back
       </button>
 
       <div className="max-w-[1400px] mx-auto bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
@@ -522,7 +523,7 @@ const PerformanceInvoiceForm2 = () => {
         <div className="flex justify-between items-start mb-8">
           <div>
             <h2 className="text-xl font-black text-gray-900 tracking-tight">Performance Invoice 2</h2>
-            <p className="text-[12px] text-gray-400 mt-1">Customer → Products → Save</p>
+            <p className="text-[12px] text-gray-400 mt-1">Customer  Products  Save</p>
           </div>
           <div className="flex gap-2">
             <button onClick={resetall} className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-gray-800 hover:text-white transition-colors">NEW</button>
@@ -531,14 +532,14 @@ const PerformanceInvoiceForm2 = () => {
           </div>
         </div>
 
-        {/* Step 1 — Invoice Header */}
+        {/* Step 1 â€” Invoice Header */}
         <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-5 border border-gray-100 mb-5">
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Step 1 — Invoice Header</p>
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Step 1  Invoice Header</p>
           <div className="grid grid-cols-4 gap-5">
             {/* Customer */}
             <div className="relative col-span-2" ref={customerDropdownRef}>
               <label className={labelCls}>Customer / Company <span className="text-red-500">*</span></label>
-              <input type="text" placeholder="Type to search customers…"
+              <input type="text" placeholder="Type to search customers"
                 value={formData.customer_name}
                 onFocus={() => setclientopen(true)}
                 onChange={(e) => { const v = e.target.value; setFormdata({ ...formData, customer_name: v }); setsearch(v); }}
@@ -575,19 +576,10 @@ const PerformanceInvoiceForm2 = () => {
           </div>
         </div>
 
-        {/* Step 2 — DC & Order Details */}
+        {/* Step 2 â€” DC & Order Details */}
         <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-5 border border-gray-100 mb-5">
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Step 2 — DC &amp; Order Details</p>
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Step 2  DC &amp; Order Details</p>
           <div className="grid grid-cols-7 gap-5">
-            <div>
-              <label className={labelCls}>DC No</label>
-              <input type="text" placeholder="Enter DC No" value={formData.dc_no}
-                onChange={(e) => setFormdata({ ...formData, dc_no: e.target.value })} className={inputCls} />
-            </div>
-            <div>
-              <label className={labelCls}>DC Date</label>
-              <input ref={dcDateRef} readOnly placeholder="Select DC Date" className={inputCls} />
-            </div>
             <div>
               <label className={labelCls}>Order No</label>
               <input type="text" placeholder="Order number" value={formData.order_no}
@@ -604,7 +596,7 @@ const PerformanceInvoiceForm2 = () => {
                 className={`${inputCls} flex justify-between items-center cursor-pointer min-h-[43px]`}
               >
                 <span className={formData.dispatch_through ? "text-black" : "text-gray-400 font-medium text-[13px]"}>
-                  {formData.dispatch_through || "Select mode…"}
+                  {formData.dispatch_through || "Select "}
                 </span>
                 <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -637,14 +629,7 @@ const PerformanceInvoiceForm2 = () => {
 
           {/* Display fields (accumulated values) */}
           <div className="grid grid-cols-4 gap-5 mt-4">
-            <div>
-              <label className={labelCls}>DC No (Added)</label>
-              <input type="text" value={dcNoDisplay} readOnly className={roInputCls} placeholder="Click SHOW to add" />
-            </div>
-            <div>
-              <label className={labelCls}>DC Date (Added)</label>
-              <input type="text" value={dcDateDisplay} readOnly className={roInputCls} placeholder="Click SHOW to add" />
-            </div>
+  
             <div>
               <label className={labelCls}>Order No (Added)</label>
               <input type="text" value={orderNoDisplay} readOnly className={roInputCls} placeholder="Click SHOW to add" />
@@ -656,9 +641,9 @@ const PerformanceInvoiceForm2 = () => {
           </div>
         </div>
 
-        {/* Step 3 — Add Products */}
+        {/* Step 3  Add Products */}
         <div className="mb-4">
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Step 3 — Add Products</p>
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Step 3  Add Products</p>
 
           <div className="flex items-center gap-6 mb-4">
             {[["service", "Service"], ["spare", "Spares"], ["purchase_item", "Purchase Items"]].map(([val, lbl]) => (
@@ -672,7 +657,7 @@ const PerformanceInvoiceForm2 = () => {
             {/* Item Name */}
             <div className="col-span-2 relative" ref={itemDropdownRef}>
               <label className={labelCls}>Item Name <span className="text-red-500">*</span></label>
-              <input type="text" placeholder="Search item…"
+              <input type="text" placeholder="Search item"
                 value={currentrow.item_name}
                 onFocus={() => setitemopen(true)}
                 onChange={(e) => { const v = e.target.value; setcurrentrow({ ...currentrow, item_name: v }); setitemsearch(v); }}
@@ -769,12 +754,12 @@ const PerformanceInvoiceForm2 = () => {
                   <tr key={`${item.item_name}-${index}`} className="border-b border-gray-100 hover:bg-gray-50/70 transition-colors">
                     <td className="px-4 py-3 text-[12px] font-semibold text-gray-400 text-center">{index + 1}</td>
                     <td className="px-4 py-3 text-[13px] font-semibold text-gray-800 uppercase">{item.item_name}</td>
-                    <td className="px-4 py-3 text-[13px] text-gray-600 text-left">{item.serial_no || "—"}</td>
+                    <td className="px-4 py-3 text-[13px] text-gray-600 text-left">{item.serial_no || ""}</td>
                     <td className="px-4 py-3 text-[13px] font-semibold text-gray-800 text-center">{item.quantity}</td>
-                    <td className="px-4 py-3 text-[13px] font-medium text-gray-700 text-center">₹{item.price}</td>
-                    <td className="px-4 py-3 text-[13px] font-bold text-gray-900 text-center">₹{Number(item.amount).toFixed(2)}</td>
+                    <td className="px-4 py-3 text-[13px] font-medium text-gray-700 text-center">{item.price}</td>
+                    <td className="px-4 py-3 text-[13px] font-bold text-gray-900 text-center">{Number(item.amount).toFixed(2)}</td>
                     <td className="px-4 py-3 text-[13px] text-gray-600 text-center uppercase">{item.uom}</td>
-                    <td className="px-4 py-3 text-[13px] text-gray-600 text-center">{item.hsn_number || "—"}</td>
+                    <td className="px-4 py-3 text-[13px] text-gray-600 text-center">{item.hsn_number || ""}</td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex justify-center gap-3">
                         <button onClick={() => edititem(index)} title="Edit"><SquarePen size={16} className="text-blue-500 hover:text-blue-700 transition-colors" /></button>
@@ -785,9 +770,9 @@ const PerformanceInvoiceForm2 = () => {
                 )) : (
                   <tr>
                     <td colSpan="9" className="py-14 text-center">
-                      <div className="text-gray-300 text-4xl mb-3">🧾</div>
+                      <div className="text-gray-300 text-4xl mb-3"></div>
                       <p className="text-[13px] text-gray-400 font-medium">No products added yet.</p>
-                      <p className="text-[12px] text-gray-300 mt-1">Select customer → products to begin.</p>
+                      <p className="text-[12px] text-gray-300 mt-1">Select customer â†’ products to begin.</p>
                     </td>
                   </tr>
                 )}
@@ -840,7 +825,7 @@ const PerformanceInvoiceForm2 = () => {
             <div className="bg-gray-50/50 rounded-xl border border-gray-200 p-6 space-y-3 max-w-sm ml-auto">
               <div className="flex justify-between items-center">
                 <span className="text-[12px] font-black text-gray-500 uppercase">Sub Total</span>
-                <span className="text-[13px] font-bold text-gray-900">₹{subtotal.toFixed(2)}</span>
+                <span className="text-[13px] font-bold text-gray-900">{subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-[12px] font-black text-gray-500 uppercase">Transport Charges (+)</span>
@@ -850,7 +835,7 @@ const PerformanceInvoiceForm2 = () => {
               </div>
               <div className="flex justify-between items-center bg-blue-50 px-2 py-1 rounded">
                 <span className="text-[12px] font-black text-blue-700 uppercase">Taxable Value</span>
-                <span className="text-[13px] font-black text-blue-900">₹{taxableValue.toFixed(2)}</span>
+                <span className="text-[13px] font-black text-blue-900">{taxableValue.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
@@ -859,20 +844,20 @@ const PerformanceInvoiceForm2 = () => {
                     className="w-12 p-1 border border-gray-200 rounded text-center text-[11px] font-bold outline-none" />
                 </div>
                 <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${isIntrastate ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"}`}>
-                  {isIntrastate ? "TN — CGST+SGST" : "IGST"}
+                  {isIntrastate ? "TN  CGST+SGST" : "IGST"}
                 </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-[12px] font-black text-gray-500 uppercase">CGST @{cgstPct}%</span>
-                <span className="text-[13px] font-bold text-gray-700">₹{cgst.toFixed(2)}</span>
+                <span className="text-[13px] font-bold text-gray-700">{cgst.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-[12px] font-black text-gray-500 uppercase">SGST @{sgstPct}%</span>
-                <span className="text-[13px] font-bold text-gray-700">₹{sgst.toFixed(2)}</span>
+                <span className="text-[13px] font-bold text-gray-700">{sgst.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-[12px] font-black text-gray-500 uppercase">IGST @{igstPct}%</span>
-                <span className="text-[13px] font-bold text-gray-700">₹{igst.toFixed(2)}</span>
+                <span className="text-[13px] font-bold text-gray-700">{igst.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-[12px] font-black text-gray-500 uppercase">Round Off</span>
@@ -880,7 +865,7 @@ const PerformanceInvoiceForm2 = () => {
               </div>
               <div className="flex justify-between items-center pt-4 border-t-2 border-gray-300 mt-2">
                 <span className="text-[15px] font-black text-black uppercase">NET TOTAL</span>
-                <span className="text-[24px] font-black text-indigo-700">₹{grandtotal || 0}</span>
+                <span className="text-[24px] font-black text-indigo-700">{grandtotal || 0}</span>
               </div>
             </div>
           </div>
@@ -948,3 +933,4 @@ const PerformanceInvoiceForm2 = () => {
 };
 
 export default PerformanceInvoiceForm2;
+

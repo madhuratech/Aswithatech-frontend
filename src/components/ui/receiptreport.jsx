@@ -129,14 +129,14 @@ export const ReceiptVoucher = ({ receipt, copyLabel }) => {
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-gray-50 border-b-2 border-black text-blue-800">
-                <th className="p-2 w-[5%] text-center text-[12px] font-bold text-blue-800">SNO</th>
-                <th className="p-2 w-[18%] text-center text-[12px] font-bold text-blue-800">BILL NO</th>
-                <th className="p-2 w-[18%] text-center text-[12px] font-bold text-blue-800">DATE</th>
-                <th className="p-2 w-[20%] text-center text-[12px] font-bold text-blue-800 pr-4">BILL AMOUNT</th>
-                <th className="p-2 w-[11%] text-right text-[12px] font-bold text-blue-800 pr-4">ADVANS</th>
-                <th className="p-2 w-[11%] text-right text-[12px] font-bold text-blue-800 pr-4">TDSAMT</th>
-                <th className="p-2 w-[13%] text-right text-[12px] font-bold text-blue-800 pr-4">PAIDAMT</th>
-                <th className="p-2 w-[12%] text-right text-[12px] font-bold text-blue-800 pr-4">NETPAID</th>
+                <th className="p-2 w-[5%] border-r-2 border-black text-center text-[12px] font-bold text-blue-800">SNO</th>
+                <th className="p-2 w-[18%] border-r-2 border-black text-center text-[12px] font-bold text-blue-800">BILL NO</th>
+                <th className="p-2 w-[18%] border-r-2 border-black text-center text-[12px] font-bold text-blue-800">DATE</th>
+                <th className="p-2 w-[20%] border-r-2 border-black text-center text-[12px] font-bold text-blue-800 pr-4">BILL AMOUNT</th>
+                <th className="p-2 w-[11%] border-r-2 border-black text-right text-[12px] font-bold text-blue-800 pr-4">ADVANS</th>
+                <th className="p-2 w-[11%] border-r-2 border-black text-right text-[12px] font-bold text-blue-800 pr-4">TDSAMT</th>
+                <th className="p-2 w-[13%] border-r-2 border-black text-right text-[12px] font-bold text-blue-800 pr-4">PAIDAMT</th>
+                <th className="p-2 w-[12%]  text-right text-[12px] font-bold text-blue-800 pr-4">NETPAID</th>
               </tr>
             </thead>
             <tbody>
