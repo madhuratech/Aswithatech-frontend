@@ -489,6 +489,7 @@ useEffect(() =>{
 },[]);
 
 useEffect(() => {
+  if (!dnDateRef.current) return;
   dnDateFp.current = flatpickr(dnDateRef.current, {
     disableMobile: true,
     monthSelectorType: "static",
@@ -510,6 +511,7 @@ useEffect(() => {
 }, [Formdata.dn_date]);
 
 useEffect(() => {
+  if (!debitBillDateRef.current) return;
   debitBillDateFp.current = flatpickr(debitBillDateRef.current, {
     disableMobile: true,
     monthSelectorType: "static",

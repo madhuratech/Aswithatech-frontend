@@ -143,6 +143,7 @@ const PerformanceInvoiceForm2 = () => {
   }, []);
 
   useEffect(() => {
+    if (!perfInvoiceDateRef.current) return;
     perfInvoiceDateFp.current = flatpickr(perfInvoiceDateRef.current, {
       disableMobile: true,
       monthSelectorType: "static",
@@ -165,6 +166,7 @@ const PerformanceInvoiceForm2 = () => {
 
   // DC Date
   useEffect(() => {
+    if (!dcDateRef.current) return;
     dcDateFp.current = flatpickr(dcDateRef.current, {
       disableMobile: true,
       monthSelectorType: "static",
@@ -188,6 +190,7 @@ const PerformanceInvoiceForm2 = () => {
 
   // Order Date (multiple dates)
   useEffect(() => {
+    if (!orderDateRef.current) return;
     orderDateFp.current = flatpickr(orderDateRef.current, {
       disableMobile: true,
       monthSelectorType: "static",
