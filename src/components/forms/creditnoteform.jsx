@@ -70,7 +70,7 @@ const Creditnote = () => {
  const [Formdata , setFormData] = useState({
   client_name:'',
   cn_date:'',
-  bill_no:'',
+  bill_number:'',
   bill_date:'',
   remarks:''
  });
@@ -102,7 +102,7 @@ const [currentrow , setcurrentrow] = useState({
        setFormData({
         client_name: data.client_name || "",
         cn_date: data.cn_date?.split('T')[0] || "",
-        bill_no: data.bill_no || "",
+        bill_number: data.bill_number || "",
         bill_date: data.bill_date,
         remarks: data.remarks || ""
        });
@@ -337,7 +337,7 @@ const resetForm = async() =>{
     setFormData({
       client_name: '',
       cn_date: new Date().toISOString().split('T')[0],
-      bill_no: '',
+      bill_number: '',
       bill_date: '',
       remarks: '',
       });
@@ -387,7 +387,7 @@ const payload = {
   client_name: Formdata.client_name,
   order_type: ordertype,
   cn_date: Formdata.cn_date,
-   bill_no: Formdata.bill_no,    
+   bill_number: Formdata.bill_number,
   bill_date: Formdata.bill_date,
   items: tabledata.map(items => ({
     item_name: items.item_name,
@@ -407,7 +407,11 @@ const payload = {
   igst: totals.igst,
   delivery_charge: Number(deliveryCharge || 0),
   grand_total: totals.grandTotal,
+  grandTotal: totals.grandTotal,
   narration: Formdata.remarks || "",
+  remarks: Formdata.remarks || "",
+  round_off: totals.roundOff,
+  roundOff: totals.roundOff,
   cn_number: cnNumber,
 };
 
@@ -504,7 +508,7 @@ useOutsideClick([
 
 useEffect(() =>{
   const today = new Date().toISOString().split('T')[0];
-  setFormData(prev => ({...prev,cn_date:today}));
+  setFormData(prev => ({...prev, cn_date: today, bill_date: today}));
 // eslint-disable-next-line react-hooks/exhaustive-deps
 },[]);
 
@@ -732,8 +736,8 @@ const deleteItem = (index) =>{
               <label className={labelCls}>Bill No</label>
               <input
                 type="text"
-                value={Formdata.bill_no}
-                onChange={(e) => setFormData({ ...Formdata, bill_no: e.target.value })}
+                value={Formdata.bill_number}
+                onChange={(e) => setFormData({ ...Formdata, bill_number: e.target.value })}
                 placeholder="Bill Number"
                 className={inputCls}
               />

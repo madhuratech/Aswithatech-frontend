@@ -147,7 +147,7 @@ const Creditnoteview = ({ cnNumber }) => {
                 <div className="flex text-[13px] font-bold">
                   <div className="w-[90px] uppercase">Bill No</div>
                   <div className="w-[20px] text-center">:</div>
-                  <div className="flex-1">{creditnote.bill_no || "N/A"}</div>
+                  <div className="flex-1">{creditnote.bill_number || ""}</div>
                 </div>
                 <div className="flex text-[13px] font-bold">
                   <div className="w-[90px] uppercase">Bill Date</div>
@@ -175,7 +175,7 @@ const Creditnoteview = ({ cnNumber }) => {
                 {items.map((item, index) => (
                   <tr key={index} className=" border-black min-h-[35px]" style={{ pageBreakInside: "avoid", breakInside: "avoid" }}>
                     <td className="border-r-2 border-black p-2 text-center text-[12px]">{index + 1}</td>
-                    <td className="border-r-2 border-black px-3 py-2 text-[12px] font-semibold uppercase">{item.item_name}</td>
+                    <td className="border-r-2 border-black px-3 py-2 text-[12px] font-semibold uppercase">{item.item_name} {item.part_no}</td>
                     <td className="border-r-2 border-black p-2 text-center text-[12px]">{item.hsn_code || "-"}</td>
                     <td className="border-r-2 border-black p-2 text-center text-[12px]">{item.quantity} {item.unit || "Nos"}</td>
                     <td className="border-r-2 border-black p-2 text-right text-[12px] pr-4">{(Number(item.price) || 0).toFixed(2)}</td>
@@ -200,41 +200,41 @@ const Creditnoteview = ({ cnNumber }) => {
           </div>
 
           {/* SUMMARY SECTION */}
-          <div className="border-t-2 border-black flex" style={{ pageBreakInside: "avoid", breakInside: "avoid" }}>
-            <div className="w-[60%] p-4">
+          <div className="border-t border-black flex" style={{ pageBreakInside: "avoid", breakInside: "avoid" }}>
+            <div className="w-[60%] p-4" >
               {/* Left side empty space to match UI */}
             </div>
-            <div className="w-[40%] border-black">
-              <div className="flex border-b border-black">
-                <div className="w-[60%] p-2 text-[12px] font-bold border-r border-black">Sub Total</div>
+            <div className="w-[40%] border-l-2 border-black">
+              <div className="flex  border-black">
+                <div className="w-[60%] p-2 text-[12px] font-bold border-r-2 border-black">Sub Total</div>
                 <div className="w-[40%] p-2 text-[12px] font-bold text-right pr-4">{(Number(creditnote.subtotal) || 0).toFixed(2)}</div>
               </div>
-              <div className="flex border-b border-black">
-                <div className="w-[60%] p-2 text-[12px] font-bold border-r border-black">Transport Charges</div>
+              <div className="flex  border-black">
+                <div className="w-[60%] p-2 text-[12px] font-bold border-r-2 border-black">Transport Charges</div>
                 <div className="w-[40%] p-2 text-[12px] font-bold text-right pr-4">{(Number(creditnote.delivery_charge) || 0).toFixed(2)}</div>
               </div>
-              <div className="flex border-b border-black">
-                <div className="w-[60%] p-2 text-[12px] font-bold border-r border-black">TAXABLE</div>
+              <div className="flex  border-black">
+                <div className="w-[60%] p-2 text-[12px] font-bold border-r-2 border-black">TAXABLE</div>
                 <div className="w-[40%] p-2 text-[12px] font-bold text-right pr-4">{(Number(creditnote.subtotal) || 0).toFixed(2)}</div>
               </div>
-              <div className="flex border-b border-black">
-                <div className="w-[60%] p-2 text-[12px] font-bold border-r border-black">CGST @ {creditnote.igst > 0 ? "0.00" : "9.00"} %</div>
+              <div className="flex  border-black">
+                <div className="w-[60%] p-2 text-[12px] font-bold border-r-2 border-black">CGST @ {creditnote.igst > 0 ? "0.00" : "9.00"} %</div>
                 <div className="w-[40%] p-2 text-[12px] font-bold text-right pr-4">{(Number(creditnote.cgst) || 0).toFixed(2)}</div>
               </div>
-              <div className="flex border-b border-black">
-                <div className="w-[60%] p-2 text-[12px] font-bold border-r border-black">SGST @ {creditnote.igst > 0 ? "0.00" : "9.00"} %</div>
+              <div className="flex  border-black">
+                <div className="w-[60%] p-2 text-[12px] font-bold border-r-2 border-black">SGST @ {creditnote.igst > 0 ? "0.00" : "9.00"} %</div>
                 <div className="w-[40%] p-2 text-[12px] font-bold text-right pr-4">{(Number(creditnote.sgst) || 0).toFixed(2)}</div>
               </div>
-              <div className="flex border-b border-black">
-                <div className="w-[60%] p-2 text-[12px] font-bold border-r border-black">IGST @ {creditnote.igst > 0 ? "18.00" : "0.00"} %</div>
+              <div className="flex  border-black">
+                <div className="w-[60%] p-2 text-[12px] font-bold border-r-2 border-black">IGST @ {creditnote.igst > 0 ? "18.00" : "0.00"} %</div>
                 <div className="w-[40%] p-2 text-[12px] font-bold text-right pr-4">{(Number(creditnote.igst) || 0).toFixed(2)}</div>
               </div>
-              <div className="flex border-b border-black">
-                <div className="w-[60%] p-2 text-[12px] font-bold border-r border-black">Round Off</div>
+              <div className="flex  border-black">
+                <div className="w-[60%] p-2 text-[12px] font-bold border-r-2 border-black">Round Off</div>
                 <div className="w-[40%] p-2 text-[12px] font-bold text-right pr-4">{(Number(creditnote.roundOff) || 0).toFixed(2)}</div>
               </div>
               <div className="flex bg-gray-50">
-                <div className="w-[60%] p-2 text-[13px] font-extrabold border-r border-black">NET TOTAL</div>
+                <div className="w-[60%] p-2 text-[13px] font-extrabold border-r-2 border-black">NET TOTAL</div>
                 <div className="w-[40%] p-2 text-[13px] font-extrabold text-right pr-4 text-[#ea232a]">{(Number(creditnote.grandTotal) || 0).toFixed(2)}</div>
               </div>
             </div>

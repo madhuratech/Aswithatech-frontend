@@ -59,6 +59,7 @@ import ReceiptReport from "./components/ui/receiptreport";
 import SalesViewReport from "./components/ui/salesviewreport";
 import PurchaseViewReport from "./components/ui/purchaseviewreport";
 import CreditNote from "./components/forms/creditnoteform";
+import Creditnoteview from "./components/pages/Sales/creditnote";
 import PerformanceInvoiceForm2 from "./components/forms/performainvoiceform2";
 import PerformanceInvoiceView2 from "./components/pages/Sales/performanceinvoiceview2";
 import PerformanceInvoiceReport2 from "./components/pages/Sales/performanceinvoicereport2";
@@ -154,7 +155,7 @@ function App() {
             <Route path="pending-bills" element={<PendingBillsReport />} />
             <Route path="Reciept-Format" element={<ReceiptReport />} />
             <Route path="credit-note" element={<CreditNote />} />
-            <Route path="credit-note-view/:cnNumber" element={<creditnoteview />} />
+            <Route path="credit-note-view/:cnNumber" element={<Creditnoteview />} />
             <Route path="sales-view-report" element={<SalesViewReport />} />
             
             <Route path="performance-invoice-2" element={<PerformanceInvoiceForm2 />} />
