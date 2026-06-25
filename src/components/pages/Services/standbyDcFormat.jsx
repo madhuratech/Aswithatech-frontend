@@ -158,7 +158,7 @@ const StandbyDeliveryChallan = ({ dcNumber }) => {
           </div>
           <div className="absolute right-6 bottom-2 text-right">
             <h2 className="text-red-600 text-[17px] font-extrabold mb-2 uppercase">For ASWITHA TECH</h2>
-            <h3 className="text-[12px] font-bold uppercase tracking-tight relative top-4">Authorised Signatory</h3>
+            <h3 className="text-[12px] font-bold uppercase tracking-tight relative top-2">Authorised Signatory</h3>
           </div>
         </div>
       </div>
