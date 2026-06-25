@@ -42,7 +42,7 @@ const PerformanceInvoiceForm2 = () => {
 
   const Api_url = `${API_BASE_URL}/performanceinvoices2`;
 
-  const DESPATCH_OPTIONS = ["Courier", "Hand Delivery", "Transport", "By Bus", "By Train", "Parcel Service", "Customer Pickup"];
+  const DESPATCH_OPTIONS = ["Courier", "By Hand", "Transport"];
 
   const [formData, setFormdata] = useState({
     customer_name: "",

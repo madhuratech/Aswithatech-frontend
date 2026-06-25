@@ -43,7 +43,7 @@ const INIT_ROW = {
     order_date:""
 };
 
-const DESPATCH_OPTIONS = [ "Courier", "Transport", "By Hand"];
+const DESPATCH_OPTIONS = ["Courier", "By Hand", "Transport"];
 
 const ServiceInvoiceForm = () => {
     const navigate = useNavigate();

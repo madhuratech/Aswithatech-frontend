@@ -7,16 +7,45 @@ import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import flatpickr from "flatpickr";
 import { toDmy, toYmd } from "../../utils/dateFormat";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
+
+const DEFAULT_BANKS = [
+  "State Bank of India",
+  "HDFC Bank",
+  "ICICI Bank",
+  "Axis Bank",
+  "Punjab National Bank",
+  "Canara Bank",
+  "Bank of Baroda",
+  "Union Bank of India",
+  "Indian Bank",
+  "Kotak Mahindra Bank",
+  "IndusInd Bank",
+  "Federal Bank",
+  "IDBI Bank",
+  "UCO Bank",
+  "Indian Overseas Bank"
+];
+
+const Api_url = `${API_BASE_URL}/receipts`;
+
 const ReceiptAdvance = () => {
   const navigate = useNavigate();
   const { showPasswordModal, requirePassword, handlePasswordSuccess, handlePasswordCancel } = usePasswordProtection();
-  const Api_url = `${API_BASE_URL}/receipts`;
   const clientDropdownRef = useRef(null);
   const loadReceiptDropdownRef = useRef(null);
+  const modeRef = useRef(null);
+  const bankRef = useRef(null);
+
+  const [modeOpen, setModeOpen] = useState(false);
+  const [bankOpen, setBankOpen] = useState(false);
+  const [banks, setBanks] = useState([]);
+  const [bankSearch, setBankSearch] = useState("");
 
   useOutsideClick([
     { ref: clientDropdownRef, onClose: () => setClientOpen(false) },
-    { ref: loadReceiptDropdownRef, onClose: () => setLoadOpen(false) }
+    { ref: loadReceiptDropdownRef, onClose: () => setLoadOpen(false) },
+    { ref: modeRef, onClose: () => setModeOpen(false) },
+    { ref: bankRef, onClose: () => { setBankOpen(false); setBankSearch(formData.bank_name || ""); } },
   ]);
 
   useEffect(() => {
@@ -28,7 +57,6 @@ const ReceiptAdvance = () => {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const [formData, setFormData] = useState({
@@ -38,6 +66,7 @@ const ReceiptAdvance = () => {
     payment_type: "",
     payment_mode: "",
     bank_name: "",
+    reference_number: "",
     received_amount: "",
     tds_amount: "",
     other_amount: "",
@@ -63,7 +92,18 @@ const ReceiptAdvance = () => {
       .then((r) => r.json())
       .then((d) => setFormData((prev) => ({ ...prev, receipt_no: d.receipt_no || "" })))
       .catch(console.error);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    fetch(`${API_BASE_URL}/billpayment/banks`)
+      .then((r) => r.json())
+      .then((data) => {
+        const list = Array.isArray(data) ? data
+          : Array.isArray(data.data) ? data.data
+          : Array.isArray(data.banks) ? data.banks : [];
+        setBanks(list.length > 0 ? list : DEFAULT_BANKS.map(name => ({ name })));
+      })
+      .catch(() => {
+        setBanks(DEFAULT_BANKS.map(name => ({ name })));
+      });
   }, []);
 
   useEffect(() => {
@@ -75,7 +115,6 @@ const ReceiptAdvance = () => {
       .then((r) => r.json())
       .then(setClientList)
       .catch(console.error);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.customer_name]);
 
   useEffect(() => {
@@ -96,7 +135,6 @@ const ReceiptAdvance = () => {
     if (receiptDateFp.current && formData.receipt_date) {
       receiptDateFp.current.setDate(toDmy(formData.receipt_date));
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.receipt_date]);
 
   const grandTotal =
@@ -119,12 +157,14 @@ const ReceiptAdvance = () => {
       payment_type: "",
       payment_mode: "",
       bank_name: "",
+      reference_number: "",
       received_amount: "",
       tds_amount: "",
       other_amount: "",
       received_by: "",
       remarks: "",
     });
+    setBankSearch("");
     setLoadedId(null);
     setLoadReceipt("");
     setReceiptList([]);
@@ -136,6 +176,14 @@ const ReceiptAdvance = () => {
       toast.error("Customer name is required");
       return;
     }
+    if (!formData.payment_mode) {
+      toast.error("Payment mode is required");
+      return;
+    }
+    if ((formData.payment_mode === "Bank" || formData.payment_mode === "Cheque") && !formData.bank_name?.trim()) {
+      toast.error("Bank Name is required for Bank/Cheque payments");
+      return;
+    }
 
     const payload = {
       receipt_no: formData.receipt_no,
@@ -143,6 +191,7 @@ const ReceiptAdvance = () => {
       customer_name: formData.customer_name,
       payment_mode: formData.payment_mode,
       bank_name: formData.bank_name,
+      reference_number: formData.reference_number,
       total: Number(formData.received_amount || 0),
       force_amount: Number(formData.other_amount || 0),
       other_deductions: Number(formData.tds_amount || 0),
@@ -228,8 +277,15 @@ const ReceiptAdvance = () => {
         customer_name: header.customer_name || "",
         payment_mode: header.payment_mode || "",
         bank_name: header.bank_name || "",
+        reference_number: header.reference_number || "",
         remarks: header.remarks || "",
+        payment_type: header.payment_type || "",
+        received_amount: header.total || "",
+        tds_amount: header.other_deductions || "",
+        other_amount: header.force_amount || "",
+        received_by: header.received_by || "",
       }));
+      setBankSearch(header.bank_name || "");
       setLoadedId(header.id || null);
       setLoadReceipt(receiptNo);
       setLoadOpen(false);
@@ -239,6 +295,12 @@ const ReceiptAdvance = () => {
     }
   };
 
+  // Shared classes for visual consistency and outlines removal
+  const labelCls = "text-[12px] font-bold text-gray-600 uppercase tracking-tight block mb-1";
+  const inputCls = "mt-1 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-black focus:outline-none focus:ring-0 focus:border-blue-400 bg-white outline-none transition-all";
+  const roInputCls = "mt-1 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-black focus:outline-none focus:ring-0 outline-none";
+  const dropdownCls = "absolute top-full left-0 z-50 w-full rounded-xl border border-gray-200 bg-white shadow-lg max-h-[180px] overflow-y-auto mt-1 outline-none";
+
   return (
     <div className="p-6 min-h-screen bg-gray-50 font-sans">
       <div className="max-w-[1200px] mx-auto bg-white p-8 mt-8 shadow-sm border border-gray-200 rounded-xl">
@@ -246,20 +308,20 @@ const ReceiptAdvance = () => {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-2xl font-bold text-black tracking-tight">Receipt Advance</h2>
             <div className="flex flex-wrap gap-2">
-              <button onClick={resetForm} className="px-4 py-2 border rounded-lg text-sm hover:bg-green-600 hover:text-white">NEW</button>
-              <button onClick={handleSave} className="px-4 py-2 border rounded-lg text-sm hover:bg-green-600 hover:text-white">SAVE</button>
-              <button onClick={() => loadReceiptData(loadReceipt)} className="px-4 py-2 border rounded-lg text-sm hover:bg-yellow-600 hover:text-white">EDIT</button>
-              <button onClick={handleDelete} className="px-4 py-2 border rounded-lg text-sm hover:bg-red-600 hover:text-white">DELETE</button>
-              <button onClick={() => window.print()} className="px-4 py-2 border rounded-lg text-sm hover:bg-purple-600 hover:text-white">PRINT</button>
-              <button onClick={resetForm} className="px-4 py-2 border rounded-lg text-sm hover:bg-blue-600 hover:text-white">RESET</button>
-              <button onClick={() => navigate(-1)} className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-800 hover:text-white">CLOSE</button>
+              <button onClick={resetForm} className="px-4 py-2 border rounded-lg text-sm hover:bg-green-600 hover:text-white transition-colors outline-none focus:outline-none">NEW</button>
+              <button onClick={handleSave} className="px-4 py-2 border rounded-lg text-sm hover:bg-green-600 hover:text-white transition-colors outline-none focus:outline-none">SAVE</button>
+              <button onClick={() => loadReceiptData(loadReceipt)} className="px-4 py-2 border rounded-lg text-sm hover:bg-yellow-600 hover:text-white transition-colors outline-none focus:outline-none">EDIT</button>
+              <button onClick={handleDelete} className="px-4 py-2 border rounded-lg text-sm hover:bg-red-600 hover:text-white transition-colors outline-none focus:outline-none">DELETE</button>
+              <button onClick={() => window.print()} className="px-4 py-2 border rounded-lg text-sm hover:bg-purple-600 hover:text-white transition-colors outline-none focus:outline-none">PRINT</button>
+              <button onClick={resetForm} className="px-4 py-2 border rounded-lg text-sm hover:bg-blue-600 hover:text-white transition-colors outline-none focus:outline-none">RESET</button>
+              <button onClick={() => navigate(-1)} className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-800 hover:text-white transition-colors outline-none focus:outline-none">CLOSE</button>
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div className="space-y-4">
-<div className="relative" ref={clientDropdownRef}>
-                <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Customer Name</label>
+              <div className="relative" ref={clientDropdownRef}>
+                <label className={labelCls}>Customer Name</label>
                 <input
                   type="text"
                   placeholder="Search Customer Name"
@@ -269,10 +331,10 @@ const ReceiptAdvance = () => {
                     setFormData({ ...formData, customer_name: e.target.value });
                     setClientOpen(true);
                   }}
-                  className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-black"
+                  className={inputCls}
                 />
                 {clientOpen && clientList.length > 0 && (
-                  <div className="absolute top-full left-0 z-50 w-full rounded-xl border border-gray-200 bg-white shadow-lg max-h-[180px] overflow-y-auto">
+                  <div className={dropdownCls}>
                     {clientList.map((c, i) => (
                       <div
                         key={i}
@@ -289,88 +351,150 @@ const ReceiptAdvance = () => {
                 )}
               </div>
 
-              
               <div>
-                <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Payment Type</label>
+                <label className={labelCls}>Payment Type</label>
                 <input
                   type="text"
                   placeholder="Enter Payment Type"
                   value={formData.payment_type}
                   onChange={(e) => setFormData({ ...formData, payment_type: e.target.value })}
-                  className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-black"
+                  className={inputCls}
                 />
               </div>
+
               <div>
-                <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Received Amount</label>
+                <label className={labelCls}>Received Amount</label>
                 <input
                   type="number"
                   placeholder="0.00"
                   value={formData.received_amount}
                   onChange={(e) => setFormData({ ...formData, received_amount: e.target.value })}
-                  className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-black"
+                  className={inputCls}
                 />
               </div>
-              
             </div>
 
             <div className="space-y-4">
-              
               <div>
-                <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Receipt No</label>
+                <label className={labelCls}>Receipt No</label>
                 <input
                   type="text"
                   value={formData.receipt_no}
                   readOnly
-                  className="mt-1 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-black"
+                  className={roInputCls}
                 />
               </div>
-              <div>
-                <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Mode</label>
+
+              <div className="relative" ref={modeRef}>
+                <label className={labelCls}>Mode</label>
                 <input
                   type="text"
-                  placeholder="Enter Mode"
+                  placeholder="Select Mode"
                   value={formData.payment_mode}
-                  onChange={(e) => setFormData({ ...formData, payment_mode: e.target.value })}
-                  className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-black"
+                  onFocus={() => setModeOpen(true)}
+                  readOnly
+                  className={`${inputCls} cursor-pointer`}
                 />
+                {modeOpen && (
+                  <div className={dropdownCls}>
+                    {["Cash", "Bank", "Cheque"].map((m) => (
+                      <div
+                        key={m}
+                        onMouseDown={() => {
+                          setFormData({ ...formData, payment_mode: m, bank_name: m === "Cash" ? "" : formData.bank_name });
+                          setModeOpen(false);
+                        }}
+                        className="cursor-pointer px-4 py-2 text-sm hover:bg-blue-50"
+                      >
+                        {m}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              <div>
-                <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Bank Name</label>
-                <input
-                  type="text"
-                  placeholder="Enter Bank Name"
-                  value={formData.bank_name}
-                  onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })}
-                  className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-black"
-                />
-              </div>
+
+              {(formData.payment_mode === "Bank" || formData.payment_mode === "Cheque") && (
+                <>
+                  <div className="relative" ref={bankRef}>
+                    <label className={labelCls}>Bank Name <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      placeholder="Select Bank"
+                      value={bankSearch}
+                      onFocus={() => {
+                        setBankSearch("");
+                        setBankOpen(true);
+                      }}
+                      onChange={(e) => setBankSearch(e.target.value)}
+                      className={inputCls}
+                    />
+                    {bankOpen && (
+                      <div className={dropdownCls}>
+                        {banks
+                          .filter((b) => (b.name || b.bank_name || "").toLowerCase().includes(bankSearch.toLowerCase()))
+                          .map((b, i) => (
+                            <div
+                              key={i}
+                              onMouseDown={() => {
+                                setFormData({ ...formData, bank_name: b.name || b.bank_name });
+                                setBankSearch(b.name || b.bank_name);
+                                setBankOpen(false);
+                              }}
+                              className="cursor-pointer px-4 py-2 text-sm hover:bg-blue-50 text-black font-semibold"
+                            >
+                              {b.name || b.bank_name}
+                            </div>
+                          ))}
+                        {banks.filter((b) => (b.name || b.bank_name || "").toLowerCase().includes(bankSearch.toLowerCase())).length === 0 && (
+                          <div className="px-4 py-2 text-sm text-gray-400">No banks found</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className={labelCls}>Reference Number</label>
+                    <input
+                      type="text"
+                      placeholder="UTR / Txn ID / Cheque No"
+                      value={formData.reference_number}
+                      onChange={(e) => setFormData({ ...formData, reference_number: e.target.value })}
+                      className={inputCls}
+                    />
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Date</label>
-                <input ref={receiptDateRef}
-                  className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-black"
+                <label className={labelCls}>Date</label>
+                <input
+                  ref={receiptDateRef}
+                  className={inputCls}
+                  readOnly
                 />
               </div>
+
               <div>
-                <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">TDS</label>
+                <label className={labelCls}>TDS</label>
                 <input
                   type="number"
                   placeholder="0.00"
                   value={formData.tds_amount}
                   onChange={(e) => setFormData({ ...formData, tds_amount: e.target.value })}
-                  className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-black"
+                  className={inputCls}
                 />
               </div>
+
               <div>
-                <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Others</label>
+                <label className={labelCls}>Others</label>
                 <input
                   type="number"
                   placeholder="0.00"
                   value={formData.other_amount}
                   onChange={(e) => setFormData({ ...formData, other_amount: e.target.value })}
-                  className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-black"
+                  className={inputCls}
                 />
               </div>
             </div>
@@ -379,44 +503,45 @@ const ReceiptAdvance = () => {
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <div className="space-y-4">
               <div>
-                <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Received By</label>
+                <label className={labelCls}>Received By</label>
                 <input
                   type="text"
                   placeholder="Received By"
                   value={formData.received_by}
                   onChange={(e) => setFormData({ ...formData, received_by: e.target.value })}
-                  className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-black"
+                  className={inputCls}
                 />
               </div>
+
               <div>
-                <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Remarks</label>
+                <label className={labelCls}>Remarks</label>
                 <textarea
                   value={formData.remarks}
                   onChange={(e) => setFormData({ ...formData, remarks: e.target.value })}
                   rows={4}
                   placeholder="Enter remarks"
-                  className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-black"
+                  className={inputCls}
                 />
               </div>
             </div>
 
-            <div className="rounded-3xl border border-gray-200 bg-gray-50 p-6">
+            <div className="rounded-3xl border border-gray-200 bg-gray-50 p-6 flex flex-col justify-center">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm font-semibold uppercase tracking-[0.18em] text-gray-500">Grand Total</span>
-                <span className="text-3xl font-black text-indigo-900">{grandTotal.toFixed(2)}</span>
+                <span className="text-3xl font-black text-indigo-900">₹{grandTotal.toFixed(2)}</span>
               </div>
               <div className="space-y-2 text-sm text-gray-700">
                 <div className="flex justify-between">
                   <span>Received</span>
-                  <span>{Number(formData.received_amount || 0).toFixed(2)}</span>
+                  <span>₹{Number(formData.received_amount || 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>TDS</span>
-                  <span>{Number(formData.tds_amount || 0).toFixed(2)}</span>
+                  <span>₹{Number(formData.tds_amount || 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Others</span>
-                  <span>{Number(formData.other_amount || 0).toFixed(2)}</span>
+                  <span>₹{Number(formData.other_amount || 0).toFixed(2)}</span>
                 </div>
               </div>
             </div>
@@ -439,10 +564,10 @@ const ReceiptAdvance = () => {
                   searchReceipts(e.target.value);
                 }}
                 placeholder="Search receipt..."
-                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-black"
+                className={inputCls}
               />
               {loadOpen && (
-                <div className="absolute top-[56px] left-0 z-50 w-full rounded-xl border border-gray-200 bg-white shadow-lg">
+                <div className="absolute top-[56px] left-0 z-50 w-full rounded-xl border border-gray-200 bg-white shadow-lg outline-none">
                   {receiptList.length > 0 ? (
                     receiptList.map((receipt) => (
                       <div

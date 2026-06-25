@@ -50,7 +50,7 @@ const PerformanceInvoiceForm = () => {
 
   const Api_url = `${API_BASE_URL}/directinvoices`
 
-  const DESPATCH_OPTIONS = ["Courier", "Hand Delivery", "Transport", "By Bus", "By Train", "Parcel Service", "Customer Pickup"];
+  const DESPATCH_OPTIONS = ["Courier", "By Hand", "Transport"];
 
   // States
 

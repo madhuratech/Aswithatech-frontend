@@ -34,7 +34,7 @@ const INIT_ROW = {
     party_dc_date: ""
 };
 
-const DESPATCH_OPTIONS = ["Courier", "Transport", "By Hand"];
+const DESPATCH_OPTIONS = ["Courier", "By Hand", "Transport"];
 const REMARKS_OPTIONS = ["Serviced", "Re Serviced", "For Sale", "Beyond", "For Testing Purpose","Buy Back"];
 
 const DcEntryForm = () => {

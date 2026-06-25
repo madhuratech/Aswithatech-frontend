@@ -14,7 +14,7 @@ import { toDmy, toYmd } from "../../utils/dateFormat";
 const API = `${API_BASE_URL}/salesinvoices`;
 const TODAY = new Date().toISOString().split("T")[0];
 
-const DESPATCH_OPTIONS = [ "Courier", "Transport", "By Hand", "Lorry"];
+const DESPATCH_OPTIONS = ["Courier", "By Hand", "Transport"];
 
 const INIT_FORM = {
     customer_name: "",

@@ -2,7 +2,7 @@ import API_BASE_URL from "../../config/api";
 import React, { useEffect, useState, useRef } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
-import { Trash2, SquarePen } from "lucide-react";
+import { Trash2, SquarePen, CheckCircle, Eye } from "lucide-react";
 import SaleswindowModel from "../ui/saleswindowModal";
 import Billwiseformat from "../pages/Purchase/bilwisepaymentformat";
 import Addpassword from "./addeditpassword";
@@ -13,6 +13,8 @@ import { toDmy, toYmd } from "../../utils/dateFormat";
 const API = `${API_BASE_URL}/billpayment`;
 const TODAY = new Date().toISOString().split("T")[0];
 const PAYMENT_MODES = ["Cash", "Bank Transfer", "Cheque", "Online", "By Hand"];
+const fmt = (v) => Number(v || 0).toFixed(2);
+
 
 const INIT_ROW = {
   bill_no: "",
@@ -74,11 +76,7 @@ const BillwisePayment = () => {
   const payEntryDateRef = useRef(null);
   const payEntryDateFp = useRef(null);
 
-  // ── shared CSS (matches Sales Invoice) ───────────────────────────────
-  const labelCls = "block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5";
-  const inputCls = "w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black focus:outline-none focus:border-blue-400 bg-white shadow-sm";
-  const roInputCls = "w-full p-2.5 border border-blue-100 rounded-lg text-[13px] font-semibold text-blue-800 bg-blue-50 cursor-not-allowed focus:outline-none";
-  const dropdownCls = "absolute top-full left-0 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 max-h-52 overflow-y-auto";
+
 
   // ════════════════════════════════════════════════════════════════════
   // Lifecycle
@@ -103,10 +101,10 @@ const BillwisePayment = () => {
 
   useOutsideClick([
     { ref: supplierRef, onClose: () => closeAll("supplier") },
-    { ref: billRef,     onClose: () => closeAll("bill") },
-    { ref: modeRef,     onClose: () => closeAll("mode") },
-    { ref: bankRef,     onClose: () => closeAll("bank") },
-    { ref: loadRef,     onClose: () => closeAll("loadPay") },
+    { ref: billRef, onClose: () => closeAll("bill") },
+    { ref: modeRef, onClose: () => closeAll("mode") },
+    { ref: bankRef, onClose: () => closeAll("bank") },
+    { ref: loadRef, onClose: () => closeAll("loadPay") },
   ]);
 
   useEffect(() => {
@@ -368,359 +366,226 @@ const BillwisePayment = () => {
   // Render
   // ════════════════════════════════════════════════════════════════════
   return (
-    <div className="min-h-screen bg-gray-50/70 p-6 font-sans">
-
-      {/* ── Success Modal ─────────────────────────────────────────── */}
-      {savedBillNo !== null && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4">
-          <div className="bg-white rounded-2xl p-8 shadow-2xl text-center w-full max-w-md animate-in fade-in zoom-in duration-200">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-9 h-9 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h2 className="text-[22px] font-black text-gray-900 mb-1">
-              Payment Saved Successfully
-            </h2>
-            <div className="text-[13px] text-gray-400 mb-6 flex flex-col gap-1">
-              {form.receipt_no && (
-                <div>
-                  Receipt No: <span className="font-bold text-gray-700">{form.receipt_no}</span>
-                </div>
-              )}
-              <div>
-                Bill No: <span className="font-bold text-gray-700">{savedBillNo}</span>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowWindow(true)}
-                className="flex-1 py-3 bg-blue-600 text-white rounded-xl text-[14px] font-bold hover:bg-blue-700 transition-colors"
-              >
-                View
-              </button>
-              <button
-                onClick={() => { setSavedBillNo(null); resetAll(); }}
-                className="flex-1 py-3 bg-gray-900 text-white rounded-xl text-[14px] font-bold hover:bg-black transition-colors"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Back */}
+    <div className="p-6 min-h-screen bg-gray-50 font-sans">
       <button
         onClick={() => navigate(-1)}
-        className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl bg-white hover:bg-gray-50 text-[14px] font-semibold w-fit mb-6 shadow-sm"
+        className="flex items-center gap-2 px-4 py-2 border rounded-xl bg-white hover:bg-gray-50 text-[15px] font-medium w-fit"
       >
-        ← Go Back
+        Go Back
       </button>
 
-      <div className="max-w-[1400px] mx-auto bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+      <div className="max-w-[1400px] mx-auto bg-white p-8 mt-8 shadow-sm border border-gray-200">
 
-        {/* ── Title + Buttons ────────────────────────────────── */}
-        <div className="flex justify-between items-start mb-8">
-          <div>
-            <h2 className="text-xl font-black text-gray-900 tracking-tight">Billwise Payment</h2>
-            <p className="text-[12px] text-gray-400 mt-1">Supplier → Select Bills → Enter Payment → Save</p>
-          </div>
-          <div className="flex gap-2">
-            <button onClick={resetAll}
-              className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-gray-800 hover:text-white transition-colors">
-              NEW
-            </button>
-            <button onClick={handleSave} disabled={busy.save}
-              className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-green-600 hover:text-white transition-colors disabled:opacity-40">
-              {busy.save ? "Saving…" : loadedId ? "UPDATE" : "SAVE"}
-            </button>
-            <button onClick={handleDelete}
-              className="border border-gray-200 px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-red-600 hover:text-white transition-colors">
-              DELETE
-            </button>
+        {/* ── Title + Action Buttons ── */}
+        <div className="flex justify-between items-center mb-8">
+          <h2 className="text-xl font-bold text-black tracking-tight">Billwise Payment</h2>
+          <div className="flex gap-1.5">
+            <button onClick={resetAll} className="border px-3 py-1.5 rounded-lg hover:bg-green-600 hover:text-white text-sm">NEW</button>
+            <button onClick={handleSave} disabled={busy.save} className="border px-3 py-1.5 rounded-lg hover:bg-green-600 hover:text-white text-sm">{busy.save ? "Saving…" : loadedId ? "UPDATE" : "SAVE"}</button>
+            <button onClick={handleDelete} className="border px-3 py-1.5 rounded-lg hover:bg-red-600   hover:text-white text-sm">DELETE</button>
+            <button onClick={() => navigate(-1)} className="border px-3 py-1.5 rounded-lg hover:bg-red-600 hover:text-white text-sm">CLOSE</button>
           </div>
         </div>
 
-        {/* ══════════════════════════════════════════════════════
-            STEP 1 — Payment Header
-        ══════════════════════════════════════════════════════ */}
-        <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-5 border border-gray-100 mb-5">
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">
-            Step 1 — Payment Header
-          </p>
-          <div className="grid grid-cols-5 gap-4">
-            {/* Supplier Name — loads from purchase_entry only */}
-            <div className="relative" ref={supplierRef}>
-              <label className={labelCls}>
-                Supplier Name <span className="text-red-500">*</span>
-                <span className="ml-1.5 text-[10px] text-blue-500 font-black normal-case">Bills only</span>
-              </label>
-              <input
-                type="text"
-                value={form.supplier_name}
-                onChange={(e) => {
-                  setForm((p) => ({ ...p, supplier_name: e.target.value }));
-                  openDrop("supplier");
-                }}
-                onFocus={() => openDrop("supplier")}
-                className={inputCls}
-                placeholder="Select supplier with bills…"
-              />
-              {open.supplier && (
-                <div className={dropdownCls}>
-                  {suppliers
-                    .filter((s) =>
-                      (s.supplier_name || "").toLowerCase().includes(form.supplier_name.toLowerCase())
-                    )
-                    .map((s, i) => (
-                      <div key={i} onClick={() => handleSupplierSelect(s.supplier_name)}
-                        className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0">
-                        {s.supplier_name}
-                      </div>
-                    ))}
-                  {suppliers.filter((s) =>
+        {/* ── Row 1: Supplier Name | Receipt No | Date ── */}
+        <div className="grid grid-cols-12 gap-7 border-b border-gray-100 pb-6 mb-6">
+          {/* Supplier Name — auto-loads bills on selection */}
+          <div className="col-span-4 flex flex-col relative" ref={supplierRef}>
+            <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Supplier Name</label>
+            <input
+              type="text"
+              placeholder="Enter Supplier Name"
+              value={form.supplier_name}
+              onFocus={() => openDrop("supplier")}
+              onChange={(e) => {
+                setForm((p) => ({ ...p, supplier_name: e.target.value }));
+                openDrop("supplier");
+              }}
+              className="w-full max-w-[350px] p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black outline-none bg-white shadow-sm mt-2"
+            />
+            {open.supplier && (
+              <div className="absolute top-[66px] left-0 w-full max-w-[380px] bg-white shadow-lg z-50 border border-gray-200 rounded max-h-40 overflow-y-auto">
+                {suppliers
+                  .filter((s) =>
                     (s.supplier_name || "").toLowerCase().includes(form.supplier_name.toLowerCase())
-                  ).length === 0 && (
-                      <div className="px-4 py-3 text-[13px] text-gray-400">
-                        No suppliers with bills found.
-                      </div>
-                    )}
-                </div>
-              )}
-            </div>
-
-            {/* Receipt No */}
-            <div>
-              <label className={labelCls}>Receipt No</label>
-              <input
-                type="text"
-                value={form.receipt_no}
-                readOnly
-                className={roInputCls}
-                placeholder="Auto-generated"
-              />
-            </div>
-
-            {/* Entry Date */}
-            <div>
-              <label className={labelCls}>Entry Date</label>
-              <input ref={payEntryDateRef}
-                className={inputCls} />
-            </div>
-
-            {/* Bank Name */}
-            <div className="relative" ref={bankRef}>
-              <label className={labelCls}>Bank Name</label>
-              <input
-                type="text"
-                value={form.bank_name}
-                onChange={(e) => { setForm((p) => ({ ...p, bank_name: e.target.value })); openDrop("bank"); }}
-                onFocus={() => openDrop("bank")}
-                className={inputCls}
-                placeholder="Type to search bank…"
-              />
-              {open.bank && (
-                <div className={dropdownCls}>
-                  {filteredBanks.slice(0, 30).map((b, i) => (
-                    <div key={i}
-                      onClick={() => { setForm((p) => ({ ...p, bank_name: b.name || b.bank_name })); closeAll("bank"); }}
-                      className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0">
-                      {b.name || b.bank_name}
+                  )
+                  .map((s, i) => (
+                    <div
+                      key={i}
+                      onClick={() => handleSupplierSelect(s.supplier_name)}
+                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                    >
+                      {s.supplier_name}
                     </div>
                   ))}
-                  {filteredBanks.length === 0 && (
-                    <div className="px-4 py-3 text-[13px] text-gray-400">No banks found.</div>
+                {suppliers.filter((s) =>
+                  (s.supplier_name || "").toLowerCase().includes(form.supplier_name.toLowerCase())
+                ).length === 0 && (
+                    <div className="px-3 py-2 text-gray-400 text-sm">No suppliers with bills found</div>
                   )}
-                </div>
-              )}
-            </div>
+              </div>
+            )}
+          </div>
 
-            {/* Reference No */}
-            <div>
-              <label className={labelCls}>Bank Reference No</label>
-              <input type="text" value={form.reference_no}
-                onChange={(e) => setForm((p) => ({ ...p, reference_no: e.target.value }))}
-                className={inputCls} placeholder="Reference number" />
-            </div>
+          <div className="flex flex-col col-span-3 gap-2">
+            <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Receipt No</label>
+            <input
+              readOnly
+              value={form.receipt_no}
+              className="w-full max-w-[250px] p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black bg-gray-50 outline-none shadow-sm"
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Date</label>
+            <input
+              ref={payEntryDateRef}
+              type="text"
+              readOnly
+              value={form.entry_date}
+              className="w-[180px] p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black outline-none shadow-sm"
+            />
           </div>
         </div>
 
-        {/* ══════════════════════════════════════════════════════
-            STEP 2 — Bill Entry
-        ══════════════════════════════════════════════════════ */}
-        <div className={`bg-gradient-to-br from-blue-50/40 to-white rounded-xl p-5 border border-blue-100 mb-5 transition-all duration-200 ${!form.supplier_name ? "opacity-40 pointer-events-none" : ""}`}>
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">
-            Step 2 — Bill Selection &amp; Payment Entry
-          </p>
+        {/* ── Entry Form ── */}
+        <div className={`border border-gray-200 p-5 mb-6 bg-gray-50 transition-all duration-200 ${!form.supplier_name ? "opacity-40 pointer-events-none" : ""}`}>
+          <div className="grid grid-cols-3 gap-x-8 gap-y-4">
 
-          {/* Row 1: Bill No + Auto-filled read-only fields */}
-          <div className="grid grid-cols-6 gap-4 mb-4">
-
-            {/* Bill No */}
-            <div className="relative" ref={billRef}>
-              <label className={labelCls}>
-                Bill No <span className="text-red-500">*</span>
-              </label>
-              <div
-                onClick={() => form.supplier_name && openDrop("bill")}
-                className={`${inputCls} flex justify-between items-center cursor-pointer min-h-[43px]`}
-              >
-                <span className={currentRow.bill_no ? "text-black" : "text-gray-400 font-medium text-[13px]"}>
-                  {currentRow.bill_no || (supplierBills.length === 0 ? "No bills found" : "Select bill…")}
-                </span>
-                <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
+            {/* Bill Number */}
+            <div className="flex flex-col gap-1 relative" ref={billRef}>
+              <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Bill Number</label>
+              <input
+                type="text"
+                placeholder="Select Bill No"
+                value={currentRow.bill_no}
+                onFocus={() => { if (supplierBills.length) openDrop("bill"); }}
+                readOnly
+                className="p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black outline-none bg-white shadow-sm cursor-pointer"
+              />
               {open.bill && supplierBills.length > 0 && (
-                <div className={dropdownCls}>
+                <div className="absolute top-[62px] left-0 w-full bg-white shadow-lg z-50 border border-gray-200 rounded max-h-40 overflow-y-auto">
                   {supplierBills.map((b, i) => (
-                    <div key={i} onClick={() => handleBillSelect(b)}
-                      className="px-4 py-3 hover:bg-blue-50 cursor-pointer border-b border-gray-50 last:border-0">
-                      <div className="text-[13px] font-bold text-gray-900">{b.bill_no}</div>
+                    <div
+                      key={i}
+                      onClick={() => handleBillSelect(b)}
+                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm flex justify-between"
+                    >
+                      <span className="font-semibold">{b.bill_no}</span>
+                      <span className="text-gray-500">{Number(b.bill_amount).toFixed(2)}</span>
                     </div>
                   ))}
                 </div>
               )}
               {open.bill && supplierBills.length === 0 && (
-                <div className={`${dropdownCls} px-4 py-3 text-[13px] text-gray-400`}>
+                <div className="absolute top-[62px] left-0 w-full bg-white shadow-lg z-50 border border-gray-200 rounded px-3 py-2 text-gray-400 text-sm">
                   No pending bills for this supplier.
                 </div>
               )}
             </div>
 
-            {/* Bill Date — auto-filled */}
-            <div>
-              <label className={labelCls}>
-                Bill Date
-                {currentRow.bill_no && <span className="ml-1 text-[10px] text-blue-500 font-black normal-case">Auto</span>}
-              </label>
-              <input type="text" value={currentRow.bill_date ? new Date(currentRow.bill_date).toLocaleDateString("en-IN") : ""}
-                readOnly className={roInputCls} placeholder="Auto-filled" />
-            </div>
-
-            {/* Bill Amount — auto-filled */}
-            <div>
-              <label className={labelCls}>
-                Bill Amount
-                {currentRow.bill_no && <span className="ml-1 text-[10px] text-blue-500 font-black normal-case">Auto</span>}
-              </label>
-              <input type="text"
-                value={currentRow.bill_amount ? `₹${Number(currentRow.bill_amount).toFixed(2)}` : ""}
-                readOnly className={roInputCls} placeholder="Auto-filled" />
-            </div>
-
-            {/* Supplier Name — auto from header */}
-            <div>
-              <label className={labelCls}>
-                Supplier
-                {currentRow.bill_no && <span className="ml-1 text-[10px] text-blue-500 font-black normal-case">Auto</span>}
-              </label>
-              <input type="text" value={form.supplier_name}
-                readOnly className={roInputCls} placeholder="Auto-filled" />
-            </div>
-
-            {/* Previous Paid — auto-filled */}
-            <div>
-              <label className={labelCls}>
-                Prev. Paid
-                {currentRow.bill_no && <span className="ml-1 text-[10px] text-blue-500 font-black normal-case">Auto</span>}
-              </label>
-              <input type="text"
-                value={currentRow.previous_paid !== "" ? `₹${Number(currentRow.previous_paid).toFixed(2)}` : ""}
-                readOnly className={roInputCls} placeholder="Auto-filled" />
-            </div>
-
-            {/* Balance Amount — calculated */}
-            <div>
-              <label className={labelCls}>
-                Balance
-                <span className="ml-1 text-[10px] text-orange-500 font-black normal-case">Calc.</span>
-              </label>
-              <input type="text"
-                value={currentRow.balance_amount !== "" ? `₹${Number(currentRow.balance_amount).toFixed(2)}` : ""}
+            {/* Bill Date */}
+            <div className="flex flex-col gap-1">
+              <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Bill Date</label>
+              <input
                 readOnly
-                className="w-full p-2.5 border border-orange-200 rounded-lg text-[13px] font-bold text-orange-700 bg-orange-50 cursor-not-allowed focus:outline-none"
-                placeholder="Calculated" />
+                value={currentRow.bill_date ? new Date(currentRow.bill_date).toLocaleDateString("en-IN") : ""}
+                className="p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black bg-gray-100 outline-none shadow-sm"
+                placeholder="Auto-filled"
+              />
             </div>
-          </div>
 
-          {/* Row 2: Editable payment fields */}
-          <div className="grid grid-cols-6 gap-4 items-end">
+            {/* Bill Amount */}
+            <div className="flex flex-col gap-1">
+              <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Bill Amount</label>
+              <input
+                readOnly
+                value={currentRow.bill_amount ? `₹${Number(currentRow.bill_amount).toFixed(2)}` : ""}
+                className="p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black bg-gray-100 outline-none shadow-sm"
+                placeholder="Auto-filled"
+              />
+            </div>
 
-            {/* Paid Amount — manual */}
-            <div>
-              <label className={labelCls}>
-                Paid Amount <span className="text-red-500">*</span>
-                <span className="ml-1 text-[10px] text-gray-400 font-black normal-case">Manual</span>
-              </label>
-              <input type="number" min="0"
+            {/* Prev. Paid */}
+            <div className="flex flex-col gap-1">
+              <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Prev. Paid</label>
+              <input
+                readOnly
+                value={currentRow.previous_paid !== "" ? `₹${Number(currentRow.previous_paid).toFixed(2)}` : ""}
+                className="p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black bg-gray-100 outline-none shadow-sm"
+                placeholder="Auto-filled"
+              />
+            </div>
+
+            {/* Paid Amount */}
+            <div className="flex flex-col gap-1">
+              <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Paid Amount</label>
+              <input
+                type="number"
+                min="0"
+                placeholder="0.00"
                 value={currentRow.paid_amount}
                 onChange={(e) => updateCurrentRow("paid_amount", e.target.value)}
-                className="w-full p-2.5 border border-green-300 rounded-lg text-[13px] font-semibold text-green-800 bg-green-50 focus:outline-none focus:border-green-500 shadow-sm"
-                placeholder="Enter amount" />
+                className="p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black outline-none bg-white shadow-sm"
+              />
             </div>
 
-            {/* TDS Amount — new manual field */}
-            <div>
-              <label className={labelCls}>
-                TDS Amount
-                <span className="ml-1 text-[10px] text-gray-400 font-black normal-case">Manual</span>
-              </label>
-              <input type="number" min="0"
+            {/* TDS Amount */}
+            <div className="flex flex-col gap-1">
+              <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">TDS Amount</label>
+              <input
+                type="number"
+                min="0"
+                placeholder="0.00"
                 value={currentRow.tds_amount}
                 onChange={(e) => updateCurrentRow("tds_amount", e.target.value)}
-                className="w-full p-2.5 border border-purple-200 rounded-lg text-[13px] font-semibold text-purple-800 bg-purple-50 focus:outline-none focus:border-purple-400 shadow-sm"
-                placeholder="0.00" />
+                className="p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black outline-none bg-white shadow-sm"
+              />
             </div>
 
-            {/* Delivery Charge — new manual field */}
-            <div>
-              <label className={labelCls}>
-                Delivery Charge
-                <span className="ml-1 text-[10px] text-gray-400 font-black normal-case">Manual</span>
-              </label>
-              <input type="number" min="0"
+            {/* Delivery Charge */}
+            <div className="flex flex-col gap-1">
+              <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Delivery Charge</label>
+              <input
+                type="number"
+                min="0"
+                placeholder="0.00"
                 value={currentRow.delivery_charge}
                 onChange={(e) => updateCurrentRow("delivery_charge", e.target.value)}
-                className="w-full p-2.5 border border-blue-200 rounded-lg text-[13px] font-semibold text-blue-800 bg-blue-50 focus:outline-none focus:border-blue-400 shadow-sm"
-                placeholder="0.00" />
+                className="p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black outline-none bg-white shadow-sm"
+              />
             </div>
 
-            {/* Remarks — manual */}
-            <div>
-              <label className={labelCls}>
-                Remarks
-                <span className="ml-1 text-[10px] text-gray-400 font-black normal-case">Manual</span>
-              </label>
-              <input type="text"
-                value={form.remarks}
-                onChange={(e) => setForm((p) => ({ ...p, remarks: e.target.value }))}
-                className="w-full p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black focus:outline-none focus:border-blue-400 bg-white shadow-sm"
-                placeholder="Optional note" />
+            {/* Balance Amount */}
+            <div className="flex flex-col gap-1">
+              <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Balance Amount</label>
+              <input
+                readOnly
+                value={currentRow.balance_amount !== "" ? `₹${Number(currentRow.balance_amount).toFixed(2)}` : ""}
+                className="p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-red-600 bg-gray-100 outline-none shadow-sm"
+                placeholder="Calculated"
+              />
             </div>
 
             {/* Payment Mode */}
-            <div className="relative" ref={modeRef}>
-              <label className={labelCls}>Payment Mode <span className="text-red-500">*</span></label>
-              <div
-                onClick={() => openDrop("mode")}
-                className={`${inputCls} flex justify-between items-center cursor-pointer min-h-[43px]`}
-              >
-                <span className={currentRow.payment_mode ? "text-black" : "text-gray-400 font-medium text-[13px]"}>
-                  {currentRow.payment_mode || "Select mode…"}
-                </span>
-                <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
+            <div className="flex flex-col gap-1 relative" ref={modeRef}>
+              <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Payment Mode</label>
+              <input
+                type="text"
+                placeholder="Select Mode"
+                value={currentRow.payment_mode}
+                onFocus={() => openDrop("mode")}
+                readOnly
+                className="p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black outline-none bg-white shadow-sm cursor-pointer"
+              />
               {open.mode && (
-                <div className={dropdownCls}>
+                <div className="absolute top-[62px] left-0 w-full bg-white shadow-lg z-50 border border-gray-200 rounded">
                   {PAYMENT_MODES.map((m) => (
-                    <div key={m}
+                    <div
+                      key={m}
                       onClick={() => { setCurrentRow((p) => ({ ...p, payment_mode: m })); closeAll("mode"); }}
-                      className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0">
+                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                    >
                       {m}
                     </div>
                   ))}
@@ -728,84 +593,141 @@ const BillwisePayment = () => {
               )}
             </div>
 
-            {/* Buttons */}
-            <div className="flex gap-2">
-              <button onClick={addRow}
-                className="flex-1 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-[13px] font-bold transition-colors">
-                Add
-              </button>
-              <button onClick={() => setCurrentRow(INIT_ROW)}
-                className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-[13px] font-bold transition-colors">
-                Clear
-              </button>
+            {/* Bank Name (Dropdown) */}
+            <div className="flex flex-col gap-1 relative" ref={bankRef}>
+              <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Bank Name</label>
+              <input
+                type="text"
+                placeholder="Type to search bank..."
+                value={form.bank_name}
+                onFocus={() => openDrop("bank")}
+                onChange={(e) => setForm((p) => ({ ...p, bank_name: e.target.value }))}
+                className="p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black outline-none bg-white shadow-sm"
+              />
+              {open.bank && (
+                <div className="absolute top-[62px] left-0 w-full bg-white shadow-lg z-50 border border-gray-200 rounded max-h-40 overflow-y-auto">
+                  {filteredBanks.slice(0, 30).map((b, i) => (
+                    <div
+                      key={i}
+                      onClick={() => { setForm((p) => ({ ...p, bank_name: b.name || b.bank_name })); closeAll("bank"); }}
+                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                    >
+                      {b.name || b.bank_name}
+                    </div>
+                  ))}
+                  {filteredBanks.length === 0 && (
+                    <div className="px-3 py-2 text-gray-400 text-sm">No banks found.</div>
+                  )}
+                </div>
+              )}
             </div>
+
+            {/* Bank Reference No */}
+            <div className="flex flex-col gap-1">
+              <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Reference Number</label>
+              <input
+                type="text"
+                placeholder="Reference number"
+                value={form.reference_no}
+                onChange={(e) => setForm((p) => ({ ...p, reference_no: e.target.value }))}
+                className="p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black outline-none bg-white shadow-sm"
+              />
+            </div>
+
+            {/* Remarks */}
+            <div className="flex flex-col gap-1">
+              <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Remarks</label>
+              <input
+                type="text"
+                placeholder="Remarks"
+                value={form.remarks}
+                onChange={(e) => setForm((p) => ({ ...p, remarks: e.target.value }))}
+                className="p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black outline-none bg-white shadow-sm"
+              />
+            </div>
+          </div>
+
+          {/* ADD / CLEAR buttons */}
+          <div className="flex gap-2 mt-4">
+            <button
+              onClick={addRow}
+              className="border px-5 py-1.5 rounded-lg hover:bg-green-600 hover:text-white text-sm font-semibold"
+            >
+              ADD
+            </button>
+            <button
+              onClick={() => setCurrentRow(INIT_ROW)}
+              className="border px-5 py-1.5 rounded-lg hover:bg-gray-400 hover:text-white text-sm font-semibold"
+            >
+              CLEAR
+            </button>
           </div>
         </div>
 
-        {/* ── Items Table ──────────────────────────────────────── */}
-        <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm min-h-[180px]">
+        {/* ── Bills Table ── */}
+        <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm bg-white min-h-[200px]">
           <table className="w-full border-collapse">
             <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
-                {["#", "Bill No", "Bill Date", "Bill Amt", "Prev Paid", "Paid Amt", "TDS", "Delivery", "Balance", "Mode", "Actions"].map((h, i) => (
-                  <th key={i}
-                    className={`px-3 py-3 text-[10px] font-black text-gray-400 uppercase tracking-wide ${i === 0 ? "w-8 text-center" : i === 1 ? "text-left" : "text-center"
-                      }`}>
-                    {h}
-                  </th>
+              <tr className="bg-gray-50 border-b border-gray-200 text-left">
+                {["Bill No", "Bill Date", "Bill Amount", "Prev Paid", "TDS Amount", "Delivery Charge", "Paid Amount", "Balance", "Payment Mode", "Del"].map((h) => (
+                  <th key={h} className="p-3 text-[11px] font-black text-gray-500 border-r border-gray-100 uppercase text-center whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {tabledata.length === 0 ? (
-                <tr>
-                  <td colSpan={11} className="py-14 text-center">
-                    <div className="text-gray-300 text-4xl mb-3">💳</div>
-                    <p className="text-[13px] text-gray-400 font-medium">No bills added yet.</p>
-                    <p className="text-[12px] text-gray-300 mt-1">Select a supplier → pick a bill → enter payment.</p>
-                  </td>
-                </tr>
-              ) : (
-                tabledata.map((r, idx) => (
-                  <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50/70 transition-colors">
-                    <td className="px-3 py-3 text-[11px] font-semibold text-gray-400 text-center">{idx + 1}</td>
-                    <td className="px-3 py-3 text-[12px] font-bold text-gray-800">{r.bill_no}</td>
-                    <td className="px-3 py-3 text-[12px] text-gray-600 text-center">
-                      {r.bill_date ? new Date(r.bill_date).toLocaleDateString("en-IN") : "—"}
+              {tabledata.length > 0 ? (
+                tabledata.map((row, index) => (
+                  <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
+                    <td className="p-3 text-[12px] font-bold text-black border-r border-gray-100 text-center">{row.bill_no}</td>
+                    <td className="p-3 text-[12px] text-gray-700 border-r border-gray-100 text-center">
+                      {row.bill_date ? new Date(row.bill_date).toLocaleDateString("en-IN") : "—"}
                     </td>
-                    <td className="px-3 py-3 text-[12px] font-semibold text-gray-800 text-center">
-                      ₹{Number(r.bill_amount).toFixed(2)}
+                    <td className="p-3 text-[12px] font-bold text-blue-700 border-r border-gray-100 text-center">₹{Number(row.bill_amount).toFixed(2)}</td>
+                    <td className="p-3 text-[12px] font-semibold text-gray-700 border-r border-gray-100 text-center">
+                      {row.previous_paid !== "" && row.previous_paid !== undefined ? `₹${Number(row.previous_paid).toFixed(2)}` : "—"}
                     </td>
-                    <td className="px-3 py-3 text-[12px] text-gray-500 text-center">
-                      ₹{Number(r.previous_paid || 0).toFixed(2)}
-                    </td>
-                    <td className="px-3 py-3 text-[12px] font-bold text-green-700 text-center">
-                      ₹{Number(r.paid_amount).toFixed(2)}
-                    </td>
-                    <td className="px-3 py-3 text-[12px] text-purple-700 text-center">
-                      ₹{Number(r.tds_amount || 0).toFixed(2)}
-                    </td>
-                    <td className="px-3 py-3 text-[12px] text-blue-700 text-center">
-                      ₹{Number(r.delivery_charge || 0).toFixed(2)}
-                    </td>
-                    <td className="px-3 py-3 text-[12px] font-bold text-orange-700 text-center">
-                      ₹{Number(r.balance_amount).toFixed(2)}
-                    </td>
-                    <td className="px-3 py-3 text-[12px] text-gray-600 text-center">{r.payment_mode}</td>
-                    <td className="px-3 py-3 text-center">
+                    <td className="p-3 text-[12px] font-semibold text-gray-700 border-r border-gray-100 text-center">₹{Number(row.tds_amount || 0).toFixed(2)}</td>
+                    <td className="p-3 text-[12px] font-semibold text-gray-700 border-r border-gray-100 text-center">₹{Number(row.delivery_charge || 0).toFixed(2)}</td>
+                    <td className="p-3 text-[12px] font-bold text-green-700 border-r border-gray-100 text-center">₹{Number(row.paid_amount).toFixed(2)}</td>
+                    <td className="p-3 text-[12px] font-bold text-red-600 border-r border-gray-100 text-center">₹{Number(row.balance_amount).toFixed(2)}</td>
+                    <td className="p-3 text-[12px] font-semibold text-gray-700 border-r border-gray-100 text-center">{row.payment_mode}</td>
+                    <td className="p-3 text-center">
                       <div className="flex justify-center gap-3">
-                        <button onClick={() => editRow(idx)} title="Edit">
-                          <SquarePen size={15} className="text-blue-500 hover:text-blue-700 transition-colors" />
+                        <button onClick={() => editRow(index)} title="Edit">
+                          <SquarePen size={15} className="text-blue-500 hover:text-blue-700 cursor-pointer" />
                         </button>
-                        <button onClick={() => deleteRow(idx)} title="Delete">
-                          <Trash2 size={15} className="text-red-400 hover:text-red-600 transition-colors" />
+                        <button onClick={() => deleteRow(index)} title="Delete">
+                          <Trash2 size={15} className="text-red-500 hover:text-red-700 cursor-pointer" />
                         </button>
                       </div>
                     </td>
                   </tr>
                 ))
+              ) : (
+                <tr>
+                  <td colSpan="10" className="p-10 text-center text-gray-400 text-sm">
+                    Select a supplier, choose a bill and click <strong>ADD</strong>
+                  </td>
+                </tr>
               )}
             </tbody>
+            {/* Totals footer */}
+            {tabledata.length > 0 && (
+              <tfoot>
+                <tr className="bg-gray-50 border-t-2 border-gray-300 font-black text-[12px]">
+                  <td className="p-3 text-center text-gray-600 border-r border-gray-100">TOTAL</td>
+                  <td className="p-3 border-r border-gray-100"></td>
+                  <td className="p-3 text-center text-blue-700 border-r border-gray-100">₹{fmt(tabledata.reduce((s, r) => s + Number(r.bill_amount || 0), 0))}</td>
+                  <td className="p-3 text-center text-gray-700 border-r border-gray-100">₹{fmt(tabledata.reduce((s, r) => s + Number(r.previous_paid || 0), 0))}</td>
+                  <td className="p-3 text-center text-gray-700 border-r border-gray-100">₹{fmt(tabledata.reduce((s, r) => s + Number(r.tds_amount || 0), 0))}</td>
+                  <td className="p-3 text-center text-gray-700 border-r border-gray-100">₹{fmt(tabledata.reduce((s, r) => s + Number(r.delivery_charge || 0), 0))}</td>
+                  <td className="p-3 text-center text-green-700 border-r border-gray-100">₹{fmt(derivedGrandTotal)}</td>
+                  <td className="p-3 text-center text-red-600 border-r border-gray-100">₹{fmt(tabledata.reduce((s, r) => s + Number(r.balance_amount || 0), 0))}</td>
+                  <td className="p-3 border-r border-gray-100"></td>
+                  <td className="p-3"></td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
 
@@ -813,25 +735,24 @@ const BillwisePayment = () => {
         <div className="grid grid-cols-2 gap-10 mt-8">
 
           {/* Load Existing Payment */}
-          <div className="pt-6 border-t border-gray-100">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">
-              Load / Edit Existing Payment
-            </p>
-            <div className="relative w-64" ref={loadRef}>
-              <label className={labelCls}>Bill No</label>
+          <div className="mt-8 p-5 bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg flex items-center gap-6 self-start">
+            <label className="text-[11px] font-black text-gray-600 uppercase tracking-[0.2em] italic whitespace-nowrap">
+              Select Bill No To View / Modify :
+            </label>
+            <div className="relative" ref={loadRef}>
               <input
                 type="text"
+                readOnly
                 placeholder="Select a saved bill no…"
                 onFocus={() => { openDrop("loadPay"); searchAllPayments(); }}
-                className={`${inputCls} w-64`}
-                readOnly
+                className="p-2.5 border w-full max-w-[200px] rounded-lg outline-none w-56 bg-white cursor-pointer"
               />
               {open.loadPay && allPayments.length > 0 && (
-                <div className={`${dropdownCls} w-64`}>
+                <div className="absolute top-[46px] left-0 w-full bg-white shadow-lg z-50 border border-gray-200 rounded max-h-40 overflow-y-auto">
                   {allPayments.map((b, i) => (
                     <div key={i}
                       onClick={() => requirePassword(() => loadPayment(b.bill_no))}
-                      className="px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-[13px] font-semibold border-b border-gray-50 last:border-0">
+                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm">
                       {b.bill_no}
                     </div>
                   ))}
@@ -872,7 +793,7 @@ const BillwisePayment = () => {
 
               <div className="flex justify-between items-center pt-4 border-t-2 border-gray-300 mt-2">
                 <span className="text-[15px] font-black text-black uppercase">Total Paid</span>
-                <span className="text-[24px] font-black text-indigo-700">₹{derivedGrandTotal}</span>
+                <span className="text-[24px] font-black text-green-700">₹{derivedGrandTotal}</span>
               </div>
             </div>
           </div>
@@ -893,6 +814,53 @@ const BillwisePayment = () => {
       >
         <Billwiseformat billNo={savedBillNo} />
       </SaleswindowModel>
+
+      {/* ── Minimized bar ── */}
+      {showWindow && isMinimized && (
+        <div className="fixed bottom-0 left-0 right-0 h-10 bg-[#e0e0e0] border-t border-gray-400 flex items-center px-4 z-[99999] shadow-[0_-2px_10px_rgba(0,0,0,0.1)]">
+          <button
+            onClick={() => setIsMinimized(false)}
+            className="flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-blue-700 to-blue-500 text-white text-xs font-bold rounded-sm border border-gray-600 shadow-[inset_1px_1px_0px_rgba(255,255,255,0.3)] hover:from-blue-600 hover:to-blue-400 transition-all"
+          >
+            <div className="w-3 h-3 border border-white/50"></div>
+            Payment Format
+          </button>
+        </div>
+      )}
+
+      {/* ── Success Modal ── */}
+      {savedBillNo !== null && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-8 shadow-2xl w-full max-w-sm text-center">
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+                <CheckCircle className="w-9 h-9 text-green-500" />
+              </div>
+            </div>
+            <h2 className="text-xl font-black text-gray-800 mb-1">Billwise Payment Saved Successfully!</h2>
+            <p className="text-sm text-gray-500 mb-1">Payment has been created.</p>
+            {form.receipt_no && (
+              <p className="text-sm font-semibold text-gray-600">Receipt No : {form.receipt_no}</p>
+            )}
+            <p className="text-sm font-black text-blue-600 mb-6">Bill No : {savedBillNo}</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowWindow(true); setSavedBillNo(null); }}
+                className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white py-2.5 rounded-xl font-bold hover:bg-blue-700 transition-colors"
+              >
+                <Eye className="w-4 h-4" /> View
+              </button>
+              <button
+                onClick={() => { setSavedBillNo(null); resetAll(); }}
+                className="flex-1 border border-gray-300 py-2.5 rounded-xl font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showPasswordModal && (
         <Addpassword onSuccess={handlePasswordSuccess} onClose={handlePasswordCancel} />
       )}

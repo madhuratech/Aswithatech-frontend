@@ -12,7 +12,7 @@ const API = `${API_BASE_URL}/taxpurchases`;
 const TODAY = new Date().toISOString().split("T")[0];
 const UOM_LIST = ["Nos", "Set", "Pkt", "Kg", "Mtr", "Ltr", "Box", "Unit"];
 const OTHER_CHARGE_OPTIONS = ["Transportation Charges", "Delivery Charges", "Courier Charges"];
-const DESPATCH_OPTIONS = ["By Hand", "Courier", "Transport", "Bus", "Lorry", "Parcel Service"];
+const DESPATCH_OPTIONS = ["Courier", "By Hand", "Transport"];
 
 const INIT_FORM = {
   supplier_name: "",

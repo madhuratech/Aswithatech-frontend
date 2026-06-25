@@ -33,16 +33,23 @@ function readFileAsBase64(file) {
 }
 
 const AddEmployee = ({ onClose, refreshEmployees, employee }) => {
-  const [open, setOpen] = React.useState(false);
-  const [category, setCategory] = React.useState("");
   const [documents, setDocuments] = useState([]);
   const [busy, setBusy] = useState(false);
+  const [departmentList, setDepartmentList] = useState([]);
+  const [departmentOpen, setDepartmentOpen] = useState(false);
   const cardRef = useRef(null);
   const departmentRef = useRef(null);
 
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/employees/departments`)
+      .then(r => r.json())
+      .then(data => setDepartmentList(Array.isArray(data) ? data : []))
+      .catch(() => {});
+  }, []);
+
   useOutsideClick([
     { ref: cardRef, onClose },
-    { ref: departmentRef, onClose: () => setOpen(false) }
+    { ref: departmentRef, onClose: () => setDepartmentOpen(false) }
   ]);
 
   useEffect(() => {
@@ -96,7 +103,6 @@ const AddEmployee = ({ onClose, refreshEmployees, employee }) => {
         identification: employee.identification || "",
         pannumber: employee.pannumber || ""
       });
-      setCategory(employee.department || "");
       const existing = Array.isArray(employee.documents) ? employee.documents : [];
       setDocuments(existing);
     }
@@ -264,20 +270,35 @@ const AddEmployee = ({ onClose, refreshEmployees, employee }) => {
               <div className="relative" ref={departmentRef}>
                 <label className="text-sm font-medium">Department</label>
                 <input
-                  value={category || formData.department}
-                  onClick={() => setOpen(true)}
-                  type="text" name="department"
+                  type="text"
+                  value={formData.department}
+                  onChange={(e) => { setFormData(prev => ({ ...prev, department: e.target.value })); setDepartmentOpen(true); }}
+                  onFocus={() => setDepartmentOpen(true)}
                   className="mt-2 w-full rounded-lg bg-gray-100 px-3 py-2 text-sm outline-none cursor-pointer"
-                  placeholder="Select Department" required
-                  readOnly
+                  placeholder="Select or type Department"
+                  required
                 />
-
-                {open && (
-                  <div className="absolute top-full left-0 mt-1 w-full bg-white shadow p-3 rounded-lg border z-10">
-                    <ul className="leading-8 cursor-pointer">
-                      <li onClick={() => { setCategory("Sales"); setFormData(prev => ({ ...prev, department: "Sales" })); setOpen(false); }} className="hover:bg-gray-100 px-2 rounded">Sales</li>
-                      <li onClick={() => { setCategory("Services"); setFormData(prev => ({ ...prev, department: "Services" })); setOpen(false); }} className="hover:bg-gray-100 px-2 rounded">Services</li>
-                    </ul>
+                {departmentOpen && (
+                  <div className="absolute top-full left-0 mt-1 w-full bg-white shadow p-3 rounded-lg border z-10 max-h-48 overflow-y-auto">
+                    {departmentList
+                      .filter(d => d.toLowerCase().includes(formData.department.toLowerCase()))
+                      .map((d, i) => (
+                        <div
+                          key={i}
+                          onClick={() => { setFormData(prev => ({ ...prev, department: d })); setDepartmentOpen(false); }}
+                          className="hover:bg-gray-100 px-2 rounded cursor-pointer py-1"
+                        >
+                          {d}
+                        </div>
+                      ))}
+                    {formData.department && !departmentList.some(d => d.toLowerCase() === formData.department.toLowerCase()) && (
+                      <div
+                        onClick={() => setDepartmentOpen(false)}
+                        className="hover:bg-gray-100 px-2 rounded cursor-pointer py-1 text-blue-600 italic"
+                      >
+                        Add "{formData.department}"
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

@@ -12,7 +12,7 @@ import { usePasswordProtection } from "../../hooks/usePasswordProtection";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 const API = `${API_BASE_URL}/salesdc`;
 const TODAY = new Date().toISOString().split("T")[0];
-const DESPATCH_OPTIONS = ["Courier", "Transport", "By Hand"];
+const DESPATCH_OPTIONS = ["Courier", "By Hand", "Transport"];
 const REMARKS_OPTIONS = ["Serviced", "Re Serviced", "For Sale", "Beyond", "For Testing Purpose","Buy Back"];
 
 const INIT_FORM = {

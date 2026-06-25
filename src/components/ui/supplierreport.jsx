@@ -138,13 +138,7 @@ const SupplierModel = ({ onMinimize, onClose, title, setIsMinimizedInternal }) =
   const totalPaid    = data.reduce((s, r) => s + (Number(r.paid_amount)    || 0), 0);
   const totalTds     = data.reduce((s, r) => s + (Number(r.tds)            || 0), 0);
   const totalOthers  = data.reduce((s, r) => s + (Number(r.others)         || 0), 0);
-  const totalGrand   = data.reduce((s, r) => s + (Number(r.po_grand_total) || 0), 0);
-  const totalBalance = data.reduce((s, r) => s + (
-    (Number(r.po_grand_total) || 0) -
-    (Number(r.paid_amount)    || 0) -
-    (Number(r.tds)            || 0) -
-    (Number(r.others)         || 0)
-  ), 0);
+
 
   if (isMinimized) {
     return (
@@ -330,8 +324,7 @@ const SupplierModel = ({ onMinimize, onClose, title, setIsMinimizedInternal }) =
                       ["PAID AMOUNT",    "right",  "100px"],
                       ["TDS",            "right",  "70px"],
                       ["OTHERS",         "right",  "70px"],
-                      ["GRAND TOTAL",    "right",  "100px"],
-                      ["BALANCE AMOUNT", "right",  "110px"],
+
                       ["PAYMENT METHOD", "center", "110px"],
                     ].map(([label, align, width]) => (
                       <th key={label} style={{
@@ -349,7 +342,7 @@ const SupplierModel = ({ onMinimize, onClose, title, setIsMinimizedInternal }) =
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan="10" style={{ textAlign: "center", padding: "20px", color: "#666", fontStyle: "italic", border: "1px solid #ddd" }}>
+                      <td colSpan="8" style={{ textAlign: "center", padding: "20px", color: "#666", fontStyle: "italic", border: "1px solid #ddd" }}>
                         Loading...
                       </td>
                     </tr>
@@ -374,12 +367,7 @@ const SupplierModel = ({ onMinimize, onClose, title, setIsMinimizedInternal }) =
                           <td style={{ border: "1px solid #d0d0d0", padding: "3px 5px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
                             {Number(row.others || 0).toFixed(2)}
                           </td>
-                          <td style={{ border: "1px solid #d0d0d0", padding: "3px 5px", textAlign: "right", color: "#00008b", fontWeight: "600", fontVariantNumeric: "tabular-nums" }}>
-                            {Number(row.po_grand_total || 0).toFixed(2)}
-                          </td>
-                          <td style={{ border: "1px solid #d0d0d0", padding: "3px 5px", textAlign: "right", color: "#8b0000", fontWeight: "600", fontVariantNumeric: "tabular-nums" }}>
-                            {((Number(row.po_grand_total) || 0) - (Number(row.paid_amount) || 0) - (Number(row.tds) || 0) - (Number(row.others) || 0)).toFixed(2)}
-                          </td>
+
                           <td style={{ border: "1px solid #d0d0d0", padding: "3px 5px", textAlign: "center", color: "#00008b", fontWeight: "600" }}>
                             {row.payment_mode}
                           </td>
@@ -392,14 +380,13 @@ const SupplierModel = ({ onMinimize, onClose, title, setIsMinimizedInternal }) =
                         <td style={{ border: "1px solid #a0bbd0", padding: "4px 5px", textAlign: "right", color: "#006400", fontVariantNumeric: "tabular-nums" }}>{totalPaid.toFixed(2)}</td>
                         <td style={{ border: "1px solid #a0bbd0", padding: "4px 5px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{totalTds.toFixed(2)}</td>
                         <td style={{ border: "1px solid #a0bbd0", padding: "4px 5px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{totalOthers.toFixed(2)}</td>
-                        <td style={{ border: "1px solid #a0bbd0", padding: "4px 5px", textAlign: "right", color: "#00008b", fontVariantNumeric: "tabular-nums" }}>{totalGrand.toFixed(2)}</td>
-                        <td style={{ border: "1px solid #a0bbd0", padding: "4px 5px", textAlign: "right", color: "#8b0000", fontVariantNumeric: "tabular-nums" }}>{totalBalance.toFixed(2)}</td>
+
                         <td style={{ border: "1px solid #a0bbd0", padding: "4px 5px" }}></td>
                       </tr>
                     </>
                   ) : (
                     <tr>
-                      <td colSpan="10" style={{ textAlign: "center", padding: "24px", color: "#aaa", fontStyle: "italic", border: "1px solid #ddd" }}>
+                      <td colSpan="8" style={{ textAlign: "center", padding: "24px", color: "#aaa", fontStyle: "italic", border: "1px solid #ddd" }}>
                         No supplier records found.
                       </td>
                     </tr>

@@ -36,7 +36,7 @@ const INIT_ROW = {
 };
 
 const UOM_LIST = ["NOS", "KG", "MTR", "NO", "SET", "PKT"];
-const DESPATCH_OPTIONS = ["Courier", "Transport", "By Hand"];
+const DESPATCH_OPTIONS = ["Courier", "By Hand", "Transport"];
 
 const StandbyDcEntryForm = () => {
     const navigate = useNavigate();

@@ -93,7 +93,7 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
     const searchurl = (type === "qt" || type === "Quotation Format")
       ? `${Api_urls}/QT/search?q=`
       : (type === "Invoice Format")
-        ? `${API_BASE_URL}/salesinvoices/INV/search?q=`
+        ? `${API_BASE_URL}/salesinvoices/INV/search?all=true&q=`
         : (type === "DC Format")
           ? `${API_BASE_URL}/salesdc/DC/search?q=`
           : (type === "Credit Note Format")

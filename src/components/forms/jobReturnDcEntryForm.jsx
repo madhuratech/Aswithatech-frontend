@@ -33,7 +33,7 @@ const INIT_ROW = {
     remarks: ""
 };
 
-const DESPATCH_OPTIONS = ["Courier", "Transport", "By Hand"];
+const DESPATCH_OPTIONS = ["Courier", "By Hand", "Transport"];
 
 const JobReturnDcEntryForm = () => {
     const navigate = useNavigate();

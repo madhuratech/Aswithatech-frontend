@@ -471,7 +471,7 @@ const ReceiptEntry = () => {
         <div className="border border-gray-200 p-5 mb-6 bg-gray-50">
           <div className="grid grid-cols-3 gap-x-8 gap-y-4">
 
-            {/* Bill No — dropdown of pending bills */}
+            {/* Bill No — dropdown of pending bills (selection only, no manual typing) */}
             <div className="flex flex-col gap-1 relative" ref={billRef}>
               <label className="text-[12px] font-bold text-gray-600 uppercase tracking-tight">Bill Number</label>
               <input
@@ -479,23 +479,21 @@ const ReceiptEntry = () => {
                 placeholder="Select Bill No"
                 value={entry.bill_no}
                 onFocus={() => { if (pendingBills.length) setBillOpen(true); }}
-                onChange={(e) => { setEntry((p) => ({ ...p, bill_no: e.target.value })); setBillOpen(true); }}
-                className="p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black outline-none bg-white shadow-sm"
+                readOnly
+                className="p-2.5 border border-gray-200 rounded-lg text-[13px] font-semibold text-black outline-none bg-white shadow-sm cursor-pointer"
               />
               {billOpen && pendingBills.length > 0 && (
                 <div className="absolute top-[62px] left-0 w-full bg-white shadow-lg z-50 border border-gray-200 rounded max-h-40 overflow-y-auto">
-                  {pendingBills
-                    .filter((b) => !entry.bill_no || b.bill_no.toLowerCase().includes(entry.bill_no.toLowerCase()))
-                    .map((b) => (
-                      <div
-                        key={b.bill_no}
-                        onClick={() => selectBill(b)}
-                        className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm flex justify-between"
-                      >
-                        <span className="font-semibold">{b.bill_no}</span>
-                        <span className="text-gray-500">{fmt(b.bill_amount)}</span>
-                      </div>
-                    ))}
+                  {pendingBills.map((b) => (
+                    <div
+                      key={b.bill_no}
+                      onClick={() => selectBill(b)}
+                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm flex justify-between"
+                    >
+                      <span className="font-semibold">{b.bill_no}</span>
+                      <span className="text-gray-500">{fmt(b.bill_amount)}</span>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

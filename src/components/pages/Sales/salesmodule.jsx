@@ -8,6 +8,7 @@ import InvoiceFormat from "./invoiceformat";
 import SalesDCFormat from "./salesdcformat";
 import CreditNoteView from "./creditnote";
 import PerformanceInvoiceLayout2 from "./performanceinvoiceformat2";
+import ServiceInvoiceFormat from "../Services/invoiceFormat";
 const SalesCard = ({ title, subtitle, icon: Icon, bgColor, iconColor, onClick }) => {
     return (
         <div
@@ -36,14 +37,36 @@ const SalesModule = () => {
     const [isMinimized, setIsMinimized] = useState(false);
     const [initialView] = useState("qt");
     const [modalKey, setModalKey] = useState(0);
-    
-    
+    const [detectedInvoiceType, setDetectedInvoiceType] = React.useState("SalesInvoice");
 
     const [filters , setFilters] = useState({
     fromDate : "",
     toDate : "",
     QtNumber : ""
     });
+
+    React.useEffect(() => {
+        if (!filters.QtNumber || (viewtype !== "Invoice Format" && viewtype !== "Direct Invoice Format")) {
+            return;
+        }
+        const fetchType = async () => {
+            try {
+                const res = await fetch(`${API_BASE_URL}/salesinvoices/INV/type/${encodeURIComponent(filters.QtNumber)}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setDetectedInvoiceType(data.invoiceType);
+                } else {
+                    setDetectedInvoiceType("SalesInvoice");
+                }
+            } catch (err) {
+                console.error("Error fetching invoice type:", err);
+                setDetectedInvoiceType("SalesInvoice");
+            }
+        };
+        fetchType();
+    }, [filters.QtNumber, viewtype]);
+    
+    
 
 const openReport = async (type) => {
 
@@ -292,18 +315,26 @@ const ShowReport = (item) => {
         {viewtype === "Quotation Format" &&
         <QuotationFormat QtNumber={filters.QtNumber} /> 
         }        
-        {viewtype === "Invoice Format" &&
-        <InvoiceFormat InvNumber={filters.QtNumber} />
-        }        
-        {viewtype === "DC Format" &&
-        <SalesDCFormat dcNumber={filters.QtNumber} />
-        } 
-        {viewtype === "Credit Note Format" &&
-        <CreditNoteView cnNumber={filters.QtNumber} />
-        }
-        {viewtype === "Direct Invoice Format" &&
-        <InvoiceFormat InvNumber={filters.QtNumber} />
-        }
+         {viewtype === "Invoice Format" && (
+             detectedInvoiceType === "ServiceInvoice" ? (
+                 <ServiceInvoiceFormat dcNumber={filters.QtNumber} />
+             ) : (
+                 <InvoiceFormat InvNumber={filters.QtNumber} />
+             )
+         )}        
+         {viewtype === "DC Format" &&
+         <SalesDCFormat dcNumber={filters.QtNumber} />
+         } 
+         {viewtype === "Credit Note Format" &&
+         <CreditNoteView cnNumber={filters.QtNumber} />
+         }
+         {viewtype === "Direct Invoice Format" && (
+             detectedInvoiceType === "ServiceInvoice" ? (
+                 <ServiceInvoiceFormat dcNumber={filters.QtNumber} />
+             ) : (
+                 <InvoiceFormat InvNumber={filters.QtNumber} />
+             )
+         )}
         {viewtype === "PI2 Format" &&
         <PerformanceInvoiceLayout2 InvNumber={filters.QtNumber} />
         }
