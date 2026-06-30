@@ -46,6 +46,14 @@ const fmtDate = (d) => {
   return `${String(dt.getDate()).padStart(2, "0")}-${months[dt.getMonth()]}-${dt.getFullYear()}`;
 };
 
+// today date
+useEffect(() => {
+  const today = new Date().toISOString().split('T')[0];
+  const toInput = document.getElementById('to-date');
+  if (toInput) toInput.value = today;
+}, [])
+
+
 function groupByBill(rows) {
   const map = new Map();
   rows.forEach((row) => {

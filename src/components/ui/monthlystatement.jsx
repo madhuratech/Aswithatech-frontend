@@ -37,6 +37,16 @@ const PurchaseReport = ({ onMinimize, onClose, setIsMinimizedInternal, title }) 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onClose]);
 
+
+  // Today Date 
+   useEffect (() => {
+     const today = new Date().toISOString().split('T')[0];
+     setFilters(prev => ({
+       ...prev,
+       todate: today
+     }));
+   },[]);
+
   const [filters, setFilters] = useState({ fromdate: "", todate: "", bill_no: "", supplier_name: "" });
 
   const baseApi = reportMode === "billwise"
@@ -173,6 +183,8 @@ const PurchaseReport = ({ onMinimize, onClose, setIsMinimizedInternal, title }) 
     </div>
   );
 
+  
+ 
   return (
     <div
       style={{

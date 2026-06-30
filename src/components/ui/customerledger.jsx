@@ -32,6 +32,14 @@ const CustomerLedger = ({ onClose, onMinimize, title = "Customer Ledger" }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onClose]);
 
+
+  // Today Date;
+
+ useEffect(() =>{
+  const today = new Date().toISOString().split('T')[0];
+  setFilters(prev => ({...prev, toDate: today}));
+ },[]);
+
   const initialLedgerType = location.state?.ledgerType || "ledger";
   const [ledgerType, setLedgerType] = useState(initialLedgerType); // "ledger" | "outstanding"
   const [filters, setFilters] = useState({ fromDate: "", toDate: "", customer_name: "" });
