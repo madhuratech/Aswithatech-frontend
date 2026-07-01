@@ -9,7 +9,7 @@ import {
   Receipt,
   ClipboardCheck,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Outlet } from "react-router-dom";
 import WindowModal from "../../ui/WindowModal";
 import PurchaseOrderFormat from "./purchaseorderview";
 import Debitnoteview from "./debitnoteview";
@@ -26,15 +26,15 @@ const PurchaseCard = ({
   return (
     <div
       onClick={onClick}
-      className="flex items-center gap-5 p-6 bg-white border rounded-xl shadow-sm hover:shadow-md cursor-pointer transition"
+      className="flex items-center gap-3.5 p-4 bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md cursor-pointer transition duration-200 group"
     >
-      <div className={`w-14 h-14 flex items-center justify-center rounded-xl ${bgColor}`}>
-        <Icon size={26} className={iconColor} />
+      <div className={`w-10 h-10 flex items-center justify-center rounded-lg shrink-0 ${bgColor}`}>
+        <Icon size={18} className={iconColor} />
       </div>
 
       <div>
-        <h3 className="font-semibold text-gray-900">{title}</h3>
-        <p className="text-sm text-gray-500">{description}</p>
+        <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
+        <p className="text-xs text-gray-500 mt-0.5">{description}</p>
       </div>
     </div>
   );
@@ -47,7 +47,7 @@ const Purchase = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState("");
   const [isMinimized, setIsMinimized] = useState(false);
-   const [viewType, setViewType] = useState("po");
+  const [viewType, setViewType] = useState("po");
 
   const [filters, setFilters] = useState({
     fromDate: "",
@@ -58,65 +58,65 @@ const Purchase = () => {
 
 
 
-const [initialView, setInitialView] = useState("po");
+  const [initialView, setInitialView] = useState("po");
 
-const openReport = async (title, type, mode = "po") => {
-  setModalTitle(title);
-  setInitialView(mode);
-  let number = "";
+  const openReport = async (title, type, mode = "po") => {
+    setModalTitle(title);
+    setInitialView(mode);
+    let number = "";
 
-  try {
-    if (type === "po") {
-      const res = await fetch(`${API_BASE_URL}/purchaseorders/po/search?q=`);
-      const data = await res.json();
-      number = data[0]?.po_number || "";
+    try {
+      if (type === "po") {
+        const res = await fetch(`${API_BASE_URL}/purchaseorders/po/search?q=`);
+        const data = await res.json();
+        number = data[0]?.po_number || "";
 
-      setFilters(prev => ({ ...prev, poNumber: number }));
+        setFilters(prev => ({ ...prev, poNumber: number }));
+      }
+
+      if (type === "dn") {
+        const res = await fetch(`${API_BASE_URL}/debitnotes/dn/search?q=`);
+        const data = await res.json();
+        number = data[0]?.dn_number || "";
+
+        setFilters(prev => ({ ...prev, dnNumber: number }));
+      }
+
+      if (type === "billwise") {
+        const res = await fetch(`${API_BASE_URL}/billpayment/allbills`);
+        const data = await res.json();
+        number = data[0]?.bill_no || "";
+
+        setFilters(prev => ({ ...prev, billNumber: number }));
+      }
+
+    } catch (err) {
+      console.error(err);
     }
 
-    if (type === "dn") {
-      const res = await fetch(`${API_BASE_URL}/debitnotes/dn/search?q=`);
-      const data = await res.json();
-      number = data[0]?.dn_number || "";
+    setViewType(type);
+    setIsModalOpen(true);
+    setIsMinimized(false);
+  };
 
-      setFilters(prev => ({ ...prev, dnNumber: number }));
+
+  const ShowReport = (item) => {
+    if (item.name === "Purchase Order Format") {
+      openReport(item.name, "po", "po");
+    } else if (item.name === "Debit Note Format") {
+      openReport(item.name, "dn", "po");
+    } else if (item.name === "Purchase Order Report") {
+      openReport(item.name, "po", "report");
+    } else if (item.name === "Debit Note Report") {
+      openReport(item.name, "dn", "report");
     }
-
-    if (type === "billwise") {
-      const res = await fetch(`${API_BASE_URL}/billpayment/allbills`);
-      const data = await res.json();
-      number = data[0]?.bill_no || "";
-
-      setFilters(prev => ({ ...prev, billNumber: number }));
+    else if (item.name === "Payment Format") {
+      openReport(item.name, "billwise", "po");
     }
-
-  } catch (err) {
-    console.error(err);
-  }
-
-  setViewType(type);
-  setIsModalOpen(true);
-  setIsMinimized(false);
-};
-
-
-const ShowReport = (item) => {
-  if (item.name === "Purchase Order Format") {
-    openReport(item.name, "po", "po");
-  } else if (item.name === "Debit Note Format") {
-    openReport(item.name, "dn", "po");
-  } else if (item.name === "Purchase Order Report") {
-    openReport(item.name, "po", "report");
-  } else if (item.name === "Debit Note Report") {
-    openReport(item.name, "dn", "report");
-  } 
-  else if(item.name === "Payment Format"){
-     openReport(item.name, "billwise", "po");
-  }
-  else {
-    navigate(item.path);
-  }
-};
+    else {
+      navigate(item.path);
+    }
+  };
 
 
 
@@ -167,7 +167,7 @@ const ShowReport = (item) => {
       icon: CreditCard,
       bgColor: "bg-indigo-100",
       iconColor: "text-indigo-600",
-     action: () =>navigate("/purchase/billwise"),
+      action: () => navigate("/purchase/billwise"),
     },
     {
       title: "Purchase Report",
@@ -183,8 +183,8 @@ const ShowReport = (item) => {
     { name: "Purchase Order Format", path: "/purchase/po-format" },
     { name: "Debit Note Format", path: "/purchase/debitnote-view" },
     { name: "Supplier Ledger", path: "/purchase/supplier-ledger" },
-    { name: "Monthly Report", path: "/purchase/monthly-statement"},
-    { name: "Payment Format", path: "/purchase/bill-format"},
+    { name: "Monthly Report", path: "/purchase/monthly-statement" },
+    { name: "Payment Format", path: "/purchase/bill-format" },
   ];
 
   return (
@@ -194,7 +194,7 @@ const ShowReport = (item) => {
     >
 
       <h1 className="text-3xl font-bold mb-8">Purchase Module</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-6xl">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-6 ">
         {purchaseOptions.map((option, index) => (
           <div key={index} className="relative">
 
@@ -215,7 +215,7 @@ const ShowReport = (item) => {
                 {dropdownItems.map((item, i) => (
                   <button
                     key={i}
-                    onClick={() => { ShowReport(item); setOpenDropdown(null)}}
+                    onClick={() => { ShowReport(item); setOpenDropdown(null) }}
                     className="w-full text-left px-4 py-3 text-sm hover:bg-blue-50 hover:text-blue-600 transition"
                   >
                     {item.name}
@@ -229,7 +229,7 @@ const ShowReport = (item) => {
       </div>
 
       <WindowModal
-        key={viewType} 
+        key={viewType}
         title={modalTitle}
         isOpen={isModalOpen}
         type={viewType}
@@ -245,7 +245,7 @@ const ShowReport = (item) => {
         ) : viewType === "dn" ? (
           <Debitnoteview dnNumber={filters.dnNumber} />
         ) : viewType === "billwise" ? (
-        <Billwiseformat billNo={filters.billNumber} />
+          <Billwiseformat billNo={filters.billNumber} />
         ) : null}
       </WindowModal>
 
@@ -262,9 +262,8 @@ const ShowReport = (item) => {
           </button>
         </div>
       )}
+      <Outlet />
     </div>
-
-
   );
 };
 

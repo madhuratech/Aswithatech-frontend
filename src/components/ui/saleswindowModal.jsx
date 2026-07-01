@@ -14,6 +14,7 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
   const [clientopen, setclientopen] = useState(false);
   const [clientlist, setclientlist] = useState([]);
   const [deleteConfirm, setDeleteConfirm] = useState({ open: false, dcNo: null });
+  const [detectedDcType, setDetectedDcType] = useState("SalesDC");
   const contentRef = useRef(null);
   const qtDropdownRef = useRef(null);
   const clientDropdownRef = useRef(null);
@@ -86,23 +87,68 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
 
   }, [qtNumber]);
 
+  useEffect(() => {
+    if (type !== "DC Format" || !filters.QtNumber) return;
+    const checkDcType = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/salesdc/full/${encodeURIComponent(filters.QtNumber)}`);
+        if (res.ok) {
+          setDetectedDcType("SalesDC");
+        } else {
+          const serviceRes = await fetch(`${API_BASE_URL}/servicedcentry/full/${encodeURIComponent(filters.QtNumber)}`);
+          if (serviceRes.ok) {
+            setDetectedDcType("ServiceDC");
+          }
+        }
+      } catch (err) {
+        console.error("Error detecting DC type:", err);
+      }
+    };
+    checkDcType();
+  }, [filters.QtNumber, type]);
+
 
 
   //  Search PO
   useEffect(() => {
+    if (type === "DC Format") {
+      Promise.all([
+        fetch(`${API_BASE_URL}/salesdc/DC/search?q=`).then(res => res.json()),
+        fetch(`${API_BASE_URL}/servicedcentry/DC/search?q=`).then(res => res.json())
+      ])
+        .then(([salesData, serviceData]) => {
+          const formattedServiceData = serviceData.map(item => ({
+            dc_no: item.dc_number || item.dc_no
+          }));
+          const merged = [...salesData, ...formattedServiceData];
+          const uniqueMerged = [];
+          const seen = new Set();
+          for (const item of merged) {
+            if (item.dc_no && !seen.has(item.dc_no)) {
+              seen.add(item.dc_no);
+              uniqueMerged.push(item);
+            }
+          }
+          setPoList(uniqueMerged);
+        })
+        .catch(err => {
+          console.error("Error fetching DC list:", err);
+          setPoList([]);
+        });
+      return;
+    }
+
     const searchurl = (type === "qt" || type === "Quotation Format")
       ? `${Api_urls}/QT/search?q=`
       : (type === "Invoice Format")
         ? `${API_BASE_URL}/salesinvoices/INV/search?all=true&q=`
-        : (type === "DC Format")
-          ? `${API_BASE_URL}/salesdc/DC/search?q=`
-          : (type === "Credit Note Format")
-            ? `${API_BASE_URL}/creditnotes/cn/search?q=`
-            : (type === "Direct Invoice Format")
-              ? `${API_BASE_URL}/directinvoices/INV/search?q=`
-              : (type === "PI2 Format")
-                ? `${API_BASE_URL}/performanceinvoices2/INV/search?q=`
-                : null;
+        : (type === "Credit Note Format")
+          ? `${API_BASE_URL}/creditnotes/cn/search?q=`
+          : (type === "Direct Invoice Format")
+            ? `${API_BASE_URL}/directinvoices/INV/search?q=`
+            : (type === "PI2 Format")
+              ? `${API_BASE_URL}/performanceinvoices2/INV/search?q=`
+              : null;
 
     if (searchurl) {
       fetch(searchurl)
@@ -145,7 +191,11 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
       }
 
       if ((type === "DC Format") && filters.QtNumber) {
-        params.append("dcNo", filters.QtNumber);
+        if (detectedDcType === "ServiceDC") {
+          params.append("dcNumber", filters.QtNumber);
+        } else {
+          params.append("dcNo", filters.QtNumber);
+        }
       }
 
       if ((type === "Credit Note Format") && filters.QtNumber) {
@@ -163,7 +213,9 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
           : (type === "PI2 Format")
             ? `${API_BASE_URL}/performanceinvoices2/report/filters?${params.toString()}`
             : (type === "DC Format")
-              ? `${API_BASE_URL}/salesdc/report/filters?${params.toString()}`
+              ? (detectedDcType === "ServiceDC"
+                ? `${API_BASE_URL}/servicedcentry/report/filters?${params.toString()}`
+                : `${API_BASE_URL}/salesdc/report/filters?${params.toString()}`)
               : (type === "Credit Note Format")
                 ? `${API_BASE_URL}/creditnotes/report/filters?${params.toString()}`
                 : `${Api_urls}/report/filters?${params.toString()}`;
@@ -197,7 +249,11 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
       params.append("invoiceNo", filters.QtNumber);
     }
     if ((type === "DC Format") && filters.QtNumber) {
-      params.append("dcNo", filters.QtNumber);
+      if (detectedDcType === "ServiceDC") {
+        params.append("dcNumber", filters.QtNumber);
+      } else {
+        params.append("dcNo", filters.QtNumber);
+      }
     }
     if ((type === "Credit Note Format") && filters.QtNumber) {
       params.append("cnNumber", filters.QtNumber);
@@ -209,7 +265,9 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
         : (type === "PI2 Format")
           ? `${API_BASE_URL}/performanceinvoices2/report/excel?${params.toString()}`
           : (type === "DC Format")
-            ? `${API_BASE_URL}/salesdc/report/excel?${params.toString()}`
+            ? (detectedDcType === "ServiceDC"
+              ? `${API_BASE_URL}/servicedcentry/report/excel?${params.toString()}`
+              : `${API_BASE_URL}/salesdc/report/excel?${params.toString()}`)
             : (type === "Credit Note Format")
               ? `${API_BASE_URL}/creditnotes/report/excel?${params.toString()}`
               : `${Api_urls}/report/excel?${params.toString()}`;
@@ -296,14 +354,21 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
 
   const handleEditDC = (dcNo) => {
     onClose();
-    navigate('/sales/sales-dc', { state: { loadDcNo: dcNo } });
+    if (detectedDcType === "ServiceDC") {
+      navigate('/services/service-dc', { state: { loadDcNo: dcNo } });
+    } else {
+      navigate('/sales/sales-dc', { state: { loadDcNo: dcNo } });
+    }
   };
 
   const handleDeleteDC = async (dcNo) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/salesdc/delete/${dcNo}`, { method: 'DELETE' });
+      const url = detectedDcType === "ServiceDC"
+        ? `${API_BASE_URL}/servicedcentry/deletedc/${dcNo}`
+        : `${API_BASE_URL}/salesdc/delete/${dcNo}`;
+      const res = await fetch(url, { method: 'DELETE' });
       if (res.ok) {
-        setReportData(prev => prev.filter(r => r.dc_no !== dcNo));
+        setReportData(prev => prev.filter(r => (r.dc_no || r.dc_number) !== dcNo));
         setDeleteConfirm({ open: false, dcNo: null });
       } else {
         alert('Failed to delete DC.');
@@ -719,8 +784,8 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
                             style={{ background: i % 2 === 0 ? "#fff" : "#dce6f1" }}
                           >
                             <td style={tdStyle("left")}>{i + 1}</td>
-                            <td style={{ ...tdStyle("left"), color: "#1a3f7a", fontWeight: "bold" }}>
-                              {row.quotation_no || row.invoice_no || row.dc_no || row.cn_number || "-"}
+                             <td style={{ ...tdStyle("left"), color: "#1a3f7a", fontWeight: "bold" }}>
+                              {row.quotation_no || row.invoice_no || row.dc_no || row.dc_number || row.cn_number || "-"}
                             </td>
                             <td style={tdStyle("left")}>{row.quotation_date || row.invoice_date || row.dc_date || row.cn_date}</td>
                             <td style={{ ...tdStyle("left"), color: "#1a3f7a", fontWeight: "bold" }}>
@@ -745,13 +810,13 @@ const WindowModal = ({ title, isOpen, type, onClose, isMinimized, onMinimize, ch
                             {type === "DC Format" && (
                               <td style={{ ...tdStyle("center"), whiteSpace: "nowrap" }} className="no-print">
                                 <button
-                                  onClick={() => handleEditDC(row.dc_no)}
+                                  onClick={() => handleEditDC(row.dc_no || row.dc_number)}
                                   style={{ background: "#0069d9", color: "#fff", border: "none", padding: "3px 8px", fontSize: "11px", cursor: "pointer", borderRadius: "3px", marginRight: "4px" }}
                                 >
                                   Edit
                                 </button>
                                 <button
-                                  onClick={() => setDeleteConfirm({ open: true, dcNo: row.dc_no })}
+                                  onClick={() => setDeleteConfirm({ open: true, dcNo: row.dc_no || row.dc_number })}
                                   style={{ background: "#dc3545", color: "#fff", border: "none", padding: "3px 8px", fontSize: "11px", cursor: "pointer", borderRadius: "3px" }}
                                 >
                                   Delete

@@ -7,29 +7,29 @@ import {
   FileBarChart,
 } from "lucide-react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Outlet } from "react-router-dom";
 import ServiceWindowModal from "../../ui/servicewindowModal";
 import DeliveryChallan from "./dcFormat";
 import InvoiceFormat from "./invoiceFormat";
 import InwardReport from "./InwardReport";
 const SalesCard = ({ title, subtitle, icon: Icon, bgColor, iconColor, onClick }) => {
-    return (
-      <div
-        onClick={onClick}
-        className="flex items-center gap-5 p-6 bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md hover:border-blue-200 transition-all cursor-pointer group"
-      >
-        <div className={`flex items-center justify-center w-14 h-14 rounded-xl ${bgColor}`}>
-          <Icon size={26} className={iconColor} />
-        </div>
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-            {title}
-          </h3>
-          <p className="text-sm text-gray-500 mt-1">{subtitle}</p>
-        </div>
+  return (
+    <div
+      onClick={onClick}
+      className="flex items-center gap-3.5 p-4 bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md hover:border-blue-200 transition-all cursor-pointer group"
+    >
+      <div className={`flex items-center justify-center w-10 h-10 rounded-lg shrink-0 ${bgColor}`}>
+        <Icon size={18} className={iconColor} />
       </div>
-    );
-  };
+      <div>
+        <h3 className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+          {title}
+        </h3>
+        <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>
+      </div>
+    </div>
+  );
+};
 
 const ServiceModule = () => {
   const navigate = useNavigate();
@@ -37,10 +37,10 @@ const ServiceModule = () => {
   const [openDCModal, setOpenDCModal] = useState(false);
   const [openInwardReport, setOpenInwardReport] = useState(false);
   const [selectedDC, setSelectedDC] = useState("");
-  const [viewtype , setviewtype] = useState("");
-  const [modeltitle , setmodeltitle] = useState();
-  const [isMinimized , setMinimized] = useState(false);
-  const [initialView , setInitialView] = useState("DC");
+  const [viewtype, setviewtype] = useState("");
+  const [modeltitle, setmodeltitle] = useState();
+  const [isMinimized, setMinimized] = useState(false);
+  const [initialView, setInitialView] = useState("DC");
 
   const [filters, setFilters] = useState({
     fromDate: "",
@@ -54,27 +54,27 @@ const ServiceModule = () => {
     let number = "";
 
     try {
-        if (title === "DC Format") {
-          const res = await fetch(`${API_BASE_URL}/servicedcentry/DC/search?q=`);
-          const data = await res.json();
-          number = data[0]?.dc_number || data[0]?.inward_dc_no || "";
-          setFilters((prev) => ({ ...prev, dcNumber: number }));
-          setSelectedDC(number);
-        } else if (type === "dc") {
-          const res = await fetch(`${API_BASE_URL}/servicedcentry/IE/search?q=`);
-          const data = await res.json();
-          number = data[0]?.dc_number || data[0]?.inward_dc_no || "";
-          setFilters((prev) => ({ ...prev, dcNumber: number }));
-          setSelectedDC(number);
-        } else if (type === "invoice") {
-          const res = await fetch(`${API_BASE_URL}/serviceinvoice/search-invoice?q=`);
-          const data = await res.json();
-          number = data[0]?.invoice_no || "";
-          setFilters((prev) => ({ ...prev, dcNumber: number }));
-          setSelectedDC(number);
-        }
+      if (title === "DC Format") {
+        const res = await fetch(`${API_BASE_URL}/servicedcentry/DC/search?q=`);
+        const data = await res.json();
+        number = data[0]?.dc_number || data[0]?.inward_dc_no || "";
+        setFilters((prev) => ({ ...prev, dcNumber: number }));
+        setSelectedDC(number);
+      } else if (type === "dc") {
+        const res = await fetch(`${API_BASE_URL}/servicedcentry/IE/search?q=`);
+        const data = await res.json();
+        number = data[0]?.dc_number || data[0]?.inward_dc_no || "";
+        setFilters((prev) => ({ ...prev, dcNumber: number }));
+        setSelectedDC(number);
+      } else if (type === "invoice") {
+        const res = await fetch(`${API_BASE_URL}/serviceinvoice/search-invoice?q=`);
+        const data = await res.json();
+        number = data[0]?.invoice_no || "";
+        setFilters((prev) => ({ ...prev, dcNumber: number }));
+        setSelectedDC(number);
+      }
     } catch (err) {
-        console.error(err);
+      console.error(err);
     }
 
     setviewtype(type);
@@ -152,7 +152,7 @@ const ServiceModule = () => {
         Core PCB service operations and job management
       </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-6xl mt-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-3 gap-6 p-5">
         {servicecards.map((option, index) => (
           <div key={index} className="relative">
             <SalesCard
@@ -168,17 +168,17 @@ const ServiceModule = () => {
 
             {option.isDropdown && openDropdown === index && (
               <div className="mt-3 w-full bg-white border rounded-xl shadow-xl z-[9999]">
-               {dropdownItems.map((item, i) => (
-               <button
-                key={i}
-                onClick={() => {
-                  showReport(item);
-                  setOpenDropdown(null);
-                 }}
-                className="w-full text-left px-4 py-3 text-sm hover:bg-blue-50 hover:text-blue-600 transition"
-               >
-               {item.name}
-               </button>
+                {dropdownItems.map((item, i) => (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      showReport(item);
+                      setOpenDropdown(null);
+                    }}
+                    className="w-full text-left px-4 py-3 text-sm hover:bg-blue-50 hover:text-blue-600 transition"
+                  >
+                    {item.name}
+                  </button>
                 ))}
               </div>
             )}
@@ -201,9 +201,9 @@ const ServiceModule = () => {
         onClose={() => setOpenDCModal(false)}
         onFilterChange={(filters) => { setSelectedDC(filters.dcNumber); }}>
         {viewtype === "dc" &&
-          <DeliveryChallan key={selectedDC} dcNumber={selectedDC}/>}
+          <DeliveryChallan key={selectedDC} dcNumber={selectedDC} />}
         {viewtype === "invoice" &&
-          <InvoiceFormat key={selectedDC} dcNumber={selectedDC}/>}
+          <InvoiceFormat key={selectedDC} dcNumber={selectedDC} />}
       </ServiceWindowModal>
 
       {/* Minimise bar for DC/Invoice modal */}
@@ -227,6 +227,7 @@ const ServiceModule = () => {
           onMinimize={() => setOpenInwardReport(false)}
         />
       )}
+      <Outlet />
     </div>
   );
 }

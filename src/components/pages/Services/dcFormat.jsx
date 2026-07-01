@@ -175,11 +175,11 @@ const DeliveryChallan = ({ dcNumber }) => {
   };
 
   return (
-    <div className="bg-white w-full py-2 flex flex-col justify-center items-center print:py-0 print:bg-white">
+    <div className="dc-print-container">
       {renderChallan("")}
 
       {/* Dashed divider between copies */}
-      <div className="w-[200mm] mt-10 border-t py-2  border-dashed border-black print:mt-10"></div>
+      <div className="w-[200mm] border-t-2 border-dashed border-black"></div>
 
       {renderChallan("")}
 
@@ -187,6 +187,16 @@ const DeliveryChallan = ({ dcNumber }) => {
         @page {
           size: A4 portrait;
           margin: 5mm;
+        }
+        .dc-print-container {
+          height: 282mm;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          align-items: center;
+          background-color: white;
+          box-sizing: border-box;
+          padding: 2mm 0;
         }
         @media print {
           html, body {

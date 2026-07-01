@@ -86,8 +86,7 @@ const SalesDCEntry = () => {
     const remarksRef = useRef(null);
     const salesDcDateRef = useRef(null);
     const salesDcDateFp = useRef(null);
-    const orderDateRef = useRef(null);
-    const orderDateFp = useRef(null);
+
 
     useEffect(() => {
         salesDcDateFp.current = flatpickr(salesDcDateRef.current, {
@@ -109,27 +108,6 @@ const SalesDCEntry = () => {
         }
     }, [form.dc_date]);
 
-    // ── Order Date flatpickr with multi-date mode ─────────────────────────────
-    useEffect(() => {
-        orderDateFp.current = flatpickr(orderDateRef.current, {
-            disableMobile: true,
-            monthSelectorType: "static",
-            dateFormat: "d-m-Y",
-            mode: "multiple",
-            defaultDate: form.order_date || null,
-            onChange: (selectedDates, dateStr) => {
-                setForm((p) => ({ ...p, order_date: dateStr }));
-            },
-        });
-        return () => orderDateFp.current?.destroy();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    useEffect(() => {
-        if (orderDateFp.current && form.order_date !== undefined) {
-            orderDateFp.current.setDate(form.order_date || "");
-        }
-    }, [form.order_date]);
 
     // ── auto-load DC from navigation state (e.g. from report view Edit) ──────
     useEffect(() => {
@@ -665,15 +643,15 @@ const SalesDCEntry = () => {
                             />
                         </div>
 
-                        {/* Order Date — multi-date picker */}
+                        {/* Order Date — manual entry */}
                         <div>
-                            <label className={labelCls}>Order Date <span className="text-[10px] text-gray-400 font-normal normal-case">(optional / multi)</span></label>
+                            <label className={labelCls}>Order Date <span className="text-[10px] text-gray-400 font-normal normal-case">(optional)</span></label>
                             <input
-                                ref={orderDateRef}
                                 type="text"
-                                placeholder="Select date(s)"
+                                value={form.order_date || ""}
+                                onChange={(e) => setForm((p) => ({ ...p, order_date: e.target.value }))}
+                                placeholder="Enter order date(s) manually"
                                 className={inputCls}
-                                readOnly
                             />
                         </div>
 

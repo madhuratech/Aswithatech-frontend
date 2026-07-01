@@ -1,7 +1,7 @@
 import API_BASE_URL from "../../../config/api";
 import React, { useEffect, useState, useRef } from "react";
 import { Box, RefreshCw, Trash2, Wrench, ChevronDown } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Outlet } from "react-router-dom";
 import PCBStockReportModal from "../../ui/reports/PCBStockReportModal";
 import StandbyPCBStockReportModal from "../../ui/reports/StandbyPCBStockReportModal";
 import ScrapDamageReportModal from "../../ui/reports/ScrapDamageReportModal";
@@ -11,16 +11,16 @@ const ModuleCard = ({ title, subtitle, icon: Icon, bgColor, iconColor, onClick }
     return (
         <div
             onClick={onClick}
-            className="flex items-center gap-5 p-6 bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md hover:border-blue-200 transition-all cursor-pointer group"
+            className="flex items-center gap-3.5 p-4 bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md hover:border-blue-200 transition-all cursor-pointer group"
         >
-            <div className={`flex items-center justify-center w-14 h-14 rounded-xl ${bgColor}`}>
-                <Icon size={26} className={iconColor} />
+            <div className={`flex items-center justify-center w-10 h-10 rounded-lg shrink-0 ${bgColor}`}>
+                <Icon size={18} className={iconColor} />
             </div>
             <div>
-                <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                <h3 className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
                     {title}
                 </h3>
-                <p className="text-sm text-gray-500 mt-1">{subtitle}</p>
+                <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>
             </div>
         </div>
     );
@@ -128,7 +128,7 @@ const ProductionStock = () => {
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-5xl mb-6">
                 {modules.map((mod, index) => (
                     <ModuleCard
                         key={index}
@@ -152,21 +152,21 @@ const ProductionStock = () => {
                     Production Reports
                 </button>
                 {showDropdown && (
-                <div className="absolute left-0 mt-2 w-72 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1">
-                 {reportItems.map((item, i) => (
-                 <button
-                key={i}
-                onClick={() => {
-                    setActiveModal(item.modalKey);
-                    setShowDropdown(false);
-                }}
-                className="block w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600"
-            >
-                {item.label}
-            </button>
-        ))}
-    </div>
-)}
+                    <div className="absolute left-0 mt-2 w-72 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1">
+                        {reportItems.map((item, i) => (
+                            <button
+                                key={i}
+                                onClick={() => {
+                                    setActiveModal(item.modalKey);
+                                    setShowDropdown(false);
+                                }}
+                                className="block w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                            >
+                                {item.label}
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Modals */}
@@ -190,6 +190,7 @@ const ProductionStock = () => {
                     ))}
                 </div>
             </div>
+            <Outlet />
         </div>
     );
 };

@@ -22,14 +22,14 @@ const Statcard = () => {
   const Card = ({ title, icon, action }) => (
     <div 
       onClick={action} 
-      className="flex items-center justify-between p-6 rounded-2xl border border-slate-100 bg-white shadow-sm hover:shadow-md hover:border-blue-200 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group"
+      className="flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-white shadow-sm hover:shadow-md hover:border-blue-200 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group"
     >
       <div>
-        <p className="text-lg font-bold text-slate-800 leading-snug group-hover:text-blue-600 transition-colors">
+        <p className="text-sm font-semibold text-slate-800 leading-snug group-hover:text-blue-600 transition-colors">
           {title}
         </p>
       </div>
-      <div className="flex-shrink-0">
+      <div className="flex-shrink-0 dashboard-card-icon-wrapper">
         {icon}
       </div>
     </div>
@@ -188,7 +188,7 @@ const Statcard = () => {
 
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {cards.map((card, index) => (
           <Card
             key={index}
@@ -223,6 +223,18 @@ const Statcard = () => {
           </button>
         </div>
       )}
+
+      <style>{`
+        .dashboard-card-icon-wrapper > div {
+          width: 2.25rem !important;
+          height: 2.25rem !important;
+          border-radius: 0.5rem !important;
+        }
+        .dashboard-card-icon-wrapper svg {
+          width: 18px !important;
+          height: 18px !important;
+        }
+      `}</style>
     </>
   );
 };
